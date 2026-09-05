@@ -2,7 +2,7 @@
 
 This file records user-visible changes to BlueBot and Mastobot.
 
-## 0.50 — 2026-09-04
+## 0.50 — 2026-09-05
 
 Version 0.50 begins the BlueBot and Mastobot release line. Both clients now share
 the same Ruby implementation and command-line interface on Linux, macOS, and Windows.
