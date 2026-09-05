@@ -1,7 +1,8 @@
 # ChorusDraft
 
-> **Current prerelease: 0.51.1.** This security update retains the 0.51 comic
-> voice and strengthens opt-outs, do-not-contact checks, and draft validation.
+> **Current release: [0.51.1](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.1).**
+> This security update retains the 0.51 comic voice and strengthens opt-outs,
+> do-not-contact checks, and draft validation.
 
 ChorusDraft is an AI-assisted comedy drafting and publishing tool for Bluesky and
 Mastodon. It drafts dry observations about software, playful replies, and satirical
@@ -12,6 +13,21 @@ before it is published.
 
 Version 0.51.1 is available for the shared Ruby codebase on Linux, macOS, and
 Windows. The comic voice introduced in 0.51 is retained.
+
+## What's new in 0.51.1
+
+- Opt-out requests are recorded before reply limits or AI failures can interrupt
+  notification processing.
+- Do-not-contact checks now cover explicit mentions in generated, manual, and
+  queued posts, including Mastodon content warnings and local-handle aliases.
+- Older opt-outs remain in local state when new accounts are blocked.
+- Unicode-aware matching catches common curly-apostrophe, full-width, and
+  invisible-formatting variations without changing the text shown for review.
+- Mastodon content warnings receive length, control-character, harassment, and
+  do-not-contact validation before staging, review, and publication.
+
+See [CHANGELOG.md](CHANGELOG.md) for the complete version history and
+[RELEASE_NOTES.md](RELEASE_NOTES.md) for installation and compatibility details.
 
 ## Comic voice
 
@@ -68,14 +84,15 @@ toolchain. Setup does not download software, install services, or start a bot.
 
 ## Download and install
 
-The following archives are included with the published **0.51.1** prerelease.
+The following archives are included with the published **0.51.1** release.
 
-Download the archive for the bot and operating system from the GitHub release:
+Download the archive for the bot and operating system from the
+[0.51.1 GitHub release](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.1):
 
 | Product | Linux | macOS | Windows |
 | --- | --- | --- | --- |
-| ChorusDraft for Bluesky | `chorusdraft-bluesky-v0.51.1-linux.tar.gz` | `chorusdraft-bluesky-v0.51.1-macos.tar.gz` | `chorusdraft-bluesky-v0.51.1-windows.zip` |
-| ChorusDraft for Mastodon | `chorusdraft-mastodon-v0.51.1-linux.tar.gz` | `chorusdraft-mastodon-v0.51.1-macos.tar.gz` | `chorusdraft-mastodon-v0.51.1-windows.zip` |
+| ChorusDraft for Bluesky | [Linux](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-bluesky-v0.51.1-linux.tar.gz) | [macOS](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-bluesky-v0.51.1-macos.tar.gz) | [Windows](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-bluesky-v0.51.1-windows.zip) |
+| ChorusDraft for Mastodon | [Linux](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-mastodon-v0.51.1-linux.tar.gz) | [macOS](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-mastodon-v0.51.1-macos.tar.gz) | [Windows](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-mastodon-v0.51.1-windows.zip) |
 
 On Linux or macOS:
 
@@ -333,11 +350,12 @@ and enforced safety boundaries.
 Version 0.51.1 uses the same configuration and state formats as 0.51. Keep a
 backup of your `data` directory before upgrading.
 
-From ChorusDraft 0.50 or 0.51, stop the existing listener or daemon, extract 0.51.1 into a
-new directory, and securely copy your `.env`, configured target and do-not-contact
-files, and the entire `data` directory into it. State and configuration formats are
-unchanged. Keeping `data` preserves queued drafts, opt-outs, and duplicate and
-interaction history. Start only one installation for each account.
+From ChorusDraft 0.50 or 0.51, stop the existing listener or daemon, extract
+0.51.1 into a new directory, and securely copy your `.env`, configured target and
+do-not-contact files, and the entire `data` directory into it. State and
+configuration formats are unchanged. Keeping `data` preserves queued drafts,
+opt-outs, and duplicate and interaction history. Start only one installation for
+each account.
 
 The new voice applies only to drafts generated after the upgrade. Review existing
 pending drafts normally; the upgrade does not regenerate or republish them.
@@ -365,7 +383,8 @@ Tests use local fakes and do not log in, call an AI provider, or publish posts.
 
 ChorusDraft is distributed under the GNU General Public License v3.0.
 See [LICENSE](LICENSE). [NOTICE](NOTICE) records the original projects,
-modification date, scope of the version 0.50 rewrite and 0.51 update, and third-party names.
+modification date, scope of the version 0.50 rewrite, the 0.51 comic update, the
+0.51.1 security update, and third-party names.
 
 Version 0.50 is based on the feature sets of Bluesky Bot 1.0.3 and Mastodon Bot
 1.0.2 by Buntatoes. It begins a new shared Ruby release line under the
