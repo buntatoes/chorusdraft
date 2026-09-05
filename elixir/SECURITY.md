@@ -43,7 +43,7 @@ accuracy, platform rules, and applicable law.
 
 ## Jetstream boundary
 
-The optional BlueBot stream connects with TLS certificate and hostname
+The optional Bluesky Jetstream client connects with TLS certificate and hostname
 verification. It sends no Bluesky app password, session token, or AI credentials.
 The current JSON subprotocol is required. Post bodies are decoded only to
 identify relevant activity; complete messages over 1 MiB are ignored. This is an

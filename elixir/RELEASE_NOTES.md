@@ -5,8 +5,8 @@ replace or change the Ruby 0.51.1 release, `main-ruby`, or `ruby-testing`.
 
 The separate Linux version now implements the Ruby command workflows and safety
 controls, optional Bluesky Jetstream, read-only state import, non-overwriting
-setup, queue status/rejection, and separate BlueBot/Mastobot packages with
-checksums and corresponding application/dependency source.
+setup, queue status/rejection, and one ChorusDraft package containing both
+platform modes, checksums, and corresponding application/dependency source.
 
 Parity fixes include advancing past seen target/search results, preserving source
 content warnings, decoding numeric HTML entities before opt-out checks, accepting
@@ -27,8 +27,8 @@ both product installs, overwrite refusal, and rebuilding from shipped dependency
 source. CI used Ubuntu 22.04, OTP 25.3, and Elixir 1.15.8.
 
 Successful [Elixir checks](https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml)
-upload the `chorusdraft-elixir-linux` artifact for 30 days. It includes BlueBot
-and Mastobot Linux archives and their SHA-256 files; these are untagged build
+upload the `chorusdraft-elixir-linux` artifact for 30 days. It includes the
+ChorusDraft Linux archive and its SHA-256 file; these are untagged build
 artifacts. Local builds write the same package types to `dist/`.
 
 Live Bluesky/Mastodon/AI acceptance and a sustained daemon soak require a test

@@ -14,9 +14,9 @@ if [ -e "$dest" ] || [ -L "$dest" ]; then
 fi
 (cd "$src" && sha256sum --check --quiet MANIFEST.sha256)
 mkdir -m 700 -- "$dest"
-for item in chorusdraft run.sh setup.sh install.sh .env.example config source README.md RELEASE_NOTES.md SECURITY.md PARITY.md LICENSE NOTICE THIRD_PARTY_NOTICES.md VERSION MANIFEST.sha256; do
+for item in chorusdraft run.sh setup.sh install.sh bluesky mastodon source README.md RELEASE_NOTES.md SECURITY.md PARITY.md LICENSE NOTICE THIRD_PARTY_NOTICES.md VERSION MANIFEST.sha256; do
   cp -R -- "$src/$item" "$dest/$item"
 done
 (cd "$dest" && sha256sum --check --quiet MANIFEST.sha256)
 "$dest/setup.sh"
-echo "Installed in $dest. Edit its .env before use. See README.md for state import."
+echo "Installed ChorusDraft in $dest. Edit bluesky/.env and/or mastodon/.env before use."

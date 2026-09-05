@@ -1,6 +1,6 @@
 # Elixir changelog
 
-Changes on `elixir-experimental`, newest first. The current internal identifier
+Changes to the ChorusDraft Elixir version on `elixir-experimental`, newest first. The current internal identifier
 is `0.52.0-testing`; the branch remains unreleased. Ruby code is a read-only
 feature reference.
 
@@ -24,8 +24,9 @@ feature reference.
 - Added kernel flock locking with crash recovery, nested state validation,
   constrained publication transitions, and refusal of symlink/corrupt state.
   Imported interrupted publications remain uncertain.
-- Added separate BlueBot/Mastobot Linux archives, run/setup/install scripts,
-  checksums, complete application/dependency source, and original license files.
+- Added a ChorusDraft Linux archive containing both platform modes,
+  run/setup/install scripts, checksums, complete application/dependency source,
+  and original license files.
   Installation uses a new directory and preserves the previous installation.
 - Passed 56 regression tests, Ruby-generated state import, both package installs,
   checksum checks, overwrite refusal, and offline source rebuilds in the
@@ -37,7 +38,7 @@ security audit remain outstanding. No Ruby branch or release is modified.
 
 ## Jetstream integration — unreleased
 
-- Added opt-in `--jetstream` for BlueBot's `--listen` and `--daemon` commands.
+- Added opt-in `--jetstream` for the Bluesky `--listen` and `--daemon` commands.
 - Use the current JSON subscribeEvents protocol over verified TLS, without
   sending platform credentials to Jetstream.
 - Match incoming mention facets and direct replies by DID; coalesce activity
@@ -56,7 +57,7 @@ completed packaging, migration, launchers, and the raised Elixir requirement.
 
 ### Elixir and Linux
 
-- Reimplemented the shared BlueBot and Mastobot Linux runtime in Elixir 1.14.
+- Reimplemented the shared ChorusDraft Linux runtime in Elixir 1.14.
 - Added a single escript with product-specific commands and configuration
   directories. Product launchers were added in the completion checkpoint above.
 - Added pinned Jason 1.4.5 JSON handling. Packaging and bundled dependency source

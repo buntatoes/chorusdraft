@@ -7,7 +7,7 @@ The rewrite targets Linux. It does not replace the Windows/macOS Ruby builds.
 
 | Ruby behavior | Elixir implementation | Verification |
 |---|---|---|
-| BlueBot and Mastobot login, feed, search, replies, quotes and deletion | Separate clients in one escript | Client fixtures; live credentials still needed |
+| Bluesky and Mastodon login, feed, search, replies, quotes and deletion | Platform clients in one ChorusDraft escript | Client fixtures; live credentials still needed |
 | Original comic drafts, contextual replies, target and discovery commentary | Shared runner; continues past seen/ineligible candidates | Runner and parity tests |
 | Local OpenAI, Ollama and Gemini | Shared AI adapter; provider credentials stay out of errors | AI adapter fixtures |
 | Manual staging and explicit manual publication | `--text`, `--publish`, reply/quote/CW options | Runner and client tests |
@@ -18,7 +18,7 @@ The rewrite targets Linux. It does not replace the Windows/macOS Ruby builds.
 | Privacy exclusions, opt-outs and interaction budgets | Restricted bodies discarded; persistent blocks; daily/author limits | Safety, client, runner and store tests |
 | Account-scoped atomic state and idempotency | Kernel flock, private files, stable IDs/record keys, uncertain outcomes | Concurrency, crash recovery and transport tests |
 | Existing state and configuration | Read-only import into an empty account store; non-overwriting setup | Migration tests, including Ruby-generated state in CI |
-| Linux packaging and install/upgrade | Separate archives, source/dependency source, manifests, new-directory installer | CI extraction, installation, overwrite refusal and offline rebuild |
+| Linux packaging and install/upgrade | One ChorusDraft archive with both platform modes, source/dependency source, manifest, and new-directory installer | CI extraction, installation, overwrite refusal and offline rebuild |
 | Jetstream | Optional Bluesky notification wake-up with periodic API catch-up | Protocol, reconnect and coalescing tests |
 
 Intentional differences: Elixir uses no Ruby runtime. Packaging requires Erlang

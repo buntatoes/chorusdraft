@@ -2,7 +2,7 @@ name: Elixir checks
 
 on:
   push:
-    branches: [elixir-experimental, codex/elixir-complete]
+    branches: [elixir-experimental]
     paths: ['elixir/**', '.github/workflows/elixir.yml']
   pull_request:
     branches: [elixir-experimental]

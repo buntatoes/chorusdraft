@@ -1,7 +1,7 @@
 # ChorusDraft — Linux Elixir version
 
-This directory contains the separate Linux Elixir rewrite of BlueBot for Bluesky
-and Mastobot for Mastodon. Development lives on the `elixir-experimental` branch.
+This directory contains the Linux Elixir version of ChorusDraft. One application
+and executable support both Bluesky and Mastodon. Development lives on the `elixir-experimental` branch.
 It is a separate implementation and is not part of the official Ruby release line.
 The supported Ruby release remains 0.51.1, with future Ruby work isolated on
 `ruby-testing`.
@@ -93,7 +93,7 @@ AI-generated text is designed to stay in the queue regardless of compatibility
 flags or environment values. The same review requirement applies to daemon and
 Jetstream workflows.
 
-## Jetstream for BlueBot
+## Bluesky Jetstream
 
 Jetstream is optional in this separate Elixir version:
 
@@ -128,8 +128,8 @@ This is live-tail notification acceleration, not a historical replay consumer:
 there is no persisted Jetstream cursor or guarantee of complete delivery. The
 existing 30-notification fetch window and five-reply batch limit still apply.
 
-Mastobot continues using its existing polling workflow; Jetstream is a Bluesky
-service. Omitting `--jetstream` preserves BlueBot's polling behavior too.
+The Mastodon mode continues to use polling; Jetstream is a Bluesky service.
+Omitting `--jetstream` preserves Bluesky polling behavior too.
 
 Protocol reference: [Bluesky Jetstream documentation](https://bsky.network/docs/jetstream/).
 
@@ -146,8 +146,8 @@ before reply generation. `config/target_accounts.txt` is empty by default.
 Unsolicited target and discovery drafts are capped at five per rolling 24 hours and
 one per author every 30 days.
 
-Mastobot processes only public and unlisted source statuses; restricted bodies are
-discarded immediately. BlueBot supports public feed posts only. Automatic likes,
+The Mastodon mode processes only public and unlisted source statuses; restricted
+bodies are discarded immediately. The Bluesky mode supports public feed posts only. Automatic likes,
 favourites, boosts, and reposts are not implemented.
 
 If a publication request has an ambiguous result, the draft is marked `uncertain`.
@@ -182,35 +182,34 @@ artifacts for 30 days; they are separate from tagged releases. Build from source
 with the following commands if an older artifact has expired.
 
 
-Build separate BlueBot and Mastobot Linux archives:
+Build the ChorusDraft Linux archive containing both platform modes:
 
 ```sh
 MIX_ENV=prod mix run scripts/build_release.exs
 ./scripts/check_packages.sh
 ```
 
-Archives and SHA-256 files are written to `dist/`. Each archive includes the
+The archive and SHA-256 file are written to `dist/`. The archive includes the
 escript, `run.sh`, `setup.sh`, `install.sh`, configuration examples, a complete
 file checksum manifest, GPL source, locked dependency source and original licenses.
 Runtime configuration, state, logs and build caches are excluded. The escript
 needs Erlang/OTP; it does not need an installed Elixir or Ruby to run.
 
-The archives are named `BlueBot-elixir-0.52.0-testing-linux.tar.gz` and
-`Mastobot-elixir-0.52.0-testing-linux.tar.gz`, each with an adjacent
-`.tar.gz.sha256` file. In the directory containing both archives and checksums:
+The archive is named `ChorusDraft-elixir-0.52.0-testing-linux.tar.gz` with an
+adjacent `.tar.gz.sha256` file. In the directory containing both files:
 
 ```sh
-sha256sum --check BlueBot-elixir-0.52.0-testing-linux.tar.gz.sha256
-tar -xzf BlueBot-elixir-0.52.0-testing-linux.tar.gz
-cd BlueBot-elixir-0.52.0-testing-linux
+sha256sum --check ChorusDraft-elixir-0.52.0-testing-linux.tar.gz.sha256
+tar -xzf ChorusDraft-elixir-0.52.0-testing-linux.tar.gz
+cd ChorusDraft-elixir-0.52.0-testing-linux
 ```
 
-Use the corresponding Mastobot filenames for Mastodon. From the extracted
-product directory, install into a new location:
+The extracted package supports both platforms. Install it into a new location:
 
 ```sh
-./install.sh /absolute/path/to/new-bluebot
-/absolute/path/to/new-bluebot/run.sh --help
+./install.sh /absolute/path/to/chorusdraft-elixir
+/absolute/path/to/chorusdraft-elixir/run.sh bluesky --help
+/absolute/path/to/chorusdraft-elixir/run.sh mastodon --help
 ```
 
 The destination must not exist. Setup creates missing files with private
@@ -236,12 +235,12 @@ The package's implementation history is included in `source/CHANGELOG.md`.
    account's old `data/<account-hash>/state.json`:
 
 ```sh
-./run.sh --import-state /absolute/path/to/old/data/ACCOUNT_HASH/state.json
-./run.sh --status
+./run.sh bluesky --import-state /absolute/path/to/old/data/ACCOUNT_HASH/state.json
+./run.sh bluesky --status
 ```
 
-From a source checkout use `./chorusdraft bluesky --import-state FILE` (or
-`mastodon`). Import logs in to identify the destination account but never posts.
+Choose the matching platform in every package command. From a source checkout use
+`./chorusdraft bluesky --import-state FILE` (or `mastodon`). Import logs in to identify the destination account but never posts.
 It refuses nonempty destination state, malformed data and drafts belonging to a
 different account. If a source has no drafts, select its matching account hash
 carefully: history-only files do not contain account identity. The source is read

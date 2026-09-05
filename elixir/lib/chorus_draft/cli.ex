@@ -473,8 +473,8 @@ defmodule ChorusDraft.CLI do
   end
 
   defp default_base(platform), do: Path.expand(platform, File.cwd!())
-  defp product("bluesky"), do: "BlueBot"
-  defp product("mastodon"), do: "Mastobot"
+  defp product("bluesky"), do: "ChorusDraft for Bluesky"
+  defp product("mastodon"), do: "ChorusDraft for Mastodon"
 
   defp help(platform) do
     """

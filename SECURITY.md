@@ -1,7 +1,7 @@
 # Security policy for the Elixir experiment
 
-The supported release is ChorusDraft 0.51.1 from `main-ruby`. The separate Linux implementation on
-`elixir-experimental` is unreleased. Its offline regression, state-import, and
+The supported Ruby release is ChorusDraft 0.51.1 from `main-ruby`. The Linux
+Elixir version of ChorusDraft on `elixir-experimental` is unreleased. Its offline regression, state-import, and
 package checks have passed; live platform verification, a sustained daemon soak,
 and an independent release security audit remain outstanding.
 

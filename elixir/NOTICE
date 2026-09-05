@@ -1,24 +1,20 @@
-ChorusDraft Linux Elixir experiment (unreleased)
+ChorusDraft Linux Elixir version (unreleased)
 Modification notice — September 5, 2026
 
-This testing build is a modified work based on ChorusDraft 0.51 and the security
-fixes prepared as 0.51.1. ChorusDraft is itself based on the feature sets of
-Bluesky Bot 1.0.3 and Mastodon Bot 1.0.2, authored by Buntatoes and distributed
-under the GNU General Public License version 3.
+This testing build is an Elixir implementation of ChorusDraft, based on the
+feature set and safeguards in ChorusDraft 0.51.1. One application supports both
+Bluesky and Mastodon through platform-specific command modes and configuration
+directories.
 
-The experimental branch implements the shared Linux runtime in Elixir
-and presents the two products as BlueBot and Mastobot. It retains interactive
-review for AI drafts, privacy exclusions, do-not-contact controls, interaction
-limits, credential-safe errors, and ambiguous-publication handling. It also adds
-optional Bluesky Jetstream, read-only state import, and Linux packages containing
-corresponding application/dependency source and notices. It has not
-been published as a release and should be treated as test software.
+The implementation includes interactive review for AI drafts, privacy
+exclusions, do-not-contact controls, interaction limits, credential-safe errors,
+ambiguous-publication handling, optional Bluesky Jetstream, read-only state
+import, and a Linux package containing both modes plus corresponding source.
 
-ChorusDraft, including these modifications, is distributed under the GNU General
-Public License version 3. See the repository's LICENSE file for the complete
-terms. Copyright in the original and modified work remains with its respective
-copyright holders.
+ChorusDraft is distributed under the GNU General Public License version 3. See
+LICENSE for the complete terms. Copyright in the original and modified work
+remains with its respective copyright holders.
 
-Bluesky and Mastodon are names of third-party services and projects. This
-software is not endorsed by or affiliated with Bluesky Social PBC, Mastodon
-gGmbH, or operators of independent Mastodon servers.
+Bluesky and Mastodon are third-party services and projects. ChorusDraft is not
+endorsed by or affiliated with Bluesky Social PBC, Mastodon gGmbH, or operators
+of independent Mastodon servers.

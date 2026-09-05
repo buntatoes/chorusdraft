@@ -1,17 +1,16 @@
-ChorusDraft Elixir experiment — unreleased
+ChorusDraft Elixir version — unreleased
 Modification notice — September 5, 2026
 
-This branch contains a separate Linux Elixir reimplementation of the BlueBot and
-Mastobot behavior derived from ChorusDraft 0.51.1. It is developed separately on
-the elixir-experimental branch and is not part of the supported Ruby release.
-The implementation includes Jetstream, state import, and Linux packaging;
-live account acceptance remains outstanding. No Elixir release has been published.
+This branch contains the Linux Elixir implementation of ChorusDraft with support
+for Bluesky and Mastodon. It derives its feature set from ChorusDraft 0.51.1 and
+is developed separately on the elixir-experimental branch. The Ruby branches are
+retained separately and are not modified by this implementation.
 
-ChorusDraft is based on the feature sets of Bluesky Bot 1.0.3 and Mastodon Bot
-1.0.2, authored by Buntatoes and distributed under the GNU General Public License
-version 3. The Elixir experiment remains under GPLv3. See LICENSE for the complete
-terms and elixir/THIRD_PARTY_NOTICES.md for dependency notices.
+ChorusDraft was authored by Buntatoes and is distributed under the GNU General
+Public License version 3. The Elixir implementation remains under GPLv3. See
+LICENSE for the complete terms and elixir/THIRD_PARTY_NOTICES.md for dependency
+notices.
 
-Bluesky and Mastodon are names of third-party services and projects. This software
-is not endorsed by or affiliated with Bluesky Social PBC, Mastodon gGmbH, or
-operators of independent Mastodon servers.
+Bluesky and Mastodon are third-party services and projects. ChorusDraft is not
+endorsed by or affiliated with Bluesky Social PBC, Mastodon gGmbH, or operators
+of independent Mastodon servers.

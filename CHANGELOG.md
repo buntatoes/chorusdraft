@@ -1,39 +1,37 @@
-# Elixir branch changelog
+# ChorusDraft Elixir changelog
 
-This changelog covers `elixir-experimental`. The internal build identifier is
-`0.52.0-testing`; no Elixir tag or official release has been published.
-Ruby history and maintenance remain on `main-ruby` and `ruby-testing`.
+This changelog covers the ChorusDraft Elixir version on
+`elixir-experimental`. Its internal version is `0.52.0-testing`; no tagged
+Elixir release has been published. Ruby history stays on `main-ruby` and
+`ruby-testing`.
 
-## Documentation alignment — September 5, 2026
+## ChorusDraft naming and package consolidation — September 5, 2026
 
-- Updated the root and Elixir READMEs, changelogs, release notes, and notices to
-  describe the completed Linux implementation and current validation limits.
-- Added package download/build guidance, runtime requirements, and links to the
-  verified implementation run.
-- Preserved earlier implementation history with explicitly historical wording.
+- Corrected documentation, command banners, configuration examples, and notices
+  to identify the project as ChorusDraft for both supported platforms.
+- Consolidated the platform-specific archives into one ChorusDraft Linux archive
+  containing both Bluesky and Mastodon modes.
+- Removed the temporary CI branch from the workflow configuration.
 
 ## Linux implementation completion — September 5, 2026
 
 - Completed the Linux command workflows against the read-only Ruby 0.51.1
-  reference for BlueBot and Mastobot.
+  reference for Bluesky and Mastodon.
 - Added read-only state import, non-overwriting setup, queue status/rejection,
-  and separate Linux product archives with installation scripts, checksums,
-  application source, and dependency source/licenses.
-- Fixed target/discovery selection, source content warnings, numeric HTML entity
-  decoding, Ruby CLI aliases, local active hours, and daemon scheduling/errors.
-- Adopted Mint HTTP transport without redirects or automatic request retries,
-  bounded responses, and crash-released kernel state locking.
-- Passed 56 regression tests, including Ruby-generated state import, and both
-  product installation and offline rebuild checks in the
-  [verified build](https://github.com/buntatoes/chorusdraft/actions/runs/33999085832).
+  Linux packaging, checksums, and bundled application/dependency source.
+- Fixed target/discovery selection, content-warning preservation, numeric HTML
+  entity decoding, Ruby CLI aliases, local active hours, and daemon scheduling.
+- Added Mint HTTP transport without redirect following or automatic request
+  retries, bounded responses, and kernel state locking.
+- Passed 56 regression tests, Ruby-generated state import, installation checks,
+  overwrite refusal, and an offline source rebuild.
 
 ## Jetstream integration — September 5, 2026
 
 - Added optional Bluesky Jetstream wake-ups for `--listen` and `--daemon`.
-- Preserved API notification checks, coalesced activity, reconnect/backoff,
-  privacy boundaries, and mandatory draft review.
+- Kept API notification catch-up, reconnect/backoff, privacy boundaries, and
+  mandatory draft review.
 - Added WebSockex and Telemetry with protocol and reconnect tests.
 
-See [the detailed Elixir changelog](elixir/CHANGELOG.md) for the initial port and
-implementation details. Live account acceptance, a sustained daemon soak, and an
-independent release security audit remain outstanding.
+Live account acceptance, a sustained daemon soak, and an independent release
+security audit remain outstanding.
