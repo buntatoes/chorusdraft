@@ -1,14 +1,30 @@
-# ChorusDraft 0.52 Elixir testing
+# ChorusDraft Elixir experiment
 
 This directory contains the separate Linux Elixir rewrite of BlueBot for Bluesky
-and Mastobot for Mastodon. It is under active testing on the
-`0.52-elixir-testing` branch. It does not replace or modify the published 0.51
-release.
+and Mastobot for Mastodon. Development lives on the `elixir-experimental` branch.
+It is an unfinished experiment and is not part of the official Ruby release line.
+The supported Ruby release remains 0.51.1, with future Ruby work isolated on
+`0.51.2-ruby-testing`.
+
+The executable currently reports `0.52.0-testing` as a temporary internal build
+identifier. That identifier is not a release, tag, compatibility promise, or the
+official Ruby 0.52 version.
 
 Both products write comic social drafts using a local OpenAI-compatible/Ollama
 model or Gemini. The style favors dry wit, light sarcasm, playful exaggeration,
 and absurd comparisons. Serious or sensitive posts receive a sincere response.
 Every AI draft must be reviewed interactively before publication.
+
+## Current status
+
+- The shared Mix project compiles and produces a Linux escript.
+- BlueBot and Mastobot API clients, local AI and Gemini support, draft storage,
+  review workflows, and the primary 0.51.1 safeguards have initial Elixir ports.
+- The offline suite currently contains 22 passing tests. These use fake clients
+  and do not log in, contact an AI provider, or publish posts.
+- Live platform compatibility, state migration, long-running daemon behavior,
+  packaging, installation upgrades, and a complete security audit are unfinished.
+- No Elixir archive, tag, GitHub release, or supported upgrade path exists.
 
 ## Requirements
 
@@ -17,13 +33,25 @@ Every AI draft must be reviewed interactively before publication.
 - A Bluesky app password or Mastodon access token
 - A local AI endpoint or Gemini API key and model
 
-## Build and configure
+## Build and inspect
 
 From this `elixir` directory:
 
 ```sh
 mix deps.get
 MIX_ENV=prod mix escript.build
+```
+
+Check the command interface before adding credentials:
+
+```sh
+./chorusdraft bluesky --help
+./chorusdraft mastodon --help
+```
+
+To create local configuration files for hands-on testing:
+
+```sh
 elixir setup.exs bluesky
 elixir setup.exs mastodon
 ```
@@ -32,12 +60,9 @@ Edit `bluesky/.env` and/or `mastodon/.env`. The setup script creates private fil
 only when they do not already exist. It never starts a service or overwrites an
 existing configuration.
 
-Show the commands for either product:
-
-```sh
-./chorusdraft bluesky --help
-./chorusdraft mastodon --help
-```
+Use separate test credentials and state until live API behavior and migration are
+fully audited. Do not point the Ruby and Elixir programs at the same account at
+the same time.
 
 ## Common workflows
 
@@ -59,16 +84,17 @@ Show the commands for either product:
 ./chorusdraft bluesky --search "elixir linux"
 ```
 
-Additional commands cover target commentary, discovery, public-post inspection,
-interactive deletion, active hours, polling, and daemon operation. AI-generated
-text always stays in the queue regardless of compatibility flags or environment
-values.
+Additional experimental commands cover target commentary, discovery, public-post
+inspection, interactive deletion, active hours, polling, and daemon operation.
+AI-generated text is designed to stay in the queue regardless of compatibility
+flags or environment values, but the Elixir port is not release-qualified yet.
 
 ## State and safeguards
 
 State is stored under each product's `data/` directory and separated again by
-platform, service origin, and account. Credentials never enter state. Preserve the
-entire directory when moving an installation, and run only one process per account.
+platform, service origin, and account. Credentials are not written to state. The
+state format resembles the Ruby format, but migration has not been declared safe
+or supported. Test with a copy and run only one process per account.
 
 Add handles to `config/do_not_contact.txt` to refuse all supplied interaction
 paths for those accounts. Clear public requests to stop contact are also recorded
@@ -84,18 +110,19 @@ If a publication request has an ambiguous result, the draft is marked `uncertain
 Inspect the account manually before doing anything else with it. The program will
 not retry that draft automatically.
 
-## Tests and local packages
+## Tests
 
 ```sh
 mix format --check-formatted
 mix test --warnings-as-errors
-MIX_ENV=prod mix run scripts/build_linux_release.exs
 ```
 
-The package script writes only to `elixir/dist/`. It creates separate BlueBot and
-Mastobot Linux archives, checksums, source, tests, GPL text, and third-party notices.
-Generated configuration, credentials, logs, and state are excluded.
+There is no packaging script yet. A future package must include the GPL source,
+Jason's license and corresponding source, checksums, setup files, and separate
+BlueBot and Mastobot launchers. It must exclude generated configuration,
+credentials, logs, state, dependencies fetched outside the package, and stale
+build output.
 
-Read [CHANGELOG.md](CHANGELOG.md) for the actual ported features,
-[SECURITY.md](SECURITY.md) for enforced boundaries and known limits, and
-[RELEASE_NOTES.md](RELEASE_NOTES.md) before testing an archive.
+Read [CHANGELOG.md](CHANGELOG.md) for the porting checkpoint and
+[SECURITY.md](SECURITY.md) for the intended boundaries and known limits. Both are
+working documents until the experiment receives a complete release audit.
