@@ -1,15 +1,23 @@
-# ChorusDraft 0.51.1 — security testing
+# ChorusDraft 0.51.1 release notes
 
-This is an unreleased testing update on `codex/0.51.1-security-testing`.
-No new release or downloads have been published. The 0.51 prerelease remains unchanged.
+ChorusDraft 0.51.1 is a security update for the Ruby releases on Linux, macOS,
+and Windows. It retains the comic voice introduced in 0.51 and the requirement
+that every AI-generated draft receive interactive review.
 
-Candidate fixes cover opt-outs skipped by reply limits or AI failures, common
-Unicode variations in screening, do-not-contact checks for explicit mentions,
-Mastodon local-handle aliases, retention of older opt-outs, and screening of
-Mastodon content warnings. The comic voice and interactive publishing review remain.
-See `CHANGELOG.md` for behavior changes and `README.md` for testing instructions.
+## Security changes
 
-## Published 0.51 release notes (historical)
+- All fetched opt-out requests are recorded before reply limits or AI failures can
+  interrupt notification processing.
+- Unicode-aware matching recognizes common curly-apostrophe, full-width, and
+  invisible-formatting variations without rewriting the text being reviewed.
+- Do-not-contact checks cover explicit mentions in generated, manual, and queued
+  text and Mastodon content warnings. Local Mastodon handles match their fully
+  qualified form on the configured instance.
+- New opt-outs no longer evict older entries from local state.
+- Mastodon content warnings receive length, control-character, harassment, and
+  do-not-contact validation before staging, display, and publication.
+
+## Comic drafting
 
 ChorusDraft 0.51 gives Bluesky and Mastodon drafts a clearer comic voice: dry wit,
 light sarcasm, absurd comparisons, and playful commentary on software and everyday
@@ -34,8 +42,8 @@ manually supplied text keep their wording.
 
 | Product | Linux | macOS | Windows |
 | --- | --- | --- | --- |
-| ChorusDraft for Bluesky | `chorusdraft-bluesky-v0.51-linux.tar.gz` | `chorusdraft-bluesky-v0.51-macos.tar.gz` | `chorusdraft-bluesky-v0.51-windows.zip` |
-| ChorusDraft for Mastodon | `chorusdraft-mastodon-v0.51-linux.tar.gz` | `chorusdraft-mastodon-v0.51-macos.tar.gz` | `chorusdraft-mastodon-v0.51-windows.zip` |
+| ChorusDraft for Bluesky | `chorusdraft-bluesky-v0.51.1-linux.tar.gz` | `chorusdraft-bluesky-v0.51.1-macos.tar.gz` | `chorusdraft-bluesky-v0.51.1-windows.zip` |
+| ChorusDraft for Mastodon | `chorusdraft-mastodon-v0.51.1-linux.tar.gz` | `chorusdraft-mastodon-v0.51.1-macos.tar.gz` | `chorusdraft-mastodon-v0.51.1-windows.zip` |
 
 Download `SHA256SUMS` with the selected archive. On Linux, verify with:
 
@@ -60,7 +68,7 @@ Run `ruby setup.rb`, edit `.env`, and use `ruby chorusdraft.rb --help` to see ev
 
 ## Compatibility notes
 
-- State and configuration are compatible with ChorusDraft 0.50. Stop the old
+- State and configuration are compatible with ChorusDraft 0.50 and 0.51. Stop the old
   instance and securely copy `.env`, configured target and do-not-contact files,
   and the entire `data` directory into the new installation. Run only one instance
   per account; preserve `data` to retain drafts, opt-outs, and interaction history.

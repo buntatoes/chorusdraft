@@ -2,7 +2,7 @@
 
 This file records user-visible changes to ChorusDraft.
 
-## 0.51.1 — Unreleased (security testing)
+## 0.51.1 — 2026-09-05
 
 ### Fixed
 
@@ -17,12 +17,6 @@ This file records user-visible changes to ChorusDraft.
 - Mastodon content warnings receive length, control-character, and harassment
   screening before staging, review, and publication. Invalid warnings cannot be
   published behind a sanitized or truncated preview.
-
-### Testing status
-
-- These fixes are on `codex/0.51.1-security-testing`; no 0.51.1 release is published.
-- The published 0.51 prerelease, its tag, and its downloads are unchanged.
-- The 0.51 comic voice, human approval requirement, and GPLv3 license are retained.
 
 ## 0.51 — 2026-09-05
 

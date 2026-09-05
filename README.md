@@ -1,7 +1,7 @@
 # ChorusDraft
 
-> **0.51.1 security testing branch — not a published release.** The fixes described
-> here are being tested. The published 0.51 prerelease and its downloads are unchanged.
+> **Current prerelease: 0.51.1.** This security update retains the 0.51 comic
+> voice and strengthens opt-outs, do-not-contact checks, and draft validation.
 
 ChorusDraft is an AI-assisted comedy drafting and publishing tool for Bluesky and
 Mastodon. It drafts dry observations about software, playful replies, and satirical
@@ -10,8 +10,8 @@ and prepare commentary from configured accounts. AI-generated content is
 always placed in a review queue so the account owner can inspect the exact text
 before it is published.
 
-Version 0.51.1 is a testing update to the shared Ruby codebase for Linux, macOS,
-and Windows. The comic voice introduced in 0.51 is retained.
+Version 0.51.1 is available for the shared Ruby codebase on Linux, macOS, and
+Windows. The comic voice introduced in 0.51 is retained.
 
 ## Comic voice
 
@@ -68,22 +68,20 @@ toolchain. Setup does not download software, install services, or start a bot.
 
 ## Download and install
 
-The following archives are the published **0.51** prerelease; they do not include
-the testing branch's security fixes. To test 0.51.1, check out
-`codex/0.51.1-security-testing` and follow the Development commands below.
+The following archives are included with the published **0.51.1** prerelease.
 
 Download the archive for the bot and operating system from the GitHub release:
 
 | Product | Linux | macOS | Windows |
 | --- | --- | --- | --- |
-| ChorusDraft for Bluesky | `chorusdraft-bluesky-v0.51-linux.tar.gz` | `chorusdraft-bluesky-v0.51-macos.tar.gz` | `chorusdraft-bluesky-v0.51-windows.zip` |
-| ChorusDraft for Mastodon | `chorusdraft-mastodon-v0.51-linux.tar.gz` | `chorusdraft-mastodon-v0.51-macos.tar.gz` | `chorusdraft-mastodon-v0.51-windows.zip` |
+| ChorusDraft for Bluesky | `chorusdraft-bluesky-v0.51.1-linux.tar.gz` | `chorusdraft-bluesky-v0.51.1-macos.tar.gz` | `chorusdraft-bluesky-v0.51.1-windows.zip` |
+| ChorusDraft for Mastodon | `chorusdraft-mastodon-v0.51.1-linux.tar.gz` | `chorusdraft-mastodon-v0.51.1-macos.tar.gz` | `chorusdraft-mastodon-v0.51.1-windows.zip` |
 
 On Linux or macOS:
 
 ```sh
-tar -xzf chorusdraft-bluesky-v0.51-linux.tar.gz
-cd chorusdraft-bluesky-v0.51-linux
+tar -xzf chorusdraft-bluesky-v0.51.1-linux.tar.gz
+cd chorusdraft-bluesky-v0.51.1-linux
 ruby setup.rb
 ```
 
@@ -309,7 +307,7 @@ removes duplicate-prevention and interaction history.
   request satire about topics and situations without insulting or baiting their authors.
 - Clear public opt-out requests are honored permanently in local state. A
   configurable do-not-contact list also blocks queued and manual interactions.
-  In 0.51.1 testing, all fetched opt-outs are recorded before generating replies,
+  In 0.51.1, all fetched opt-outs are recorded before generating replies,
   and explicit mentions in draft text and content warnings are checked as well.
   Mastodon local and fully qualified handles on the configured instance are matched.
   Blocks follow recorded handles; update the list when an account changes its handle.
@@ -317,7 +315,7 @@ removes duplicate-prevention and interaction history.
   author every 30 days.
 - Output screening rejects threats, doxxing, pile-on requests, self-harm
   encouragement, and common direct personal attacks.
-  The testing update screens Mastodon content warnings before queueing or displaying
+  Version 0.51.1 screens Mastodon content warnings before queueing or displaying
   them and rejects hidden control characters instead of showing a sanitized preview
   of different text. Common Unicode variations are normalized only for screening;
   the approved text itself is not rewritten.
@@ -330,12 +328,12 @@ Human review remains responsible for factual accuracy, tone, and suitability.
 See [SECURITY.md](SECURITY.md) for supported versions, vulnerability reporting,
 and enforced safety boundaries.
 
-## Upgrading to 0.51
+## Upgrading to 0.51.1
 
-The same configuration and state formats apply to 0.51.1 testing. Keep a backup
-of your `data` directory before testing. No 0.51.1 release archive is available.
+Version 0.51.1 uses the same configuration and state formats as 0.51. Keep a
+backup of your `data` directory before upgrading.
 
-From ChorusDraft 0.50, stop the existing listener or daemon, extract 0.51 into a
+From ChorusDraft 0.50 or 0.51, stop the existing listener or daemon, extract 0.51.1 into a
 new directory, and securely copy your `.env`, configured target and do-not-contact
 files, and the entire `data` directory into it. State and configuration formats are
 unchanged. Keeping `data` preserves queued drafts, opt-outs, and duplicate and

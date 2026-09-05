@@ -2,10 +2,8 @@
 
 ## Supported version
 
-The latest published prerelease is 0.51. Candidate security fixes are on the
-unreleased `codex/0.51.1-security-testing` branch. The controls below describe that
-testing branch; consult the 0.51 tag for the currently published implementation.
-Use a currently supported, security-patched Ruby release.
+The latest published prerelease is 0.51.1. The controls below describe that
+release. Use a currently supported, security-patched Ruby release.
 
 ## Reporting a vulnerability
 
