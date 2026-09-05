@@ -7,7 +7,7 @@ base = ARGV.empty? ? __dir__ : File.expand_path(ARGV.fetch(0), __dir__)
 abort 'No bot configuration template found in that directory.' unless File.file?(File.join(base, '.env.example'))
 FileUtils.mkdir_p(File.join(base, 'config'), mode: 0700)
 { '.env.example' => '.env', 'config/target_accounts.txt.example' => 'config/target_accounts.txt',
-  'config/critical_targets.txt.example' => 'config/critical_targets.txt' }.each do |source, destination|
+  'config/do_not_contact.txt.example' => 'config/do_not_contact.txt' }.each do |source, destination|
   begin
     File.open(File.join(base, destination), File::WRONLY | File::CREAT | File::EXCL, 0600) do |file|
       file.write(File.read(File.join(base, source)))

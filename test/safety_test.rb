@@ -29,6 +29,8 @@ class FakeClient
   def limit = 500
   def notifications = @posts
   def recent(limit:) = @posts.first(limit)
+  def feed(_account, limit: 8) = @posts.first(limit)
+  def search(_query, limit: 20) = @posts.first(limit)
   def context(post)
     @contexts << post
     @posts
@@ -83,6 +85,27 @@ class SafetyTest < Minitest::Test
     assert_equal 1, @ai.calls.size
     refute_includes JSON.generate(@ai.calls), 'SECRET'
     assert_equal 'unlisted', @store.drafts.first['visibility']
+    assert_empty @client.published
+  end
+  def test_public_opt_out_is_persisted_and_never_replied_to
+    @client.posts = [post('1', 'public', 'Please stop replying to me.')]
+    runner.mentions
+    assert @store.blocked?('Alice@Example.org')
+    assert_empty @ai.calls
+    assert_empty @store.drafts
+    @client.posts = [post('2', 'public', 'A later mention')]
+    runner.mentions
+    assert_empty @ai.calls
+  end
+  def test_do_not_contact_blocks_target_manual_and_queued_publication
+    @client.posts = [post]
+    item = @store.stage(runner.draft('Previously queued', action: 'ai_generated', post: post))
+    @store.block('@alice@example.org')
+    runner.targets(['alice@example.org'])
+    assert_empty @ai.calls
+    assert_raises(SocialBots::Error) { runner.manual('A manual response', reply_to: '1', publish: true) }
+    assert_raises(SocialBots::Error) { runner.publish_draft(item) }
+    assert_equal 'pending', @store.drafts.first['status']
     assert_empty @client.published
   end
   def test_generation_has_no_publish_path_even_with_legacy_staging_false
@@ -161,8 +184,24 @@ class SafetyTest < Minitest::Test
     assert @store.stage({ 'author' => 'alice' }, source: '1', unsolicited: true)
     assert_nil @store.stage({ 'author' => 'alice' }, source: '2', unsolicited: true)
     assert_nil @store.stage({ 'author' => 'bob' }, source: '1', unsolicited: true)
-    14.times { |n| assert @store.stage({ 'author' => "author#{n}" }, source: "source#{n}", unsolicited: true) }
+    4.times { |n| assert @store.stage({ 'author' => "author#{n}" }, source: "source#{n}", unsolicited: true) }
     refute @store.available?(author: 'new', unsolicited: true)
+  end
+  def test_unsolicited_author_cooldown_is_thirty_days
+    assert @store.stage({ 'author' => 'alice' }, source: '1', unsolicited: true)
+    @store.transaction do |state|
+      state['daily'].clear
+      state['authors']['alice'] = Time.now.to_i - (29 * 86_400)
+    end
+    assert_nil @store.stage({ 'author' => 'Alice' }, source: '2', unsolicited: true)
+    @store.transaction { |state| state['authors']['alice'] = Time.now.to_i - (31 * 86_400) }
+    assert @store.stage({ 'author' => '@ALICE' }, source: '3', unsolicited: true)
+  end
+  def test_harassing_output_is_rejected
+    ['Kill yourself', "You're an idiot", 'Everybody go harass this person', 'I will doxx them'].each do |text|
+      assert_raises(SocialBots::Error) { SocialBots::Safety.validate_text!(text, 500) }
+    end
+    assert SocialBots::Safety.validate_text!('I disagree with this idea because the evidence is incomplete.', 500)
   end
   def test_queue_capacity_prevents_ai_calls
     100.times { @store.stage({}) }

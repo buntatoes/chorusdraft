@@ -10,7 +10,7 @@ the same Ruby implementation and command-line interface on Linux, macOS, and Win
 ### BlueBot
 
 - Added original post drafting, mention replies, public search, random-post
-  selection, account targets, discovery, critical commentary, and foreground
+  selection, account targets, discovery, and foreground
   monitoring for Bluesky.
 - Added native Bluesky reply references and quote-post embeds using freshly fetched
   records.
@@ -22,7 +22,7 @@ the same Ruby implementation and command-line interface on Linux, macOS, and Win
 ### Mastobot
 
 - Added original post drafting, mention replies, public search, random-post
-  selection, account targets, discovery, critical commentary, and foreground
+  selection, account targets, discovery, and foreground
   monitoring for Mastodon.
 - Added public, unlisted, followers-only, and mentioned-users visibility options.
 - Added content warnings, language selection, and link-based quote commentary.
@@ -40,7 +40,7 @@ the same Ruby implementation and command-line interface on Linux, macOS, and Win
 - Added active-hour windows, overnight schedules, configurable poll and draft
   intervals, and randomized posting jitter.
 - Added per-server/account state, duplicate history, a 100-draft queue limit, a
-  15-per-day unsolicited draft limit, and a 24-hour per-author cooldown.
+  five-per-day unsolicited draft limit, and a 30-day per-author cooldown.
 - Added Linux/macOS shell launchers and a Windows batch launcher. All launchers
   forward command-line arguments and display help when run without arguments.
 - Added a setup command that creates missing configuration files while preserving
@@ -55,6 +55,13 @@ the same Ruby implementation and command-line interface on Linux, macOS, and Win
   disabled in this release.
 - Reply and quote visibility is checked again immediately before publication.
 - Suspected prompt-injection posts are skipped rather than answered.
+- Removed dedicated critical targeting. Target and discovery workflows request
+  respectful topic-focused commentary without personal judgment or provocation.
+- Added persistent do-not-contact state and a configurable do-not-contact file.
+  Clear public requests to stop replying are honored automatically; blocked
+  accounts cannot receive queued or manual replies, quotes, or target commentary.
+- Expanded output screening for threats, doxxing, pile-on requests, self-harm
+  encouragement, and common direct personal attacks.
 - Automatic likes, favourites, boosts, and reposts are disabled.
 - Gemini keys are sent in request headers. Remote error bodies and credential-bearing
   network details are excluded from logs.
@@ -65,6 +72,8 @@ the same Ruby implementation and command-line interface on Linux, macOS, and Win
 - Draft ownership includes the server origin and account identity. A draft changed
   after display must be reviewed again.
 - Release builds reject unexpected files and symbolic links before packaging.
+- Added a GPLv3 modification and attribution notice. Replaced the dated audit
+  report with a maintainable security policy and disclosure instructions.
 
 ### Compatibility and migration
 

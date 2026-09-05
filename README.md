@@ -20,7 +20,6 @@ Version 0.50 uses one shared Ruby codebase on Linux, macOS, and Windows.
 | Random post selection | Yes | Yes |
 | Account target monitoring | Yes | Yes |
 | Public discovery and commentary | Yes | Yes |
-| Critical commentary mode | Yes | Yes |
 | Links, mentions, and hashtag metadata | Rich-text facets | Native Mastodon parsing |
 | Content warnings | No | Yes |
 | Status visibility selection | Public feed posts | Public, unlisted, followers, or mentioned users |
@@ -81,7 +80,7 @@ ruby setup.rb
 ```
 
 Setup creates `.env`, `config/target_accounts.txt`, and
-`config/critical_targets.txt` when they do not already exist. Existing files are
+`config/do_not_contact.txt` when they do not already exist. Existing files are
 preserved.
 
 ## Configuration
@@ -147,10 +146,13 @@ DISCOVERY_KEYWORDS=opensource,ruby,linux
 `DISCOVERY_TAGS` is also accepted for compatibility. Active hours use local time
 and may cross midnight.
 
-Add target handles, one per line, to:
+Add target handles, one per line, to `config/target_accounts.txt`. Target
+commentary is subject to the unsolicited-interaction limits described below.
 
-- `config/target_accounts.txt` for ordinary commentary;
-- `config/critical_targets.txt` for measured critical commentary.
+Add accounts that must never receive replies, quotes, or target commentary to
+`config/do_not_contact.txt`. A leading `@` is optional and matching is
+case-insensitive. Public mentions containing a clear request such as “stop
+replying to me” also add the author to local do-not-contact state.
 
 Blank lines and lines beginning with `#` are ignored.
 
@@ -216,13 +218,13 @@ ruby bot.rb --random-post "open source"
 ruby bot.rb --text "Manual response" --random-reply "open source"
 ruby bot.rb --discover --query "ruby"
 ruby bot.rb --targets-only
-ruby bot.rb --critical-only
-ruby bot.rb --critical-only --target account.example
+ruby bot.rb --targets-only --target account.example
 ```
 
 Search and random-post commands only display public content. Discovery,
-target, and critical modes create drafts for review. Unsolicited drafts are limited
-to 15 per rolling 24 hours and one per author per 24 hours.
+and target modes create respectful drafts for review. Unsolicited drafts are
+limited to five per rolling 24 hours and one per author every 30 days. The bot
+refuses to draft or publish interactions with accounts in do-not-contact state.
 
 ### Foreground monitoring
 
@@ -274,13 +276,22 @@ removes duplicate-prevention and interaction history.
   Mastodon messages.
 - Source visibility is checked again immediately before publishing a reply or quote.
 - Suspected prompt-injection posts are skipped.
+- Dedicated critical targeting is not supported. Target and discovery prompts
+  must address topics without insulting, judging, or provoking their authors.
+- Clear public opt-out requests are honored permanently in local state. A
+  configurable do-not-contact list also blocks queued and manual interactions.
+- Unsolicited interaction is limited to five drafts per day and one draft per
+  author every 30 days.
+- Output screening rejects threats, doxxing, pile-on requests, self-harm
+  encouragement, and common direct personal attacks.
 - Automatic likes, favourites, boosts, and reposts are disabled.
 - API keys are sent in headers and remote error bodies are omitted from logs.
 - Redirects are not followed with credentials and publishing requests are not
   automatically retried.
 
 Human review remains responsible for factual accuracy, tone, and suitability.
-See [SECURITY_AUDIT.md](SECURITY_AUDIT.md) for the audit scope and remaining limits.
+See [SECURITY.md](SECURITY.md) for supported versions, vulnerability reporting,
+and enforced safety boundaries.
 
 ## Migrating to 0.50
 
@@ -309,7 +320,8 @@ Tests use local fakes and do not log in, call an AI provider, or publish posts.
 ## License and acknowledgements
 
 BlueBot and Mastobot are distributed under the GNU General Public License v3.0.
-See [LICENSE](LICENSE).
+See [LICENSE](LICENSE). [NOTICE](NOTICE) records the original projects,
+modification date, scope of the version 0.50 rewrite, and third-party names.
 
 Version 0.50 is based on the feature sets of Bluesky Bot 1.0.3 and Mastodon Bot
 1.0.2 by Buntatoes. It begins a new shared Ruby release line under the BlueBot and

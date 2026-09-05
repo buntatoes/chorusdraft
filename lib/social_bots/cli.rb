@@ -9,7 +9,7 @@ module SocialBots
     end
 
     def eligible(post)
-      Safety.eligible?(post) && post['author_id'] != @client.identity
+      Safety.eligible?(post) && post['author_id'] != @client.identity && !@store.blocked?(post['author'])
     end
 
     def draft(text, action:, post: nil, quote: false)
@@ -40,9 +40,15 @@ module SocialBots
     end
 
     def mentions
-      @client.notifications.select { |p| eligible(p) && !@store.seen?(p['id']) }.first(5).each do |post|
+      replies = 0
+      @client.notifications.first(30).each do |post|
+        if Safety.public?(post) && post['author_id'] != @client.identity && Safety.opt_out?(post['text'])
+          @store.block(post['author'])
+          next
+        end
         next unless eligible(post)
-        stage_generated('Write a brief, respectful reply to the supplied public post.', post: post)
+        replies += 1 if stage_generated('Write a brief, respectful reply to the supplied public post.', post: post)
+        break if replies >= 5
       end
     end
 
@@ -52,12 +58,11 @@ module SocialBots
                       context: { previous_posts: previous })
     end
 
-    def targets(handles, critical: false)
+    def targets(handles)
       handles.each do |handle|
         @client.feed(handle).each do |post|
           next unless eligible(post)
-          task = critical ? 'Write a measured critique of the claim in this post. Critique ideas, avoid personal attacks, and do not invent facts.' : 'Write a short, thoughtful comment about this public post.'
-          return if stage_generated(task, post: post, quote: true, unsolicited: true)
+          return if stage_generated('Write a short, respectful comment about this public post. Address the topic without judging or provoking its author.', post: post, quote: true, unsolicited: true)
         end
       end
     end
@@ -65,7 +70,7 @@ module SocialBots
     def discovery(query)
       @client.search(query).each do |post|
         next unless eligible(post)
-        return if stage_generated('Write a short, thoughtful comment about this public post.', post: post, quote: true, unsolicited: true)
+        return if stage_generated('Write a short, respectful comment about this public post. Address the topic without judging or provoking its author.', post: post, quote: true, unsolicited: true)
       end
     end
 
@@ -73,6 +78,7 @@ module SocialBots
       raise Error, 'Choose either a reply or quote.' if reply_to && quote_to
       post = (reply_to || quote_to) && @client.get_post(reply_to || quote_to)
       raise Error, 'Restricted messages are not supported for replies or quotes.' if post && !Safety.public?(post)
+      raise Error, 'This account is on the do-not-contact list.' if post && @store.blocked?(post['author'])
       text += "\n\n#{post['url']}" if quote_to && @platform == 'mastodon'
       item = draft(text, action: 'manual', post: post, quote: !!quote_to)
       item['cw'] = cw if cw
@@ -99,6 +105,7 @@ module SocialBots
 
     def publish_draft(item)
       validate_platform!(item)
+      raise Error, 'This account is on the do-not-contact list.' if item['author'] && @store.blocked?(item['author'])
       claimed = @store.transition(item['id'], 'pending', 'publishing', expected: item)
       begin
         @client.publish(claimed)
@@ -173,7 +180,7 @@ module SocialBots
         o.on('--reply-cid CID', 'Compatibility flag; CID is freshly fetched') { |_| }
         o.on('--quote-cid CID', 'Compatibility flag; CID is freshly fetched') { |_| }
         o.on('--cw TEXT', 'Mastodon content warning') { |v| options[:cw] = v }
-        %w[post-only replies-only critical-only discover listen daemon process-queue].each do |flag|
+        %w[post-only replies-only discover listen daemon process-queue].each do |flag|
           o.on("--#{flag}") { options[flag.tr('-', '_').to_sym] = true }
         end
         o.on('--targets-only', '--quote-only', 'Stage target commentary') { options[:targets] = true }
@@ -195,7 +202,7 @@ module SocialBots
       parser.parse!(argv)
       raise Error, 'Unexpected positional arguments.' unless argv.empty?
       raise Error, 'Poll must be 10–3600 seconds; interval 1–1440 minutes; jitter 0–60; limit 1–40.' unless (10..3600).cover?(options[:poll]) && (1..1440).cover?(options[:interval]) && (0..60).cover?(options[:jitter]) && (1..40).cover?(options[:limit])
-      modes = %i[text post_only replies_only critical_only discover listen daemon process_queue targets search random_post delete]
+      modes = %i[text post_only replies_only discover listen daemon process_queue targets search random_post delete]
       raise Error, 'Choose one command at a time.' unless modes.count { |k| options.key?(k) } == 1
       raise Error, '--publish requires --text and cannot be combined with --queue.' if options[:publish] && (!options[:text] || options[:queue])
       raise Error, '--random-reply requires --text.' if options[:random_reply] && !options[:text]
@@ -210,6 +217,8 @@ module SocialBots
       # Separate history by platform AND account; credentials never go into state.
       require 'digest'
       store = Store.new(File.join(base, 'data', Digest::SHA256.hexdigest("#{platform}:#{client.account_key}")[0, 24]))
+      do_not_contact = File.join(base, 'config', 'do_not_contact.txt')
+      File.readlines(do_not_contact, chomp: true).each { |actor| store.block(actor) unless actor.strip.empty? || actor.lstrip.start_with?('#') } if File.file?(do_not_contact)
       runner = Runner.new(client, store, AI.new, platform: platform)
       puts "#{product} #{VERSION} | AI drafts require review | automatic likes disabled"
       if options[:text]
@@ -226,8 +235,8 @@ module SocialBots
       elsif options[:search] || options.key?(:random_post)
         runner.inspect_posts(options[:search] || options[:random_post], limit: options[:limit], random: options.key?(:random_post))
       else
-        targets = lambda do |critical|
-          file = File.join(base, 'config', critical ? 'critical_targets.txt' : 'target_accounts.txt')
+        targets = lambda do
+          file = File.join(base, 'config', 'target_accounts.txt')
           options[:target] ? [options[:target]] : (File.file?(file) ? File.readlines(file).map(&:strip).reject { |s| s.empty? || s.start_with?('#') } : [])
         end
         query = options[:query] || ENV['DISCOVERY_KEYWORDS'] || ENV['DISCOVERY_TAGS'] || 'opensource'
@@ -236,10 +245,8 @@ module SocialBots
             sleep(rand(0..options[:jitter] * 60)) if options[:jitter] > 0
             if options[:replies_only] || options[:listen]
               runner.mentions
-            elsif options[:critical_only]
-              runner.targets(targets.call(true), critical: true)
             elsif options[:targets]
-              runner.targets(targets.call(false))
+              runner.targets(targets.call)
             elsif options[:discover]
               runner.discovery(query.split(',').sample)
             else
@@ -256,7 +263,7 @@ module SocialBots
                   runner.mentions
                   if Time.now.to_i - last_original >= options[:interval] * 60
                     runner.original
-                    runner.targets(targets.call(false))
+                    runner.targets(targets.call)
                     last_original = Time.now.to_i
                   end
                 end

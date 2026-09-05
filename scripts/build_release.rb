@@ -14,9 +14,14 @@ products = %w[bluebot mastobot]
 products.product(%w[linux macos windows]).each do |bot, platform|
   name = "#{bot}-v#{SocialBots::VERSION}-#{platform}"
   target = File.join(dist, name)
-  expected_names = %w[README.md CHANGELOG.md RELEASE_NOTES.md SECURITY_AUDIT.md LICENSE VERSION setup.rb bot.rb .env.example
+  # Remove only files retired by this release. Any other unexpected file still
+  # stops the build instead of being silently archived.
+  %w[SECURITY_AUDIT.md config/critical_targets.txt.example].each do |retired|
+    FileUtils.rm_f(File.join(target, retired))
+  end
+  expected_names = %w[README.md CHANGELOG.md RELEASE_NOTES.md SECURITY.md NOTICE LICENSE VERSION setup.rb bot.rb .env.example
                       lib/social_bots/core.rb lib/social_bots/clients.rb lib/social_bots/cli.rb
-                      test/safety_test.rb config/target_accounts.txt.example config/critical_targets.txt.example]
+                      test/safety_test.rb config/target_accounts.txt.example config/do_not_contact.txt.example]
   expected_names << (platform == 'windows' ? 'run.bat' : 'run.sh')
   existing = Dir.glob(File.join(target, '**', '*'), File::FNM_DOTMATCH)
   abort "Refusing package tree containing symlinks: #{name}" if File.symlink?(target) || existing.any? { |p| File.symlink?(p) }
@@ -24,7 +29,7 @@ products.product(%w[linux macos windows]).each do |bot, platform|
   abort "Refusing package tree containing unexpected files: #{name}" unless unexpected.empty?
   # Explicit source allowlist: never copy runtime .env, state, logs, or old binaries.
   FileUtils.mkdir_p(target)
-  %w[README.md CHANGELOG.md RELEASE_NOTES.md SECURITY_AUDIT.md LICENSE VERSION setup.rb].each { |f| FileUtils.cp(File.join(root, f), target) }
+  %w[README.md CHANGELOG.md RELEASE_NOTES.md SECURITY.md NOTICE LICENSE VERSION setup.rb].each { |f| FileUtils.cp(File.join(root, f), target) }
   FileUtils.mkdir_p(File.join(target, 'lib', 'social_bots'))
   %w[core.rb clients.rb cli.rb].each do |file|
     FileUtils.cp(File.join(root, 'lib', 'social_bots', file), File.join(target, 'lib', 'social_bots', file))
@@ -35,7 +40,7 @@ products.product(%w[linux macos windows]).each do |bot, platform|
   File.write(File.join(target, 'bot.rb'), entry)
   FileUtils.cp(File.join(root, bot, '.env.example'), target)
   FileUtils.mkdir_p(File.join(target, 'config'))
-  %w[target_accounts critical_targets].each do |kind|
+  %w[target_accounts do_not_contact].each do |kind|
     FileUtils.cp(File.join(root, bot, 'config', "#{kind}.txt.example"), File.join(target, 'config'))
   end
   if platform == 'windows'

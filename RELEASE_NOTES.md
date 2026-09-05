@@ -11,8 +11,8 @@ and Windows, with a human review queue for every AI-generated post.
 - Use a local Ollama/OpenAI-compatible model or Google Gemini.
 - Review the exact text and publication metadata before any AI draft is posted.
 - Keep private Mastodon messages out of AI requests, logs, and local state.
-- Use per-account locked state, duplicate prevention, cooldowns, and conservative
-  handling of uncertain network results.
+- Use per-account locked state, duplicate prevention, do-not-contact controls,
+  conservative interaction limits, and safe handling of uncertain network results.
 - Run the same Ruby source on Linux, macOS, and Windows without third-party gems.
 
 ## Release files
@@ -50,8 +50,12 @@ Run `ruby setup.rb`, edit `.env`, and use `ruby bot.rb --help` to see every comm
 - AI drafts cannot be published without interactive review.
 - Automatic likes, favourites, boosts, and reposts are disabled.
 - Restricted Mastodon messages are not processed or answered.
+- Dedicated critical targeting is not included. Unsolicited target and discovery
+  drafts are limited to five per day and one per author every 30 days.
+- Clear requests to stop replying and configured do-not-contact entries block all
+  supplied reply, quote, target, and queued publication paths for that account.
 - BlueBot feed posts are public and do not support Mastodon content warnings.
 
 See `README.md` for installation, configuration, command examples, and state
 handling. See `CHANGELOG.md` for the complete feature and behavior list and
-`SECURITY_AUDIT.md` for the audit scope and deployment limitations.
+`SECURITY.md` for vulnerability reporting and the enforced safety boundaries.
