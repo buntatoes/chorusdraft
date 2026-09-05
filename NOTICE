@@ -1,26 +1,15 @@
-ChorusDraft 0.51.1 — security testing (unreleased)
+ChorusDraft Elixir experiment — unreleased
 Modification notice — September 5, 2026
 
-This distribution is a modified work based on the feature sets of Bluesky Bot
-1.0.3 and Mastodon Bot 1.0.2, authored by Buntatoes and distributed under the
-GNU General Public License version 3.
+This branch contains an unfinished Elixir reimplementation of the BlueBot and
+Mastobot behavior derived from ChorusDraft 0.51.1. It is developed separately on
+the elixir-experimental branch and is not part of the supported Ruby release.
 
-For version 0.50, the programs were reimplemented as a shared Ruby codebase,
-renamed ChorusDraft, and given new publication review, privacy,
-harassment prevention, state isolation, and release packaging controls. The
-complete user-visible change list is in CHANGELOG.md.
+ChorusDraft is based on the feature sets of Bluesky Bot 1.0.3 and Mastodon Bot
+1.0.2, authored by Buntatoes and distributed under the GNU General Public License
+version 3. The Elixir experiment remains under GPLv3. See LICENSE for the complete
+terms and elixir/THIRD_PARTY_NOTICES.md for dependency notices.
 
-Version 0.51 adds a shared comic voice for original drafts, replies, and public
-commentary while retaining publication review and harassment prevention controls.
-
-Version 0.51.1 testing hardens opt-out processing, do-not-contact checks for
-mentions, Unicode screening, and Mastodon content-warning validation.
-
-ChorusDraft, including these modifications, is distributed under
-the GNU General Public License version 3. See LICENSE for the complete terms.
-Copyright in the original and modified work remains with its respective
-copyright holders.
-
-Bluesky and Mastodon are names of third-party services and projects. This
-software is not endorsed by or affiliated with Bluesky Social PBC, Mastodon
-gGmbH, or operators of independent Mastodon servers.
+Bluesky and Mastodon are names of third-party services and projects. This software
+is not endorsed by or affiliated with Bluesky Social PBC, Mastodon gGmbH, or
+operators of independent Mastodon servers.

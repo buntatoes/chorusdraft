@@ -1,10 +1,11 @@
-# Security policy for the 0.52 Elixir test build
+# Security policy for the Elixir experiment
 
-Version 0.52 is unreleased test software on the `0.52-elixir-testing` branch. The
-published 0.51 release remains the latest release. Report vulnerabilities using
-GitHub private vulnerability reporting when available, or contact the maintainer
-privately through the GitHub profile. Never include credentials, private posts,
-or exploit details in a public issue.
+This is unfinished software on the `elixir-experimental` branch. The supported
+release is Ruby 0.51.1 from `main-ruby`; future Ruby maintenance work is isolated
+on `0.51.2-ruby-testing`. Report vulnerabilities using GitHub private
+vulnerability reporting when available, or contact the maintainer privately
+through the GitHub profile. Never include credentials, private posts, or exploit
+details in a public issue.
 
 The Elixir port enforces these boundaries:
 

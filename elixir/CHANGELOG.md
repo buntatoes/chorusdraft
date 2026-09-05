@@ -1,16 +1,17 @@
 # Changelog
 
-## 0.52.0-testing — unreleased
+## Experimental checkpoint — unreleased
+
+The Mix project currently reports `0.52.0-testing` as a temporary internal build
+identifier. This is not an official release version.
 
 ### Elixir and Linux
 
 - Reimplemented the shared BlueBot and Mastobot Linux runtime in Elixir 1.14.
-- Added a single escript with product-specific Linux launchers and configuration
-  directories. No Ruby runtime is used by the Elixir build.
-- Added a Linux-only packaging script that produces isolated BlueBot and Mastobot
-  test archives without touching the published `.51` archives.
-- Added pinned Jason 1.4.5 JSON handling and included its Apache 2.0 source and
-  license in generated packages.
+- Added a single escript with product-specific commands and configuration
+  directories. Separate Linux launchers are not implemented yet.
+- Added pinned Jason 1.4.5 JSON handling. Packaging and inclusion of corresponding
+  dependency source and notices remain unfinished.
 
 ### Platform behavior
 
@@ -38,7 +39,8 @@
 - State writes use a per-account Linux process lock, private permissions, atomic
   replacement, and fail-closed JSON validation. Ambiguous publishing failures are
   marked `uncertain` and are not retried automatically.
-- Credentials are loaded as data, excluded from packages, sent only to validated
-  HTTPS origins (or loopback HTTP for local AI), and omitted from error messages.
+- Credentials are loaded as data, ignored by Git, sent only to validated HTTPS
+  origins (or loopback HTTP for local AI), and omitted from error messages.
 
-This is a testing build. It has no Git tag or GitHub release.
+This is an experimental build on `elixir-experimental`. It has no packaging
+script, Git tag, GitHub release, or supported upgrade path.

@@ -1,4 +1,4 @@
-ChorusDraft 0.52 — Linux Elixir testing build (unreleased)
+ChorusDraft Linux Elixir experiment (unreleased)
 Modification notice — September 5, 2026
 
 This testing build is a modified work based on ChorusDraft 0.51 and the security
@@ -6,11 +6,11 @@ fixes prepared as 0.51.1. ChorusDraft is itself based on the feature sets of
 Bluesky Bot 1.0.3 and Mastodon Bot 1.0.2, authored by Buntatoes and distributed
 under the GNU General Public License version 3.
 
-Version 0.52 rewrites the shared Linux runtime in Elixir and presents the two
-products as BlueBot and Mastobot. It retains interactive review for AI drafts,
-privacy exclusions, do-not-contact controls, interaction limits, credential-safe
-errors, and ambiguous-publication handling. It has not been published as a
-release and should be treated as test software.
+The experimental branch begins a rewrite of the shared Linux runtime in Elixir
+and presents the two products as BlueBot and Mastobot. It retains interactive
+review for AI drafts, privacy exclusions, do-not-contact controls, interaction
+limits, credential-safe errors, and ambiguous-publication handling. It has not
+been published as a release and should be treated as test software.
 
 ChorusDraft, including these modifications, is distributed under the GNU General
 Public License version 3. See the repository's LICENSE file for the complete
