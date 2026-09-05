@@ -8,7 +8,7 @@ defmodule ChorusDraft.MixProject do
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
       escript: [main_module: ChorusDraft.CLI, name: "chorusdraft"],
-      deps: [{:jason, "~> 1.4.5"}]
+      deps: [{:jason, "~> 1.4.5"}, {:websockex, "== 0.5.1"}]
     ]
   end
 

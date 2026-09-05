@@ -1,0 +1,42 @@
+name: Elixir checks
+
+on:
+  push:
+    branches: [elixir-experimental, codex/elixir-jetstream]
+    paths: ['elixir/**', '.github/workflows/elixir.yml']
+  pull_request:
+    branches: [elixir-experimental]
+    paths: ['elixir/**', '.github/workflows/elixir.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: elixir
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124
+        with:
+          otp-version: '25.3'
+          elixir-version: '1.14.5'
+      - name: Dependencies
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get
+          git diff -- mix.lock
+      - name: Offline regression tests
+        run: mix test --warnings-as-errors
+      - name: Build the Linux escript
+        run: |
+          MIX_ENV=prod mix escript.build
+          ./chorusdraft bluesky --help
+          ./chorusdraft mastodon --help
+      - name: Formatting
+        run: |
+          mix format --check-formatted || { mix format; git diff -- .; exit 1; }

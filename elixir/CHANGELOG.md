@@ -1,5 +1,18 @@
 # Changelog
 
+## Jetstream integration — unreleased
+
+- Added opt-in `--jetstream` for BlueBot's `--listen` and `--daemon` commands.
+- Use the current JSON subscribeEvents protocol over verified TLS, without
+  sending platform credentials to Jetstream.
+- Match incoming mention facets and direct replies by DID; coalesce activity
+  into one pending notification refresh and keep all existing drafting safeguards.
+- Reconnect with bounded backoff and heartbeat checks. Retain startup, reconnect,
+  and periodic API reconciliation; this is a live-tail mode without cursor replay.
+- Add parser, isolation, burst handling, CLI, and local WebSocket/reconnect tests,
+  plus an Elixir-only CI workflow targeting the experimental branch.
+- Add WebSockex 0.5.1 and its Telemetry dependency. Ruby implementations are unchanged.
+
 ## Experimental checkpoint — unreleased
 
 The Mix project currently reports `0.52.0-testing` as a temporary internal build

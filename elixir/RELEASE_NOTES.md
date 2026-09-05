@@ -11,8 +11,10 @@ GitHub release, download archive, or compatibility promise.
 The checkpoint includes initial ports of Bluesky and Mastodon clients, local AI
 and Gemini support, comic drafting, interactive review, per-account state,
 opt-outs, do-not-contact checks, visibility filtering, interaction limits, and
-ambiguous-publication handling. The 22-test offline suite uses fakes and performs
-no network calls or publication.
+ambiguous-publication handling. Optional `--jetstream` now wakes BlueBot's listener
+or daemon on relevant streamed posts while retaining API notification checks and
+mandatory draft review. The offline suite uses fake platform clients and a local
+WebSocket server; it performs no external network calls or publication.
 
 Live platform compatibility, long-running daemon behavior, state migration,
 installation upgrades, packaging, and a complete release security audit remain

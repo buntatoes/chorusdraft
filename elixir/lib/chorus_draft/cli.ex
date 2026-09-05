@@ -1,5 +1,5 @@
 defmodule ChorusDraft.CLI do
-  alias ChorusDraft.{Config, Error, Runner, Store}
+  alias ChorusDraft.{Config, Error, Jetstream, Runner, Store}
   alias ChorusDraft.Clients.{Bluesky, Mastodon}
 
   @switches [
@@ -16,6 +16,7 @@ defmodule ChorusDraft.CLI do
     discover: :boolean,
     listen: :boolean,
     daemon: :boolean,
+    jetstream: :boolean,
     process_queue: :boolean,
     targets_only: :boolean,
     queue: :boolean,
@@ -39,6 +40,7 @@ defmodule ChorusDraft.CLI do
   def run(argv, io_opts \\ []) do
     with {:ok, platform, argv} <- platform(argv),
          {:ok, options} <- parse(argv),
+         :ok <- validate_platform(platform, options),
          :ok <- maybe_help(platform, options) do
       execute(platform, options, io_opts)
     else
@@ -201,10 +203,22 @@ defmodule ChorusDraft.CLI do
     end
   end
 
+  defp validate_platform(platform, options) do
+    cond do
+      options[:help] || options[:version] -> :ok
+      options[:jetstream] && platform != "bluesky" ->
+        {:error, "Jetstream is available only for Bluesky."}
+      options[:jetstream] && !(options[:listen] || options[:daemon]) ->
+        {:error, "--jetstream requires --listen or --daemon."}
+      true -> :ok
+    end
+  end
+
   defp execute(platform, options, io_opts) do
     base = Path.expand(Map.get(options, :base, default_base(platform)))
     env = Config.load(Path.join(base, ".env"), System.get_env())
     env = Config.load(Path.join([base, "config", ".env"]), env)
+    if options[:jetstream], do: Jetstream.endpoint!(env)
     hours = options[:active_hours] || env["ACTIVE_HOURS"]
     active?(hours)
     client = if platform == "bluesky", do: Bluesky.new(env), else: Mastodon.new(env)
@@ -246,7 +260,14 @@ defmodule ChorusDraft.CLI do
         Runner.inspect_posts(runner, options.random_post, limit: options.limit, random: true)
 
       options[:listen] || options[:daemon] ->
-        loop(runner, options, hours, base, 0)
+        if options[:jetstream] do
+          Jetstream.with_stream(runner.client.__struct__.identity(runner.client), runner.env, fn stream ->
+            IO.puts("Jetstream enabled; notification catch-up remains active.")
+            loop(runner, options, hours, base, 0, stream)
+          end)
+        else
+          loop(runner, options, hours, base, 0, nil)
+        end
 
       true ->
         cycle(runner, options, hours, base)
@@ -287,7 +308,8 @@ defmodule ChorusDraft.CLI do
     end
   end
 
-  defp loop(runner, options, hours, base, last_original) do
+  defp loop(runner, options, hours, base, last_original, stream) do
+    started = System.monotonic_time(:millisecond)
     last_original =
       try do
         if options[:daemon] && (options[:ignore_active_hours] || active?(hours)) do
@@ -310,8 +332,14 @@ defmodule ChorusDraft.CLI do
           last_original
       end
 
-    Process.sleep(options.poll_interval * 1000)
-    loop(runner, options, hours, base, last_original)
+    if stream do
+      cooldown = max(5_000 - (System.monotonic_time(:millisecond) - started), 0)
+      Jetstream.wait(stream, options.poll_interval * 1000, cooldown)
+    else
+      Process.sleep(options.poll_interval * 1000)
+    end
+
+    loop(runner, options, hours, base, last_original, stream)
   end
 
   defp targets(options, base) do
@@ -363,6 +391,7 @@ defmodule ChorusDraft.CLI do
           --discover           Stage discovery commentary
           --listen             Poll public mentions
           --daemon             Poll mentions and periodically draft originals
+          --jetstream          Wake Bluesky --listen/--daemon on stream activity
           --process-queue      Interactively review AI and manual drafts
           --search QUERY       Display public posts
           --random-post QUERY  Display one random public search result

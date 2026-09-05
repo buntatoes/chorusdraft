@@ -36,3 +36,19 @@ changes. Update configured entries after a rename. Only fetched notifications ca
 be checked for new opt-outs. Keyword and pattern matching cannot understand every
 form of harassment or prompt injection. Human review remains required for context,
 accuracy, platform rules, and applicable law.
+
+## Jetstream boundary
+
+The optional BlueBot stream connects with TLS certificate and hostname
+verification. It sends no Bluesky app password, session token, or AI credentials.
+The current JSON subprotocol is required. Post bodies are decoded only to
+identify relevant activity; complete messages over 1 MiB are ignored. This is an
+application decoding limit, not a transport-level bound on fragmented frames.
+
+Stream content is an untrusted signal to fetch the account's notifications, never
+a direct source of AI context or publication. A single coalesced wake-up prevents
+network bursts from filling the consumer's mailbox. Startup, reconnect and
+periodic notification checks remain active, subject to the existing fetch window.
+Jetstream cursors and historical replay are not implemented, so outages or heavy
+notification traffic can still cause missed events. A complete live audit remains
+unfinished.

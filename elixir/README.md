@@ -20,8 +20,9 @@ Every AI draft must be reviewed interactively before publication.
 - The shared Mix project compiles and produces a Linux escript.
 - BlueBot and Mastobot API clients, local AI and Gemini support, draft storage,
   review workflows, and the primary 0.51.1 safeguards have initial Elixir ports.
-- The offline suite currently contains 22 passing tests. These use fake clients
-  and do not log in, contact an AI provider, or publish posts.
+- The offline suite covers the original port and Jetstream integration. Tests use
+  fake platform clients and a loopback WebSocket fixture; they do not log in,
+  contact an AI provider, or publish posts.
 - Live platform compatibility, state migration, long-running daemon behavior,
   packaging, installation upgrades, and a complete security audit are unfinished.
 - No Elixir archive, tag, GitHub release, or supported upgrade path exists.
@@ -89,6 +90,46 @@ inspection, interactive deletion, active hours, polling, and daemon operation.
 AI-generated text is designed to stay in the queue regardless of compatibility
 flags or environment values, but the Elixir port is not release-qualified yet.
 
+## Jetstream for BlueBot
+
+Jetstream is optional in this separate Elixir version:
+
+```sh
+./chorusdraft bluesky --listen --jetstream
+./chorusdraft bluesky --daemon --jetstream
+```
+
+The client uses the current `network.bsky.jetstream.subscribeEvents` API with the
+`xrpc.v1.json` WebSocket subprotocol. It connects to
+`wss://jetstream.us-east.bsky.network` by default. Set `BLUESKY_JETSTREAM_URL` in
+`bluesky/.env` to another compatible WSS origin or full subscribeEvents URL.
+The old `/subscribe` protocol is not supported by this mode.
+
+Only post commits are requested. The client checks mention facets and direct
+reply parents for the logged-in account's DID, including updated posts. It does
+not filter by the bot's DID on the server: that would select posts *written by*
+the bot and miss incoming mentions. This means the connection receives the
+network-wide post stream and uses more bandwidth than notification polling.
+
+Matching events wake the existing notification workflow. Raw streamed bodies
+never enter AI context, terminal output, or state. The API remains the source of
+posts, handles, and thread context; all existing opt-out checks, deduplication,
+active hours, queue limits, and exact interactive approval still apply. Bursts
+coalesce into one pending wake-up, with at least five seconds between the start
+of notification cycles. Jetstream does not directly generate or publish posts.
+
+The socket reconnects with bounded exponential backoff and a heartbeat. An
+initial notification check, checks after reconnect, and periodic checks at
+`--poll-interval` (60 seconds by default) cover disconnects and API indexing lag.
+This is live-tail notification acceleration, not a historical replay consumer:
+there is no persisted Jetstream cursor or guarantee of complete delivery. The
+existing 30-notification fetch window and five-reply batch limit still apply.
+
+Mastobot continues using its existing polling workflow; Jetstream is a Bluesky
+service. Omitting `--jetstream` preserves BlueBot's polling behavior too.
+
+Protocol reference: [Bluesky Jetstream documentation](https://bsky.network/docs/jetstream/).
+
 ## State and safeguards
 
 State is stored under each product's `data/` directory and separated again by
@@ -118,7 +159,7 @@ mix test --warnings-as-errors
 ```
 
 There is no packaging script yet. A future package must include the GPL source,
-Jason's license and corresponding source, checksums, setup files, and separate
+dependency licenses and corresponding source, checksums, setup files, and separate
 BlueBot and Mastobot launchers. It must exclude generated configuration,
 credentials, logs, state, dependencies fetched outside the package, and stale
 build output.
