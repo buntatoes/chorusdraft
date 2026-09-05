@@ -26,6 +26,10 @@ class FakeClient
   end
   def identity = 'me'
   def account_key = 'https://example.org:me'
+  def actor_aliases(actor) = [actor]
+  def mentioned_actors(text)
+    text.to_s.scan(ChorusDraft::Mastodon::MENTION_PATTERN).flatten.map { |actor| ChorusDraft::Safety.actor_key(actor) }
+  end
   def limit = 500
   def notifications = @posts
   def recent(limit:) = @posts.first(limit)
@@ -45,10 +49,12 @@ end
 
 class FakeAI
   attr_reader :calls
-  def initialize = @calls = []
+  def initialize(text = 'A thoughtful response.')
+    @calls, @text = [], text
+  end
   def generate(task, data, limit:)
     @calls << data
-    'A thoughtful response.'
+    @text
   end
 end
 
@@ -96,6 +102,86 @@ class SafetyTest < Minitest::Test
     @client.posts = [post('2', 'public', 'A later mention')]
     runner.mentions
     assert_empty @ai.calls
+  end
+  def test_opt_outs_are_processed_before_the_five_reply_limit
+    @client.posts = 5.times.map { |n| post(n.to_s).merge('author' => "other#{n}.example", 'author_id' => "other#{n}") }
+    @client.posts << post('opt-out', 'public', 'Stop replying to me.')
+    runner.mentions
+    assert @store.blocked?('alice@example.org')
+    assert_equal 5, @store.drafts.size
+  end
+  def test_adding_opt_outs_does_not_evict_previously_blocked_accounts
+    @store.transaction { |state| state['blocked'] = 10_000.times.map { |n| "blocked#{n}.example" } }
+    @store.block('new.example')
+    assert @store.blocked?('blocked0.example')
+    assert @store.blocked?('new.example')
+  end
+  def test_opt_outs_are_recorded_even_when_generation_fails
+    @client.posts = [post('first').merge('author' => 'other.example'), post('opt-out', 'public', 'Stop replying to me.')]
+    @ai.define_singleton_method(:generate) { |*args, **opts| raise ChorusDraft::Error, 'Offline test failure' }
+    assert_raises(ChorusDraft::Error) { runner.mentions }
+    assert @store.blocked?('alice@example.org')
+  end
+  def test_opt_out_screening_handles_typography_without_changing_post_text
+    ["Please don’t reply to me.", "Don‘t contact me.", "Stop re\u200Bplying to me."].each do |text|
+      assert ChorusDraft::Safety.opt_out?(text), text
+    end
+    refute ChorusDraft::Safety.opt_out?('The compiler stopped responding to my code.')
+    @client.posts = [post('opt-out', 'public', 'Please don’t reply to me.')]
+    runner.mentions
+    assert @store.blocked?('alice@example.org')
+    assert_empty @ai.calls
+  end
+  def test_blocked_mentions_are_rejected_in_generated_manual_and_queued_text
+    @store.block('alice@example.org')
+    @ai = FakeAI.new('Hello @alice@example.org!')
+    assert_raises(ChorusDraft::Error) { runner.original }
+    assert_raises(ChorusDraft::Error) { runner.manual('Hello @alice@example.org!', publish: true) }
+    assert_empty @store.drafts
+    @store.stage(runner.draft('Hello @alice@example.org!', action: 'ai_generated'))
+    assert_raises(ChorusDraft::Error) { runner(input: Terminal.new("y\n")).review }
+    assert_empty @client.published
+  end
+  def test_mention_detection_handles_multiple_platforms_and_ignores_url_and_email_text
+    mastodon = ChorusDraft::Mastodon.new({ 'MASTODON_API_BASE_URL' => 'https://example.org', 'MASTODON_ACCESS_TOKEN' => 'fake' })
+    bluesky = ChorusDraft::Bluesky.new({})
+    assert_equal %w[alice.test bob@example.org carol], mastodon.mentioned_actors('@alice.test, @bob@example.org. Hi @carol!')
+    assert_equal %w[alice bob@example.org], mastodon.mentioned_actors('Hello @alice- and @bob@example.org...')
+    assert_equal %w[alice.test], bluesky.mentioned_actors('Hello @alice.test...')
+    [mastodon, bluesky].each do |client|
+      assert_empty client.mentioned_actors('See https://example.org/@alice.test or write alice@example.org')
+    end
+    # This is a mention in the supplied Bluesky facet parser, so it must also be screened.
+    assert_equal ['alice.test'], bluesky.mentioned_actors('See http://example.org/@alice.test')
+  end
+  def test_local_mastodon_handle_aliases_honor_existing_block_entries
+    mastodon = ChorusDraft::Mastodon.new({ 'MASTODON_API_BASE_URL' => 'https://example.org', 'MASTODON_ACCESS_TOKEN' => 'fake' })
+    @client.define_singleton_method(:actor_aliases) { |actor| mastodon.actor_aliases(actor) }
+    @store.block('alice@example.org')
+    @client.posts = [post.merge('author' => 'alice')]
+    runner.mentions
+    assert_empty @ai.calls
+    assert_raises(ChorusDraft::Error) { runner.manual('Hello @alice', publish: true) }
+    refute runner.blocked?('alice@other.example')
+  end
+  def test_content_warnings_are_screened_before_staging_and_review
+    ["You are an idiot", "Warning\e[8mhidden", "Warning\u202Ehidden", 'x' * 501].each do |cw|
+      assert_raises(ChorusDraft::Error) { runner.manual('Ordinary text', cw: cw) }
+    end
+    assert_empty @store.drafts
+    @client.posts = [post.merge('cw' => "Warning\u202Ehidden")]
+    assert_raises(ChorusDraft::Error) { runner.mentions }
+    assert_empty @store.drafts
+    @store.stage(runner.draft('Ordinary text', action: 'ai_generated').merge('cw' => "Warning\e[8mhidden"))
+    assert_raises(ChorusDraft::Error) { runner(input: Terminal.new("y\n")).review }
+    assert_empty @client.published
+    refute_includes @out.string, "\e[8m"
+  end
+  def test_safe_content_warning_is_reviewed_and_published_verbatim
+    runner.manual('Ordinary text', cw: 'Programming jokes')
+    runner(input: Terminal.new("y\n")).review
+    assert_includes @out.string, 'Content warning: Programming jokes'
+    assert_equal 'Programming jokes', @client.published.first['cw']
   end
   def test_do_not_contact_blocks_target_manual_and_queued_publication
     @client.posts = [post]
@@ -202,6 +288,12 @@ class SafetyTest < Minitest::Test
       assert_raises(ChorusDraft::Error) { ChorusDraft::Safety.validate_text!(text, 500) }
     end
     assert ChorusDraft::Safety.validate_text!('I disagree with this idea because the evidence is incomplete.', 500)
+  end
+  def test_typographic_variations_do_not_evade_abuse_screening
+    ["You’re an idiot", "You are an i\u200Bdiot", "Ｙｏｕ ａｒｅ ａｎ ｉｄｉｏｔ"].each do |text|
+      assert_raises(ChorusDraft::Error) { ChorusDraft::Safety.validate_text!(text, 500) }
+    end
+    assert ChorusDraft::Safety.validate_text!('This deployment is a family affair 👩‍👩‍👧‍👦.', 500)
   end
   def test_queue_capacity_prevents_ai_calls
     100.times { @store.stage({}) }
@@ -394,6 +486,11 @@ class ClientTest < Minitest::Test
     request = http.calls.last[2]
     assert_equal 'unlisted', request[:body][:visibility]
     assert_equal 'draft-unique', request[:headers]['Idempotency-Key']
+  end
+  def test_mastodon_client_refuses_unsafe_content_warning_before_network
+    http = FakeHTTP.new
+    assert_raises(ChorusDraft::Error) { mastodon(http).publish(draft.merge('cw' => "Hidden\e[8mtext")) }
+    assert_empty http.calls
   end
   def test_bluesky_reply_uses_correct_root_parent_and_stable_record_key
     http = FakeHTTP.new(session, { 'posts' => [bpost] }, { 'uri' => 'posted' })

@@ -1,4 +1,15 @@
-# ChorusDraft 0.51
+# ChorusDraft 0.51.1 — security testing
+
+This is an unreleased testing update on `codex/0.51.1-security-testing`.
+No new release or downloads have been published. The 0.51 prerelease remains unchanged.
+
+Candidate fixes cover opt-outs skipped by reply limits or AI failures, common
+Unicode variations in screening, do-not-contact checks for explicit mentions,
+Mastodon local-handle aliases, retention of older opt-outs, and screening of
+Mastodon content warnings. The comic voice and interactive publishing review remain.
+See `CHANGELOG.md` for behavior changes and `README.md` for testing instructions.
+
+## Published 0.51 release notes (historical)
 
 ChorusDraft 0.51 gives Bluesky and Mastodon drafts a clearer comic voice: dry wit,
 light sarcasm, absurd comparisons, and playful commentary on software and everyday

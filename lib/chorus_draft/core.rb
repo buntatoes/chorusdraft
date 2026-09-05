@@ -9,7 +9,7 @@ require 'fileutils'
 require 'cgi'
 
 module ChorusDraft
-  VERSION = '0.51'
+  VERSION = '0.51.1'
   class Error < StandardError; end
   class HTTPError < Error
     attr_reader :status
@@ -100,7 +100,12 @@ module ChorusDraft
     end
 
     def self.opt_out?(text)
-      text.to_s.match?(OPT_OUT)
+      screening_text(text).match?(OPT_OUT)
+    end
+
+    # Normalize only for matching. Displayed and published text is never rewritten.
+    def self.screening_text(text)
+      text.to_s.unicode_normalize(:nfkc).tr("\u2018\u2019\u02BC", "'").gsub(/\p{Cf}/, '')
     end
 
     def self.injection?(text)
@@ -119,7 +124,7 @@ module ChorusDraft
       raise Error, 'Post text is empty or exceeds the platform length limit.' if text.to_s.strip.empty? || text.scan(/\X/).length > limit
       raise Error, 'Post contains control characters.' unless clean(text) == text
       # Defense in depth. Human review remains the publishing boundary for AI output.
-      raise Error, 'Post failed harassment screening.' if text.match?(ABUSE)
+      raise Error, 'Post failed harassment screening.' if screening_text(text).match?(ABUSE)
       true
     end
   end
@@ -178,7 +183,6 @@ module ChorusDraft
       return false if key.empty?
       transaction do |s|
         s['blocked'] << key unless s['blocked'].include?(key)
-        s['blocked'] = s['blocked'].last(10_000)
       end
       true
     end

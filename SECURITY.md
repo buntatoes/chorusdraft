@@ -2,7 +2,9 @@
 
 ## Supported version
 
-Security fixes are provided for the latest 0.51 source and release artifacts.
+The latest published prerelease is 0.51. Candidate security fixes are on the
+unreleased `codex/0.51.1-security-testing` branch. The controls below describe that
+testing branch; consult the 0.51 tag for the currently published implementation.
 Use a currently supported, security-patched Ruby release.
 
 ## Reporting a vulnerability
@@ -30,10 +32,17 @@ steps, and the security impact. Revoke any credential that may have been exposed
   local do-not-contact state. Operators can preconfigure additional accounts in
   `config/do_not_contact.txt`. Queued and manual interactions with those accounts
   are refused.
+- The fetched notification batch is checked for opt-outs before reply generation
+  or limits. Older opt-outs are retained when new ones are added. Do-not-contact
+  checks include explicit mentions in draft text and content warnings, with
+  Mastodon local-handle aliases on the configured instance recognized.
 - Output screening rejects direct self-harm encouragement, threats, doxxing,
   pile-on requests, and common direct personal attacks. Human review remains
   responsible for context, factual accuracy, and language that filters cannot
   reliably classify.
+- Mastodon content warnings are screened before staging, review, and publication;
+  the reviewer sees the same accepted text that will be sent. Unicode normalization
+  is used only for matching opt-out and abuse patterns, never to rewrite a draft.
 - Mastodon private, direct, and unknown-visibility message bodies are discarded
   before AI processing, logging, or state storage.
 - Credentials are read from the environment or `.env`, excluded from release
@@ -44,3 +53,9 @@ steps, and the security impact. Revoke any credential that may have been exposed
 These controls cover the supplied AI workflows. An operator remains responsible
 for manually written posts, account configuration, platform rules, and applicable
 law.
+
+The block list tracks handles, not a permanent identity across handle changes.
+Update configured entries after a rename. Only the fetched notification batch can
+be checked for new opt-outs; unavailable or older notifications may not be observed.
+Keyword matching cannot classify all harassment or prompt injection. Human review
+remains required, including for drafts that pass automated checks.

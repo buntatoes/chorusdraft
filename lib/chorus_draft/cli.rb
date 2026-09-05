@@ -9,7 +9,11 @@ module ChorusDraft
     end
 
     def eligible(post)
-      Safety.eligible?(post) && post['author_id'] != @client.identity && !@store.blocked?(post['author'])
+      Safety.eligible?(post) && post['author_id'] != @client.identity && !blocked?(post['author'])
+    end
+
+    def blocked?(actor)
+      @client.actor_aliases(actor).any? { |key| @store.blocked?(key) }
     end
 
     def draft(text, action:, post: nil, quote: false)
@@ -33,19 +37,24 @@ module ChorusDraft
       available = @client.limit - prefix.scan(/\X/).length - suffix.scan(/\X/).length
       raise Error, 'Source URL/handle leaves no room for commentary.' if available < 20
       text = prefix + @ai.generate(task, context, limit: available) + suffix
-      Safety.validate_text!(text, @client.limit)
-      item = @store.stage(draft(text, action: 'ai_generated', post: post, quote: quote), source: post && post['id'], unsolicited: unsolicited)
+      candidate = draft(text, action: 'ai_generated', post: post, quote: quote)
+      validate_draft!(candidate)
+      item = @store.stage(candidate, source: post && post['id'], unsolicited: unsolicited)
       @out.puts(item ? "Staged draft #{item['id']}; use --process-queue to review." : 'Skipped duplicate or queue/interaction limit reached.')
       item
     end
 
     def mentions
-      replies = 0
-      @client.notifications.first(30).each do |post|
+      notifications = @client.notifications.first(30)
+      # Record all fetched opt-outs before reply limits or a provider error can
+      # interrupt this batch. A later opt-out also blocks earlier posts by its author.
+      notifications.each do |post|
         if Safety.public?(post) && post['author_id'] != @client.identity && Safety.opt_out?(post['text'])
-          @store.block(post['author'])
-          next
+          @client.actor_aliases(post['author']).each { |key| @store.block(key) }
         end
+      end
+      replies = 0
+      notifications.each do |post|
         next unless eligible(post)
         replies += 1 if stage_generated('Write a brief, witty reply grounded in the supplied public post and thread. Share a playful observation about the situation without teasing the author. If the context is serious or sensitive, give a sincere reply instead of a joke.', post: post)
         break if replies >= 5
@@ -78,12 +87,11 @@ module ChorusDraft
       raise Error, 'Choose either a reply or quote.' if reply_to && quote_to
       post = (reply_to || quote_to) && @client.get_post(reply_to || quote_to)
       raise Error, 'Restricted messages are not supported for replies or quotes.' if post && !Safety.public?(post)
-      raise Error, 'This account is on the do-not-contact list.' if post && @store.blocked?(post['author'])
+      raise Error, 'This account is on the do-not-contact list.' if post && blocked?(post['author'])
       text += "\n\n#{post['url']}" if quote_to && @platform == 'mastodon'
       item = draft(text, action: 'manual', post: post, quote: !!quote_to)
       item['cw'] = cw if cw
-      Safety.validate_text!(text, @client.limit)
-      validate_platform!(item)
+      validate_draft!(item)
       saved = @store.stage(item)
       raise Error, 'Queue is full; review existing drafts first.' unless saved
       if publish
@@ -94,18 +102,21 @@ module ChorusDraft
       saved
     end
 
-    def validate_platform!(item)
+    def validate_draft!(item)
       raise Error, 'Draft belongs to a different account or platform.' unless item['account'] == @client.account_key && item['platform'] == @platform
       Safety.validate_text!(item.fetch('text'), @client.limit)
       if @platform == 'bluesky'
         raise Error, 'Bluesky supports public feed posts only.' unless item['visibility'] == 'public'
         raise Error, 'Content warnings are supported only for Mastodon.' unless item['cw'].to_s.empty?
+      else
+        Safety.validate_text!(item['cw'], @client.limit) unless item['cw'].to_s.empty?
       end
+      actors = [item['author'], *@client.mentioned_actors(item['text']), *@client.mentioned_actors(item['cw'])].compact
+      raise Error, 'Draft contacts an account on the do-not-contact list.' if actors.any? { |actor| blocked?(actor) }
     end
 
     def publish_draft(item)
-      validate_platform!(item)
-      raise Error, 'This account is on the do-not-contact list.' if item['author'] && @store.blocked?(item['author'])
+      validate_draft!(item)
       claimed = @store.transition(item['id'], 'pending', 'publishing', expected: item)
       begin
         @client.publish(claimed)
@@ -120,7 +131,7 @@ module ChorusDraft
     def review
       raise Error, 'Queue review requires an interactive terminal.' unless @input.tty?
       @store.drafts.select { |d| d['status'] == 'pending' }.each do |item|
-        validate_platform!(item)
+        validate_draft!(item)
         @out.puts "\n#{item['id']} | #{item['action']} | #{item['visibility']}"
         @out.puts "Reply: #{Safety.clean(item['reply_to'])}" if item['reply_to']
         @out.puts "Quote: #{Safety.clean(item['quote_to'])}" if item['quote_to']

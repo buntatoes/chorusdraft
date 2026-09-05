@@ -1,4 +1,4 @@
-ChorusDraft 0.51
+ChorusDraft 0.51.1 — security testing (unreleased)
 Modification notice — September 5, 2026
 
 This distribution is a modified work based on the feature sets of Bluesky Bot
@@ -13,7 +13,10 @@ complete user-visible change list is in CHANGELOG.md.
 Version 0.51 adds a shared comic voice for original drafts, replies, and public
 commentary while retaining publication review and harassment prevention controls.
 
-ChorusDraft 0.51, including these modifications, is distributed under
+Version 0.51.1 testing hardens opt-out processing, do-not-contact checks for
+mentions, Unicode screening, and Mastodon content-warning validation.
+
+ChorusDraft, including these modifications, is distributed under
 the GNU General Public License version 3. See LICENSE for the complete terms.
 Copyright in the original and modified work remains with its respective
 copyright holders.

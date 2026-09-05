@@ -2,6 +2,28 @@
 
 This file records user-visible changes to ChorusDraft.
 
+## 0.51.1 — Unreleased (security testing)
+
+### Fixed
+
+- All opt-out requests in the fetched notification batch are recorded before
+  generating replies, including those after the five-reply limit or a failed AI request.
+- Opt-out and harassment screening recognize curly apostrophes, full-width text,
+  and inserted invisible formatting characters without rewriting approved text.
+- Do-not-contact checks cover explicit mentions in generated, manual, and queued
+  text and content warnings. Platform-specific mention boundaries are used, and
+  Mastodon local handles match their fully qualified equivalents on the configured instance.
+- Adding new opt-outs no longer removes older entries from the block list.
+- Mastodon content warnings receive length, control-character, and harassment
+  screening before staging, review, and publication. Invalid warnings cannot be
+  published behind a sanitized or truncated preview.
+
+### Testing status
+
+- These fixes are on `codex/0.51.1-security-testing`; no 0.51.1 release is published.
+- The published 0.51 prerelease, its tag, and its downloads are unchanged.
+- The 0.51 comic voice, human approval requirement, and GPLv3 license are retained.
+
 ## 0.51 — 2026-09-05
 
 ### Changed

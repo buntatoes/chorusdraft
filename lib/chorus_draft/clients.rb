@@ -3,6 +3,9 @@ require_relative 'core'
 
 module ChorusDraft
   class Mastodon
+    # Follow Mastodon's Account::MENTION_RE username/domain boundaries so
+    # punctuation cannot disguise the recipient from do-not-contact checks.
+    MENTION_PATTERN = %r{(?<![=/[:word:]])@([a-z0-9_]+(?:[.-]+[a-z0-9_]+)*(?:@[[:word:]]+(?:[.-]+[[:word:]]+)*)?)}i
     attr_reader :identity
     def initialize(env = ENV, http: HTTP.new)
       @http = http
@@ -14,6 +17,16 @@ module ChorusDraft
 
     def limit = 500
     def account_key = "#{@base}:#{@identity}"
+    def mentioned_actors(text)
+      text.to_s.scan(MENTION_PATTERN).flatten.map { |actor| Safety.actor_key(actor) }.uniq
+    end
+    def actor_aliases(actor)
+      key = Safety.actor_key(actor)
+      return [] if key.empty?
+      domain = URI(@base).hostname.downcase
+      return [key, "#{key}@#{domain}"] unless key.include?('@')
+      key.end_with?("@#{domain}") ? [key, key.delete_suffix("@#{domain}")] : [key]
+    end
     def login
       @identity = call(:get, '/api/v1/accounts/verify_credentials')['id']
       raise Error, 'Missing account identity.' unless @identity
@@ -72,6 +85,7 @@ module ChorusDraft
 
     def publish(draft)
       Safety.validate_text!(draft.fetch('text'), limit)
+      Safety.validate_text!(draft['cw'], limit) unless draft['cw'].to_s.empty?
       visibility = draft.fetch('visibility', 'public')
       raise Error, 'Invalid visibility.' unless %w[public unlisted private direct].include?(visibility)
       if draft['reply_to']
@@ -96,6 +110,7 @@ module ChorusDraft
   end
 
   class Bluesky
+    FACET_PATTERN = %r{https://[^\s<>]+|(?<![\w@])@[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}|(?<!\w)#[\p{L}\p{N}_]+}
     attr_reader :identity
     def initialize(env = ENV, http: HTTP.new)
       @env, @http = env, http
@@ -106,6 +121,11 @@ module ChorusDraft
 
     def limit = 300
     def account_key = "#{@base}:#{@identity}"
+    def actor_aliases(actor) = [actor]
+    def mentioned_actors(text)
+      text.to_s.scan(FACET_PATTERN).select { |value| value.start_with?('@') }
+          .map { |value| Safety.actor_key(value.sub(/[.,!?;:)]+\z/, '')) }.uniq
+    end
     def login
       session = @http.request(:post, "#{@base}/xrpc/com.atproto.server.createSession", body: {
         identifier: Config.required(@env, 'BLUESKY_HANDLE'), password: Config.required(@env, 'BLUESKY_APP_PASSWORD')
@@ -178,7 +198,7 @@ module ChorusDraft
     def facets(text)
       result = []
       # Facet offsets are UTF-8 bytes, not Ruby character offsets.
-      text.to_enum(:scan, %r{https://[^\s<>]+|(?<![\w@])@[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}|(?<!\w)#[\p{L}\p{N}_]+}).each do
+      text.to_enum(:scan, FACET_PATTERN).each do
         match = Regexp.last_match
         value = match[0].sub(/[.,!?;:)]+\z/, '')
         start = text[0...match.begin(0)].bytesize

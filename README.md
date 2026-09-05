@@ -1,5 +1,8 @@
 # ChorusDraft
 
+> **0.51.1 security testing branch — not a published release.** The fixes described
+> here are being tested. The published 0.51 prerelease and its downloads are unchanged.
+
 ChorusDraft is an AI-assisted comedy drafting and publishing tool for Bluesky and
 Mastodon. It drafts dry observations about software, playful replies, and satirical
 commentary on public posts. It can also monitor mentions, search public posts,
@@ -7,7 +10,8 @@ and prepare commentary from configured accounts. AI-generated content is
 always placed in a review queue so the account owner can inspect the exact text
 before it is published.
 
-Version 0.51 uses one shared Ruby codebase on Linux, macOS, and Windows.
+Version 0.51.1 is a testing update to the shared Ruby codebase for Linux, macOS,
+and Windows. The comic voice introduced in 0.51 is retained.
 
 ## Comic voice
 
@@ -63,6 +67,10 @@ The release contains no third-party Ruby gems and does not require a Go or Rust
 toolchain. Setup does not download software, install services, or start a bot.
 
 ## Download and install
+
+The following archives are the published **0.51** prerelease; they do not include
+the testing branch's security fixes. To test 0.51.1, check out
+`codex/0.51.1-security-testing` and follow the Development commands below.
 
 Download the archive for the bot and operating system from the GitHub release:
 
@@ -301,10 +309,18 @@ removes duplicate-prevention and interaction history.
   request satire about topics and situations without insulting or baiting their authors.
 - Clear public opt-out requests are honored permanently in local state. A
   configurable do-not-contact list also blocks queued and manual interactions.
+  In 0.51.1 testing, all fetched opt-outs are recorded before generating replies,
+  and explicit mentions in draft text and content warnings are checked as well.
+  Mastodon local and fully qualified handles on the configured instance are matched.
+  Blocks follow recorded handles; update the list when an account changes its handle.
 - Unsolicited interaction is limited to five drafts per day and one draft per
   author every 30 days.
 - Output screening rejects threats, doxxing, pile-on requests, self-harm
   encouragement, and common direct personal attacks.
+  The testing update screens Mastodon content warnings before queueing or displaying
+  them and rejects hidden control characters instead of showing a sanitized preview
+  of different text. Common Unicode variations are normalized only for screening;
+  the approved text itself is not rewritten.
 - Automatic likes, favourites, boosts, and reposts are disabled.
 - API keys are sent in headers and remote error bodies are omitted from logs.
 - Redirects are not followed with credentials and publishing requests are not
@@ -315,6 +331,9 @@ See [SECURITY.md](SECURITY.md) for supported versions, vulnerability reporting,
 and enforced safety boundaries.
 
 ## Upgrading to 0.51
+
+The same configuration and state formats apply to 0.51.1 testing. Keep a backup
+of your `data` directory before testing. No 0.51.1 release archive is available.
 
 From ChorusDraft 0.50, stop the existing listener or daemon, extract 0.51 into a
 new directory, and securely copy your `.env`, configured target and do-not-contact
