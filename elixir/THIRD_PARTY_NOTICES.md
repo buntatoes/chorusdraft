@@ -8,7 +8,6 @@ The Linux Elixir build uses:
   transport, MIT License.
 - [Telemetry](https://github.com/beam-telemetry/telemetry), a WebSockex runtime
   dependency, Apache License 2.0. The resolved version is pinned in `mix.lock`.
-
 - [Mint](https://github.com/elixir-mint/mint) 1.10.0 for bounded HTTP transport,
   Apache License 2.0.
 - [HPAX](https://github.com/elixir-mint/hpax), a Mint dependency, Apache License 2.0.

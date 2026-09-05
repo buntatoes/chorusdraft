@@ -1,7 +1,7 @@
 # Security policy for the Elixir experiment
 
-This is an unreleased separate implementation on the `elixir-experimental` branch. The supported
-release is Ruby 0.51.1 from `main-ruby`; future Ruby maintenance work is isolated
+This is an unreleased separate implementation on the `elixir-experimental`
+branch. The supported release is Ruby 0.51.1 from `main-ruby`; future Ruby maintenance work is isolated
 on `ruby-testing`. Report vulnerabilities using GitHub private
 vulnerability reporting when available, or contact the maintainer privately
 through the GitHub profile. Never include credentials, private posts, or exploit
@@ -25,12 +25,15 @@ The Elixir port enforces these boundaries:
   are absent.
 - Remote endpoints require HTTPS and credential-bearing redirects are not
   followed. Mint HTTP/1 connections issue one request without automatic retries,
-  including on 503 responses. Loopback HTTP is permitted only for a local AI service. Streaming response size and header
-  limits and generic errors reduce accidental disclosure.
+  including on 503 responses. Loopback HTTP is permitted only for a local AI
+  service. Streaming response size/header limits and generic errors reduce accidental disclosure.
 - State is isolated by platform and account, stored with private permissions, and
-  replaced atomically. A Linux kernel flock prevents concurrent writers and releases on process exit. Corrupt
-  state fails closed. Publishing requests are not automatically retried; uncertain
+  replaced atomically. A Linux kernel flock prevents concurrent writers and
+  releases on process exit. Corrupt state fails closed. Publishing requests are not automatically retried; uncertain
   results require manual account inspection.
+- Import reads the old state without modifying it, requires an empty destination,
+  and preserves publication IDs and interaction history. Interrupted publications
+  become uncertain; import never makes them eligible for automatic replay.
 
 The block list tracks handles rather than permanent identities across handle
 changes. Update configured entries after a rename. Only fetched notifications can

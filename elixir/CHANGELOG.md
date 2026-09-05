@@ -1,12 +1,39 @@
-# Changelog
+# Elixir changelog
+
+Changes on `elixir-experimental`, newest first. The current internal identifier
+is `0.52.0-testing`; the branch remains unreleased. Ruby code is a read-only
+feature reference.
+
+## Documentation alignment — September 5, 2026
+
+- Aligned root and Elixir documentation with the current implemented features,
+  requirements, package availability, state import, and validation results.
+- Clarified the difference between successful offline checks and outstanding
+  live account acceptance. Preserved the initial checkpoint as historical notes.
 
 ## Linux implementation completion — September 5, 2026
 
-Completed Ruby workflow parity, reliable HTTP and daemon scheduling, read-only
-state import, crash-safe locking, setup, queue status/rejection, and separate
-Linux product packaging with install checks and offline source rebuilds.
-See PARITY.md for the pinned reference and validation scope. Live account
-acceptance remains outstanding; no Ruby branch or release is modified.
+- Completed the Linux Ruby command workflows and added read-only state import
+  into empty account storage, setup, queue status, and pending-draft rejection.
+- Fixed target/discovery iteration past seen posts, source CW preservation,
+  numeric HTML entity decoding for opt-outs, CLI aliases/optional random-post
+  queries, local active hours, monotonic scheduling, jitter, and job isolation.
+- Replaced HTTP transport with Mint 1.10.0, without redirects or automatic
+  request retries, including 503 Retry-After; enforce streaming response limits.
+  The source build now requires Elixir 1.15+.
+- Added kernel flock locking with crash recovery, nested state validation,
+  constrained publication transitions, and refusal of symlink/corrupt state.
+  Imported interrupted publications remain uncertain.
+- Added separate BlueBot/Mastobot Linux archives, run/setup/install scripts,
+  checksums, complete application/dependency source, and original license files.
+  Installation uses a new directory and preserves the previous installation.
+- Passed 56 regression tests, Ruby-generated state import, both package installs,
+  checksum checks, overwrite refusal, and offline source rebuilds in the
+  [implementation verification run](https://github.com/buntatoes/chorusdraft/actions/runs/33999085832).
+
+See [PARITY.md](PARITY.md) for the pinned reference and verification scope.
+Live account acceptance, a sustained daemon soak, and an independent release
+security audit remain outstanding. No Ruby branch or release is modified.
 
 ## Jetstream integration — unreleased
 
@@ -21,18 +48,19 @@ acceptance remains outstanding; no Ruby branch or release is modified.
   plus an Elixir-only CI workflow targeting the experimental branch.
 - Add WebSockex 0.5.1 and its Telemetry dependency. Ruby implementations are unchanged.
 
-## Experimental checkpoint — unreleased
+## Initial experimental checkpoint — historical
 
-The Mix project currently reports `0.52.0-testing` as a temporary internal build
-identifier. This is not an official release version.
+The initial port used `0.52.0-testing` as an internal build identifier.
+The following records that earlier checkpoint; subsequent sections above describe
+completed packaging, migration, launchers, and the raised Elixir requirement.
 
 ### Elixir and Linux
 
 - Reimplemented the shared BlueBot and Mastobot Linux runtime in Elixir 1.14.
 - Added a single escript with product-specific commands and configuration
-  directories. Separate Linux launchers are not implemented yet.
-- Added pinned Jason 1.4.5 JSON handling. Packaging and inclusion of corresponding
-  dependency source and notices remain unfinished.
+  directories. Product launchers were added in the completion checkpoint above.
+- Added pinned Jason 1.4.5 JSON handling. Packaging and bundled dependency source
+  were completed in the later implementation checkpoint.
 
 ### Platform behavior
 
@@ -63,5 +91,5 @@ identifier. This is not an official release version.
 - Credentials are loaded as data, ignored by Git, sent only to validated HTTPS
   origins (or loopback HTTP for local AI), and omitted from error messages.
 
-This is an experimental build on `elixir-experimental`. It has no packaging
-script, Git tag, GitHub release, or supported upgrade path.
+At this initial checkpoint, packaging and migration were pending. They are now
+implemented as described above; the branch still has no official Elixir release.

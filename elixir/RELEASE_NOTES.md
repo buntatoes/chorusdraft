@@ -19,10 +19,20 @@ nested history and publication transitions, and refuses symlink/corrupt files.
 An imported interrupted publication remains uncertain and cannot be replayed.
 
 Build requirement: Elixir 1.15+ and Erlang/OTP 25+. Runtime: Linux, Erlang/OTP 25+
-and util-linux. CI verifies offline regressions, Ruby-generated state import,
-escript creation, package integrity, fresh install, overwrite refusal and
-rebuilding from shipped dependency source.
+and util-linux. Packaging/installing also uses `tar` and `sha256sum`.
+
+The [implementation verification run](https://github.com/buntatoes/chorusdraft/actions/runs/33999085832)
+passed 56 tests, Ruby-generated state import, escript creation, package integrity,
+both product installs, overwrite refusal, and rebuilding from shipped dependency
+source. CI used Ubuntu 22.04, OTP 25.3, and Elixir 1.15.8.
+
+Successful [Elixir checks](https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml)
+upload the `chorusdraft-elixir-linux` artifact for 30 days. It includes BlueBot
+and Mastobot Linux archives and their SHA-256 files; these are untagged build
+artifacts. Local builds write the same package types to `dist/`.
 
 Live Bluesky/Mastodon/AI acceptance and a sustained daemon soak require a test
-account and have not been performed. No tag or public release is created by this
-checkpoint. See PARITY.md and README.md for scope, commands and migration steps.
+account and have not been performed. An independent release security audit also
+remains outstanding. No tag or public release is created by this
+checkpoint. See [PARITY.md](PARITY.md) and [README.md](README.md) for scope,
+commands, package installation, and migration steps.
