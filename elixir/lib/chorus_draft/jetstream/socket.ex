@@ -8,6 +8,7 @@ defmodule ChorusDraft.Jetstream.Socket do
 
   def start_link(options) do
     uri = URI.parse(Keyword.fetch!(options, :url))
+
     state = %{
       stream: Keyword.fetch!(options, :stream),
       attempts: 0,
@@ -15,8 +16,12 @@ defmodule ChorusDraft.Jetstream.Socket do
       last_frame: now()
     }
 
-    WebSockex.start_link(URI.to_string(uri), __MODULE__, state,
-      connection_options(uri) ++ [async: true, handle_initial_conn_failure: true])
+    WebSockex.start_link(
+      URI.to_string(uri),
+      __MODULE__,
+      state,
+      connection_options(uri) ++ [async: true, handle_initial_conn_failure: true]
+    )
   end
 
   def connection_options(uri) do
@@ -38,7 +43,8 @@ defmodule ChorusDraft.Jetstream.Socket do
   @impl true
   def handle_connect(conn, state) do
     unless Enum.any?(conn.resp_headers, fn {key, value} ->
-             String.downcase(to_string(key)) == "sec-websocket-protocol" and value == "xrpc.v1.json"
+             String.downcase(to_string(key)) == "sec-websocket-protocol" and
+               value == "xrpc.v1.json"
            end) do
       raise Error, "Jetstream did not negotiate the JSON subprotocol."
     end
@@ -51,12 +57,17 @@ defmodule ChorusDraft.Jetstream.Socket do
   @impl true
   def handle_frame({:text, frame}, state) do
     state = %{state | last_frame: now()}
+
     case Jetstream.decode(frame, state.stream.did) do
       :activity ->
         Jetstream.notify(state.stream)
         {:ok, state}
-      :reconnect -> {:close, {1011, "Stream error"}, state}
-      :ignore -> {:ok, state}
+
+      :reconnect ->
+        {:close, {1011, "Stream error"}, state}
+
+      :ignore ->
+        {:ok, state}
     end
   end
 
@@ -64,7 +75,9 @@ defmodule ChorusDraft.Jetstream.Socket do
 
   @impl true
   def handle_ping(:ping, state), do: {:reply, :pong, %{state | last_frame: now()}}
-  def handle_ping({:ping, payload}, state), do: {:reply, {:pong, payload}, %{state | last_frame: now()}}
+
+  def handle_ping({:ping, payload}, state),
+    do: {:reply, {:pong, payload}, %{state | last_frame: now()}}
 
   @impl true
   def handle_pong(_, state), do: {:ok, %{state | last_frame: now()}}
@@ -109,8 +122,10 @@ defmodule ChorusDraft.Jetstream.Socket do
   end
 
   defp cancel_timer(nil), do: :ok
+
   defp cancel_timer(timer) do
     Process.cancel_timer(timer)
+
     receive do
       :heartbeat -> :ok
     after

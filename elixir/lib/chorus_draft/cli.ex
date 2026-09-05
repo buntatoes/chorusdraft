@@ -205,12 +205,17 @@ defmodule ChorusDraft.CLI do
 
   defp validate_platform(platform, options) do
     cond do
-      options[:help] || options[:version] -> :ok
+      options[:help] || options[:version] ->
+        :ok
+
       options[:jetstream] && platform != "bluesky" ->
         {:error, "Jetstream is available only for Bluesky."}
+
       options[:jetstream] && !(options[:listen] || options[:daemon]) ->
         {:error, "--jetstream requires --listen or --daemon."}
-      true -> :ok
+
+      true ->
+        :ok
     end
   end
 
@@ -261,10 +266,14 @@ defmodule ChorusDraft.CLI do
 
       options[:listen] || options[:daemon] ->
         if options[:jetstream] do
-          Jetstream.with_stream(runner.client.__struct__.identity(runner.client), runner.env, fn stream ->
-            IO.puts("Jetstream enabled; notification catch-up remains active.")
-            loop(runner, options, hours, base, 0, stream)
-          end)
+          Jetstream.with_stream(
+            runner.client.__struct__.identity(runner.client),
+            runner.env,
+            fn stream ->
+              IO.puts("Jetstream enabled; notification catch-up remains active.")
+              loop(runner, options, hours, base, 0, stream)
+            end
+          )
         else
           loop(runner, options, hours, base, 0, nil)
         end
@@ -310,6 +319,7 @@ defmodule ChorusDraft.CLI do
 
   defp loop(runner, options, hours, base, last_original, stream) do
     started = System.monotonic_time(:millisecond)
+
     last_original =
       try do
         if options[:daemon] && (options[:ignore_active_hours] || active?(hours)) do

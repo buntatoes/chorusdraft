@@ -20,6 +20,8 @@ jobs:
         working-directory: elixir
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
       - uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124
         with:
           otp-version: '25.3'
@@ -29,7 +31,7 @@ jobs:
           mix local.hex --force
           mix local.rebar --force
           mix deps.get
-          git diff -- mix.lock
+          git diff --exit-code -- mix.lock
       - name: Offline regression tests
         run: mix test --warnings-as-errors
       - name: Build the Linux escript
@@ -38,5 +40,4 @@ jobs:
           ./chorusdraft bluesky --help
           ./chorusdraft mastodon --help
       - name: Formatting
-        run: |
-          mix format --check-formatted || { mix format; git diff -- .; exit 1; }
+        run: mix format --check-formatted

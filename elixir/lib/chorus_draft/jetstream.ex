@@ -21,10 +21,15 @@ defmodule ChorusDraft.Jetstream do
              is_nil(uri.userinfo) and is_nil(uri.query) and is_nil(uri.fragment) and
              uri.path in [nil, "", "/", @path] and
              (is_nil(uri.port) or uri.port in 1..65_535) do
-      raise Error, "Jetstream requires a WSS origin or subscribeEvents URL without credentials, query or fragment."
+      raise Error,
+            "Jetstream requires a WSS origin or subscribeEvents URL without credentials, query or fragment."
     end
 
-    %{uri | path: @path, query: URI.encode_query(collections: "app.bsky.feed.post", kinds: "commit")}
+    %{
+      uri
+      | path: @path,
+        query: URI.encode_query(collections: "app.bsky.feed.post", kinds: "commit")
+    }
     |> URI.to_string()
   rescue
     _ in [URI.Error, ArgumentError] -> raise Error, "Invalid Jetstream endpoint."
@@ -73,6 +78,7 @@ defmodule ChorusDraft.Jetstream do
 
   defp flush(stream) do
     tag = stream.tag
+
     receive do
       {__MODULE__, ^tag} -> :ok
     after
@@ -84,16 +90,27 @@ defmodule ChorusDraft.Jetstream do
     case Jason.decode(frame) do
       {:ok, %{"$type" => "message", "payload" => payload}} ->
         if relevant?(payload, did), do: :activity, else: :ignore
-      {:ok, %{"$type" => "error"}} -> :reconnect
-      _ -> :ignore
+
+      {:ok, %{"$type" => "error"}} ->
+        :reconnect
+
+      _ ->
+        :ignore
     end
   end
 
   def decode(_, _), do: :ignore
 
-  def relevant?(%{"$type" => @commit_type, "operation" => operation,
-                  "collection" => "app.bsky.feed.post", "did" => author,
-                  "record" => record}, did)
+  def relevant?(
+        %{
+          "$type" => @commit_type,
+          "operation" => operation,
+          "collection" => "app.bsky.feed.post",
+          "did" => author,
+          "record" => record
+        },
+        did
+      )
       when operation in ["create", "update"] and is_binary(author) and
              is_binary(did) and did != "" and author != did and is_map(record) do
     reply?(record["reply"], did) or mention?(record["facets"], did)
@@ -117,7 +134,9 @@ defmodule ChorusDraft.Jetstream do
           %{"$type" => "app.bsky.richtext.facet#mention", "did" => ^did} -> true
           _ -> false
         end)
-      _ -> false
+
+      _ ->
+        false
     end)
   end
 

@@ -9,22 +9,30 @@ defmodule ChorusDraft.JetstreamTest do
   defp event(record, changes \\ %{}) do
     %{
       "$type" => "message",
-      "payload" => Map.merge(%{
-        "$type" => "network.bsky.jetstream.subscribeEvents#commit",
-        "did" => "did:plc:alice",
-        "seq" => 123,
-        "operation" => "create",
-        "collection" => "app.bsky.feed.post",
-        "rkey" => "abc",
-        "record" => record
-      }, changes)
-    } |> Jason.encode!()
+      "payload" =>
+        Map.merge(
+          %{
+            "$type" => "network.bsky.jetstream.subscribeEvents#commit",
+            "did" => "did:plc:alice",
+            "seq" => 123,
+            "operation" => "create",
+            "collection" => "app.bsky.feed.post",
+            "rkey" => "abc",
+            "record" => record
+          },
+          changes
+        )
+    }
+    |> Jason.encode!()
   end
 
   defp mention do
-    %{"text" => "UNTRUSTED STREAM BODY", "facets" => [
-      %{"features" => [%{"$type" => "app.bsky.richtext.facet#mention", "did" => @did}]}
-    ]}
+    %{
+      "text" => "UNTRUSTED STREAM BODY",
+      "facets" => [
+        %{"features" => [%{"$type" => "app.bsky.richtext.facet#mention", "did" => @did}]}
+      ]
+    }
   end
 
   defp socket_state(stream) do
@@ -35,15 +43,29 @@ defmodule ChorusDraft.JetstreamTest do
     uri = URI.parse(Jetstream.endpoint!(%{}))
     assert uri.scheme == "wss"
     assert uri.path == "/xrpc/network.bsky.jetstream.subscribeEvents"
-    assert URI.decode_query(uri.query) == %{"collections" => "app.bsky.feed.post", "kinds" => "commit"}
+
+    assert URI.decode_query(uri.query) == %{
+             "collections" => "app.bsky.feed.post",
+             "kinds" => "commit"
+           }
+
     assert is_nil(uri.userinfo)
-    assert Jetstream.endpoint!(%{"BLUESKY_JETSTREAM_URL" => "wss://example.org:8443"}) =~ "example.org:8443/"
+
+    assert Jetstream.endpoint!(%{"BLUESKY_JETSTREAM_URL" => "wss://example.org:8443"}) =~
+             "example.org:8443/"
   end
 
   test "endpoint validation refuses plaintext, credentials and caller-supplied filters" do
-    for url <- ["ws://example.org", "https://example.org", "wss://u:p@example.org",
-                "wss://example.org?dids=did:plc:me", "wss://example.org#secret",
-                "wss://example.org/subscribe", "wss:///", "wss://example.org:0"] do
+    for url <- [
+          "ws://example.org",
+          "https://example.org",
+          "wss://u:p@example.org",
+          "wss://example.org?dids=did:plc:me",
+          "wss://example.org#secret",
+          "wss://example.org/subscribe",
+          "wss:///",
+          "wss://example.org:0"
+        ] do
       assert_raise Error, fn -> Jetstream.endpoint!(%{"BLUESKY_JETSTREAM_URL" => url}) end
     end
   end
@@ -63,28 +85,45 @@ defmodule ChorusDraft.JetstreamTest do
     assert Jetstream.decode(event(mention(), %{"operation" => "update"}), @did) == :activity
     reply = %{"reply" => %{"parent" => %{"uri" => "at://#{@did}/app.bsky.feed.post/abc"}}}
     assert Jetstream.decode(event(reply), @did) == :activity
-    wrong_parent = put_in(reply, ["reply", "parent", "uri"], "at://#{@did}other/app.bsky.feed.post/abc")
+
+    wrong_parent =
+      put_in(reply, ["reply", "parent", "uri"], "at://#{@did}other/app.bsky.feed.post/abc")
+
     assert Jetstream.decode(event(wrong_parent), @did) == :ignore
   end
 
   test "unrelated, self-authored, deleted and non-post events do not trigger work" do
-    for changes <- [%{"did" => @did}, %{"operation" => "delete"},
-                    %{"collection" => "app.bsky.feed.like"}, %{"$type" => "identity"}] do
+    for changes <- [
+          %{"did" => @did},
+          %{"operation" => "delete"},
+          %{"collection" => "app.bsky.feed.like"},
+          %{"$type" => "identity"}
+        ] do
       assert Jetstream.decode(event(mention(), changes), @did) == :ignore
     end
-    assert Jetstream.decode(event(%{"text" => "Hello @me.test #{ @did }"}), @did) == :ignore
+
+    assert Jetstream.decode(event(%{"text" => "Hello @me.test #{@did}"}), @did) == :ignore
     root_only = %{"reply" => %{"root" => %{"uri" => "at://#{@did}/app.bsky.feed.post/root"}}}
     assert Jetstream.decode(event(root_only), @did) == :ignore
   end
 
   test "malformed, oversized and legacy messages are harmless" do
-    for frame <- ["broken", "null", "[]", "42", "{}", String.duplicate("x", 1_048_577),
-                  Jason.encode!(%{"kind" => "commit", "commit" => mention()})] do
+    for frame <- [
+          "broken",
+          "null",
+          "[]",
+          "42",
+          "{}",
+          String.duplicate("x", 1_048_577),
+          Jason.encode!(%{"kind" => "commit", "commit" => mention()})
+        ] do
       assert Jetstream.decode(frame, @did) == :ignore
     end
-    for record <- [nil, [], 1, %{"facets" => [nil, %{"features" => 1}]} , %{"reply" => []}] do
+
+    for record <- [nil, [], 1, %{"facets" => [nil, %{"features" => 1}]}, %{"reply" => []}] do
       assert Jetstream.decode(event(record), @did) == :ignore
     end
+
     assert Jetstream.decode(~s({"$type":"error","error":"temporary"}), @did) == :reconnect
   end
 
@@ -104,18 +143,23 @@ defmodule ChorusDraft.JetstreamTest do
     assert Socket.reconnect_delay(100) in 30_001..30_250
     state = socket_state(Jetstream.subscription(@did))
     assert {:reply, {:pong, "probe"}, _} = Socket.handle_ping({:ping, "probe"}, state)
-    assert {:close, {1001, _}, _} = Socket.handle_info(:heartbeat, %{state | last_frame: state.last_frame - 90_001})
+
+    assert {:close, {1001, _}, _} =
+             Socket.handle_info(:heartbeat, %{state | last_frame: state.last_frame - 90_001})
+
     assert {:reply, :ping, armed} = Socket.handle_info(:heartbeat, state)
     Socket.terminate(:normal, armed)
   end
 
   test "Jetstream CLI combinations are rejected before logging in" do
     assert capture_io(:stderr, fn ->
-      assert CLI.run(["mastodon", "--listen", "--jetstream"]) == 1
-    end) =~ "only for Bluesky"
+             assert CLI.run(["mastodon", "--listen", "--jetstream"]) == 1
+           end) =~ "only for Bluesky"
+
     assert capture_io(:stderr, fn ->
-      assert CLI.run(["bluesky", "--post-only", "--jetstream"]) == 1
-    end) =~ "requires --listen or --daemon"
+             assert CLI.run(["bluesky", "--post-only", "--jetstream"]) == 1
+           end) =~ "requires --listen or --daemon"
+
     assert capture_io(fn -> assert CLI.run(["bluesky", "--help"]) == 0 end) =~ "--jetstream"
   end
 
@@ -124,9 +168,24 @@ defmodule ChorusDraft.JetstreamTest do
     Store.new(dir)
     on_exit(fn -> File.rm_rf!(dir) end)
     {:ok, published} = Agent.start_link(fn -> [] end)
-    post = %{"id" => "1", "text" => "Canonical API post", "author" => "alice.test",
-             "author_id" => "did:plc:alice", "visibility" => "public", "url" => "https://example.org/1"}
-    stop = %{post | "id" => "2", "text" => "Stop replying to me.", "author" => "bob.test", "author_id" => "did:plc:bob"}
+
+    post = %{
+      "id" => "1",
+      "text" => "Canonical API post",
+      "author" => "alice.test",
+      "author_id" => "did:plc:alice",
+      "visibility" => "public",
+      "url" => "https://example.org/1"
+    }
+
+    stop = %{
+      post
+      | "id" => "2",
+        "text" => "Stop replying to me.",
+        "author" => "bob.test",
+        "author_id" => "did:plc:bob"
+    }
+
     client = %TestClient{identity: @did, posts: [post, stop], published: published}
     runner = Runner.new(client, dir, "bluesky", %{}, ai: ChorusDraft.TestAI, interactive: false)
     stream = Jetstream.subscription(@did)
@@ -144,18 +203,25 @@ defmodule ChorusDraft.JetstreamTest do
   end
 
   test "real WebSocket handshake, frame delivery, and reconnect work against a local fixture" do
-    {:ok, listener} = :gen_tcp.listen(0, [:binary, active: false, reuseaddr: true, ip: {127, 0, 0, 1}])
+    {:ok, listener} =
+      :gen_tcp.listen(0, [:binary, active: false, reuseaddr: true, ip: {127, 0, 0, 1}])
+
     {:ok, {_, port}} = :inet.sockname(listener)
     owner = self()
     {:ok, server} = Task.start(fn -> serve(listener, owner) end)
     stream = Jetstream.subscription(@did)
-    {:ok, socket} = WebSockex.start("ws://127.0.0.1:#{port}", Socket, socket_state(stream),
-      extra_headers: [{"Sec-WebSocket-Protocol", "xrpc.v1.json"}])
+
+    {:ok, socket} =
+      WebSockex.start("ws://127.0.0.1:#{port}", Socket, socket_state(stream),
+        extra_headers: [{"Sec-WebSocket-Protocol", "xrpc.v1.json"}]
+      )
+
     on_exit(fn ->
       Process.exit(socket, :kill)
       Process.exit(server, :kill)
       :gen_tcp.close(listener)
     end)
+
     assert_receive {:connected, request}, 2_000
     assert request =~ "Sec-WebSocket-Protocol: xrpc.v1.json"
     refute request =~ "Authorization"
@@ -173,7 +239,13 @@ defmodule ChorusDraft.JetstreamTest do
     request = read_headers(socket, "")
     [_, key] = Regex.run(~r/Sec-WebSocket-Key: ([^\r]+)\r/i, request)
     accept = :crypto.hash(:sha, key <> "258EAFA5-E914-47DA-95CA-C5AB0DC85B11") |> Base.encode64()
-    :ok = :gen_tcp.send(socket, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: #{accept}\r\nSec-WebSocket-Protocol: xrpc.v1.json\r\n\r\n")
+
+    :ok =
+      :gen_tcp.send(
+        socket,
+        "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: #{accept}\r\nSec-WebSocket-Protocol: xrpc.v1.json\r\n\r\n"
+      )
+
     send(owner, {:connected, request})
     serve_frames(socket)
     serve(listener, owner)
@@ -195,7 +267,9 @@ defmodule ChorusDraft.JetstreamTest do
         header = if size < 126, do: <<0x81, size>>, else: <<0x81, 126, size::16>>
         :ok = :gen_tcp.send(socket, header <> frame)
         serve_frames(socket)
-      :disconnect -> :gen_tcp.close(socket)
+
+      :disconnect ->
+        :gen_tcp.close(socket)
     end
   end
 end

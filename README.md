@@ -20,9 +20,11 @@ promise, or replacement for the Ruby version.
 - Local OpenAI-compatible/Ollama endpoints and Gemini are supported.
 - Original drafts, replies, public commentary, manual posts, queue review,
   searches, polling, and interactive deletion have initial ports.
+- Optional Jetstream support wakes BlueBot's listener or daemon for incoming
+  mentions and direct replies, with periodic API catch-up checks.
 - The primary 0.51.1 safeguards have been carried into the Elixir code.
-- The offline suite currently has 22 passing tests. It uses fake clients and does
-  not log in, call an AI provider, or publish anything.
+- The offline suite has 33 tests, including a local WebSocket reconnect fixture.
+  It does not log in, call an AI provider, or publish anything.
 
 Live platform compatibility, state migration, long-running daemon behavior,
 packaging, upgrade handling, and a complete security audit remain unfinished.
@@ -45,7 +47,7 @@ to that Ruby code are developed and released elsewhere.
 
 - Linux with Erlang/OTP 25 or later to run the current escript
 - Elixir 1.14 or later and Mix to build and test
-- Jason 1.4.5, fetched through Mix
+- Jason, WebSockex, and Telemetry, fetched through Mix and pinned in `mix.lock`
 - Test credentials for Bluesky or Mastodon for hands-on API testing
 - A local AI endpoint or a Gemini API key and model
 
@@ -87,6 +89,9 @@ the same time.
 # Fetch eligible public mentions and stage reply drafts.
 ./chorusdraft mastodon --replies-only
 
+# Use Jetstream to wake BlueBot when mentions or direct replies arrive.
+./chorusdraft bluesky --listen --jetstream
+
 # Review pending drafts in an interactive terminal.
 ./chorusdraft bluesky --process-queue
 
@@ -99,6 +104,11 @@ the same time.
 
 AI-generated text is designed to remain in the review queue. The `--publish`
 option applies only to text supplied manually with `--text`.
+
+Jetstream uses the current JSON subscribeEvents protocol and also works with
+`--daemon`. It accelerates notification checks while preserving draft review;
+it does not consume historical replay. See the
+[Jetstream guide](elixir/README.md#jetstream-for-bluebot) for configuration and limits.
 
 ## Safeguard checkpoint
 
@@ -131,5 +141,5 @@ There is no packaging script yet. Generated build output, dependencies, live
 ## License
 
 ChorusDraft is distributed under the GNU General Public License v3.0. See
-[`LICENSE`](LICENSE). Jason is distributed under the Apache License 2.0; its
-notice is recorded in the Elixir third-party notices file.
+[`LICENSE`](LICENSE). Dependency licenses and source requirements are recorded
+in [the Elixir third-party notices](elixir/THIRD_PARTY_NOTICES.md).
