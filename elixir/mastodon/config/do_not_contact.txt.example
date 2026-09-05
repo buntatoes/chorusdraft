@@ -1,0 +1,2 @@
+# Accounts Mastobot must never reply to, quote, or target, one handle per line.
+# A leading @ is optional. Entries are case-insensitive.
