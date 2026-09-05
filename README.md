@@ -21,7 +21,7 @@ Windows. The comic voice introduced in 0.51 is retained.
 ## Release and development branches
 
 - `main-ruby` is the default branch and contains the supported Ruby release line.
-- `0.51.2-ruby-testing` is this branch. It is reserved for unreleased Ruby
+- `ruby-testing` is this branch. It is reserved for unreleased Ruby
   maintenance work based on 0.51.1.
 - `elixir-experimental` contains a separate unfinished Elixir rewrite and is not
   part of the supported Ruby releases.
