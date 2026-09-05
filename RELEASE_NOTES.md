@@ -8,7 +8,7 @@ that every AI-generated draft receive interactive review.
 
 - `main-ruby` is the default branch for the supported Ruby release line.
 - The immutable `v0.51.1` tag identifies the source used for this release.
-- `0.51.2-ruby-testing` contains future unreleased Ruby work.
+- `ruby-testing` contains future unreleased Ruby work.
 - `elixir-experimental` is an independent unfinished experiment and is not
   included in the 0.51.1 source or downloads.
 
