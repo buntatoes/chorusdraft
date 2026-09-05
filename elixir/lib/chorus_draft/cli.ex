@@ -73,10 +73,21 @@ defmodule ChorusDraft.CLI do
   def active?(spec, _now) when spec in [nil, ""], do: true
 
   def active?(spec, now) do
-    case Regex.named_captures(~r/^(?<sh>\d{1,2})(?::(?<sm>\d{2}))?-(?<eh>\d{1,2})(?::(?<em>\d{2}))?$/, spec) do
+    case Regex.named_captures(
+           ~r/^(?<sh>\d{1,2})(?::(?<sm>\d{2}))?-(?<eh>\d{1,2})(?::(?<em>\d{2}))?$/,
+           spec
+         ) do
       %{"sh" => sh, "sm" => sm, "eh" => eh, "em" => em} ->
-        active_range(sh, if(sm == "", do: "0", else: sm), eh, if(em == "", do: "0", else: em), now)
-      _ -> raise Error, "ACTIVE_HOURS must use HH:MM-HH:MM."
+        active_range(
+          sh,
+          if(sm == "", do: "0", else: sm),
+          eh,
+          if(em == "", do: "0", else: em),
+          now
+        )
+
+      _ ->
+        raise Error, "ACTIVE_HOURS must use HH:MM-HH:MM."
     end
   end
 
@@ -115,7 +126,11 @@ defmodule ChorusDraft.CLI do
         {:ok, %{help: true, poll_interval: 60, interval: 120, jitter: 0, limit: 5}}
 
       {options, [], []} ->
-        validate_options(options |> Enum.reject(fn {_key, value} -> value == false end) |> Map.new())
+        validate_options(
+          options
+          |> Enum.reject(fn {_key, value} -> value == false end)
+          |> Map.new()
+        )
 
       {_options, positional, []} ->
         {:error, "Unexpected positional arguments: #{Enum.join(positional, " ")}"}
@@ -127,14 +142,24 @@ defmodule ChorusDraft.CLI do
 
   defp normalize_compatibility_args([]), do: []
   defp normalize_compatibility_args(["--random-post"]), do: ["--random-post="]
+
   defp normalize_compatibility_args(["--random-post", "--" <> _ = next | rest]),
     do: ["--random-post=" | normalize_compatibility_args([next | rest])]
+
   defp normalize_compatibility_args([value | rest]) do
-    aliases = %{"--reply-uri" => "--reply-to", "--quote-only" => "--targets-only", "--staging" => "--queue", "--poll" => "--poll-interval"}
-    value = case String.split(value, "=", parts: 2) do
-      [flag, argument] -> Map.get(aliases, flag, flag) <> "=" <> argument
-      [flag] -> Map.get(aliases, flag, flag)
-    end
+    aliases = %{
+      "--reply-uri" => "--reply-to",
+      "--quote-only" => "--targets-only",
+      "--staging" => "--queue",
+      "--poll" => "--poll-interval"
+    }
+
+    value =
+      case String.split(value, "=", parts: 2) do
+        [flag, argument] -> Map.get(aliases, flag, flag) <> "=" <> argument
+        [flag] -> Map.get(aliases, flag, flag)
+      end
+
     [value | normalize_compatibility_args(rest)]
   end
 
@@ -253,10 +278,12 @@ defmodule ChorusDraft.CLI do
       |> String.slice(0, 24)
 
     store = Store.new(Path.join([base, "data", account_hash]))
+
     if options[:import_state] do
       count = Store.import_state(store, options.import_state, platform, account_key)
       IO.puts("Imported #{count} drafts and interaction history; source was read only.")
     end
+
     load_do_not_contact(store, Path.join([base, "config", "do_not_contact.txt"]))
     runner = Runner.new(client, store, platform, env, io_opts)
 
@@ -270,17 +297,24 @@ defmodule ChorusDraft.CLI do
 
   defp dispatch(runner, options, hours, base) do
     cond do
-      options[:import_state] -> :ok
+      options[:import_state] ->
+        :ok
+
       options[:status] ->
         drafts = Store.drafts(runner.store)
+
         Enum.each(["pending", "publishing", "uncertain", "published", "rejected"], fn status ->
           IO.puts("#{status}: #{Enum.count(drafts, &(&1["status"] == status))}")
         end)
-        drafts |> Enum.filter(&(&1["status"] in ["pending", "publishing", "uncertain"]))
+
+        drafts
+        |> Enum.filter(&(&1["status"] in ["pending", "publishing", "uncertain"]))
         |> Enum.each(&IO.puts("#{&1["id"]} | #{&1["status"]}"))
+
       options[:reject] ->
         Store.transition(runner.store, options.reject, "pending", "rejected")
         IO.puts("Rejected draft.")
+
       options[:text] ->
         manual(runner, options)
 
@@ -341,6 +375,7 @@ defmodule ChorusDraft.CLI do
   defp cycle(runner, options, hours, base) do
     if within_hours?(options, hours) do
       jitter(options)
+
       if within_hours?(options, hours) do
         cond do
           options[:replies_only] || options[:listen] -> Runner.mentions(runner)
@@ -361,8 +396,10 @@ defmodule ChorusDraft.CLI do
   def daemon_cycle(runner, options, hours, base, last_original, now) do
     if within_hours?(options, hours) do
       guarded(fn -> Runner.mentions(runner) end)
+
       if is_nil(last_original) or now - last_original >= options.interval * 60 do
         jitter(options)
+
         if within_hours?(options, hours) do
           guarded(fn -> Runner.original(runner) end)
           guarded(fn -> Runner.targets(runner, targets(options, base)) end)
@@ -387,18 +424,22 @@ defmodule ChorusDraft.CLI do
 
   defp loop(runner, options, hours, base, last_original, stream) do
     started = System.monotonic_time(:millisecond)
-    last_original = if options[:daemon] do
-      daemon_cycle(runner, options, hours, base, last_original, System.monotonic_time(:second))
-    else
-      guarded(fn -> cycle(runner, options, hours, base) end)
-      last_original
-    end
+
+    last_original =
+      if options[:daemon] do
+        daemon_cycle(runner, options, hours, base, last_original, System.monotonic_time(:second))
+      else
+        guarded(fn -> cycle(runner, options, hours, base) end)
+        last_original
+      end
+
     if stream do
       cooldown = max(5_000 - (System.monotonic_time(:millisecond) - started), 0)
       Jetstream.wait(stream, options.poll_interval * 1000, cooldown)
     else
       Process.sleep(options.poll_interval * 1000)
     end
+
     loop(runner, options, hours, base, last_original, stream)
   end
 

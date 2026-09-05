@@ -32,6 +32,31 @@ defmodule ChorusDraft.MigrationTest do
     assert_raise Error, fn -> Store.transition(destination, imported["id"], "uncertain", "pending") end
   end
 
+  @tag :ruby_reference
+  test "imports state produced by the pinned read-only Ruby implementation", %{root: root, destination: destination} do
+    if reference = System.get_env("RUBY_REFERENCE_ROOT") do
+      fixture = Path.join(root, "ruby-fixture")
+      script = """
+      require File.join(ARGV.fetch(0), 'lib/chorus_draft/core')
+      store = ChorusDraft::Store.new(ARGV.fetch(1))
+      draft = {'platform'=>'mastodon', 'account'=>'https://example.org:me',
+        'text'=>'Ruby reference draft', 'action'=>'ai_generated',
+        'visibility'=>'public', 'language'=>'en', 'author'=>'alice'}
+      store.stage(draft, source: 'ruby-seen', unsolicited: true)
+      store.block('no-contact')
+      """
+      assert {_, 0} = System.cmd("ruby", ["-e", script, reference, fixture], stderr_to_stdout: true)
+      path = Path.join(fixture, "state.json")
+      original = File.read!(path)
+      assert Store.import_state(destination, path, "mastodon", "https://example.org:me") == 1
+      assert File.read!(path) == original
+      assert hd(Store.drafts(destination))["text"] == "Ruby reference draft"
+      assert Store.seen?(destination, "ruby-seen")
+      assert Store.blocked?(destination, "no-contact")
+      refute Store.available?(destination, author: "alice", unsolicited: true)
+    end
+  end
+
   test "cross-account and malformed imports leave destination empty", %{source: source, destination: destination, runner: runner} do
     Runner.manual(runner, "hello")
     path = Path.join(source, "state.json")

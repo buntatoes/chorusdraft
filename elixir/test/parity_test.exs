@@ -11,8 +11,15 @@ defmodule ChorusDraft.ParityTest do
   end
 
   defp post(id, author) do
-    %{"id" => id, "text" => "A public post", "author" => author, "author_id" => author,
-      "visibility" => "public", "url" => "https://example.org/#{id}", "cw" => "Programming"}
+    %{
+      "id" => id,
+      "text" => "A public post",
+      "author" => author,
+      "author_id" => author,
+      "visibility" => "public",
+      "url" => "https://example.org/#{id}",
+      "cw" => "Programming"
+    }
   end
 
   defp runner(dir, posts \\ []) do
@@ -34,7 +41,13 @@ defmodule ChorusDraft.ParityTest do
   end
 
   test "Mastodon numeric entities cannot hide public opt-outs" do
-    post = ChorusDraft.Clients.Mastodon.normalize(%{"id" => "1", "visibility" => "public", "content" => "Stop re&#112;lying to me&#x2e;"})
+    post =
+      ChorusDraft.Clients.Mastodon.normalize(%{
+        "id" => "1",
+        "visibility" => "public",
+        "content" => "Stop re&#112;lying to me&#x2e;"
+      })
+
     assert ChorusDraft.Safety.opt_out?(post["text"])
   end
 
@@ -49,11 +62,22 @@ defmodule ChorusDraft.ParityTest do
   end
 
   test "Ruby aliases and optional random-post query parse before login" do
-    for arguments <- [["--random-post"], ["--reply-uri=at://example", "--reply-cid=ignored"], ["--poll=30", "--quote-only"], ["--random-post", "--limit", "2"]] do
-      assert capture_io(fn -> assert CLI.run(["bluesky", "--help" | arguments]) == 0 end) =~ "Usage:"
+    for arguments <- [
+          ["--random-post"],
+          ["--reply-uri=at://example", "--reply-cid=ignored"],
+          ["--poll=30", "--quote-only"],
+          ["--random-post", "--limit", "2"]
+        ] do
+      assert capture_io(fn -> assert CLI.run(["bluesky", "--help" | arguments]) == 0 end) =~
+               "Usage:"
     end
-    assert capture_io(:stderr, fn -> assert CLI.run(["bluesky", "--reply-cid", "--post-only"]) == 1 end) =~ "Invalid option"
-    assert capture_io(:stderr, fn -> assert CLI.run(["bluesky", "--no-post-only"]) == 1 end) =~ "Choose one"
+
+    assert capture_io(:stderr, fn ->
+             assert CLI.run(["bluesky", "--reply-cid", "--post-only"]) == 1
+           end) =~ "Invalid option"
+
+    assert capture_io(:stderr, fn -> assert CLI.run(["bluesky", "--no-post-only"]) == 1 end) =~
+             "Choose one"
   end
 
   test "daemon schedules originals once per interval even after target failure", %{dir: dir} do

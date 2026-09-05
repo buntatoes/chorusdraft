@@ -41,7 +41,10 @@ defmodule ChorusDraft.StoreTest do
     refute Store.stage(dir, %{"author" => "bob"}, source: "1", unsolicited: true)
 
     for n <- 1..4 do
-      assert Store.stage(dir, %{"author" => "author#{n}"}, source: "source#{n}", unsolicited: true)
+      assert Store.stage(dir, %{"author" => "author#{n}"},
+               source: "source#{n}",
+               unsolicited: true
+             )
     end
 
     refute Store.available?(dir, author: "new", unsolicited: true)

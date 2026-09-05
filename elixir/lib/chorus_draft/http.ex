@@ -27,27 +27,48 @@ defmodule ChorusDraft.HTTP do
 
     query = Keyword.get(opts, :query, %{})
     uri = if map_size(Map.new(query)) > 0, do: %{uri | query: URI.encode_query(query)}, else: uri
-    headers = [{"accept", "application/json"} | Enum.map(Keyword.get(opts, :headers, %{}), fn {k, v} -> {to_string(k), to_string(v)} end)]
+
+    headers = [
+      {"accept", "application/json"}
+      | Enum.map(Keyword.get(opts, :headers, %{}), fn {k, v} -> {to_string(k), to_string(v)} end)
+    ]
+
     body = Keyword.get(opts, :body)
     headers = if body, do: [{"content-type", "application/json"} | headers], else: headers
     body = if body, do: Jason.encode!(body)
-    path = (if uri.path in [nil, ""], do: "/", else: uri.path) <> if(uri.query, do: "?" <> uri.query, else: "")
+
+    path =
+      if(uri.path in [nil, ""], do: "/", else: uri.path) <>
+        if(uri.query, do: "?" <> uri.query, else: "")
+
     scheme = if uri.scheme == "https", do: :https, else: :http
     transport = [timeout: 10_000, send_timeout: 30_000] ++ ssl_options(uri)
-    {:ok, conn} = Mint.HTTP.connect(scheme, uri.host, uri.port,
-      mode: :passive, protocols: [:http1], log: false,
-      max_header_list_size: 16_384, transport_opts: transport)
+
+    {:ok, conn} =
+      Mint.HTTP.connect(scheme, uri.host, uri.port,
+        mode: :passive,
+        protocols: [:http1],
+        log: false,
+        max_header_list_size: 16_384,
+        transport_opts: transport
+      )
 
     try do
-      {:ok, conn, ref} = Mint.HTTP.request(conn, method |> to_string() |> String.upcase(), path, headers, body)
+      {:ok, conn, ref} =
+        Mint.HTTP.request(conn, method |> to_string() |> String.upcase(), path, headers, body)
+
       response = receive_body(conn, ref, System.monotonic_time(:millisecond) + 45_000, [], 0)
       if response == "", do: %{}, else: Jason.decode!(response)
     after
       Mint.HTTP.close(conn)
     end
   rescue
-    error in [Error, HTTPError] -> raise error
-    _ -> raise Error, "Network or response decoding failure; details omitted to protect credentials and content."
+    error in [Error, HTTPError] ->
+      raise error
+
+    _ ->
+      raise Error,
+            "Network or response decoding failure; details omitted to protect credentials and content."
   end
 
   # One connection and one request. Never follow redirects or retry writes.
@@ -55,28 +76,49 @@ defmodule ChorusDraft.HTTP do
     timeout = deadline - System.monotonic_time(:millisecond)
     if timeout <= 0, do: raise(Error, "Network request timed out.")
     {:ok, conn, responses} = Mint.HTTP.recv(conn, 0, timeout)
-    {chunks, size, done} = Enum.reduce(responses, {chunks, size, false}, fn
-      {:status, ^ref, status}, acc when status in 100..299 -> acc
-      {:status, ^ref, status}, _ -> raise HTTPError, status
-      {:headers, ^ref, headers}, acc ->
-        Enum.each(headers, fn
-          {"content-length", value} ->
-            case Integer.parse(value) do
-              {length, ""} when length > @max_bytes -> raise Error, "Remote response exceeded size limit."
-              _ -> :ok
-            end
-          _ -> :ok
-        end)
-        acc
-      {:data, ^ref, data}, {chunks, size, done} ->
-        size = size + byte_size(data)
-        if size > @max_bytes, do: raise(Error, "Remote response exceeded size limit.")
-        {[data | chunks], size, done}
-      {:done, ^ref}, {chunks, size, _} -> {chunks, size, true}
-      {:error, ^ref, _}, _ -> raise Error, "Network response failed."
-      _, acc -> acc
-    end)
-    if done, do: chunks |> Enum.reverse() |> IO.iodata_to_binary(),
+
+    {chunks, size, done} =
+      Enum.reduce(responses, {chunks, size, false}, fn
+        {:status, ^ref, status}, acc when status in 100..299 ->
+          acc
+
+        {:status, ^ref, status}, _ ->
+          raise HTTPError, status
+
+        {:headers, ^ref, headers}, acc ->
+          Enum.each(headers, fn
+            {"content-length", value} ->
+              case Integer.parse(value) do
+                {length, ""} when length > @max_bytes ->
+                  raise Error, "Remote response exceeded size limit."
+
+                _ ->
+                  :ok
+              end
+
+            _ ->
+              :ok
+          end)
+
+          acc
+
+        {:data, ^ref, data}, {chunks, size, done} ->
+          size = size + byte_size(data)
+          if size > @max_bytes, do: raise(Error, "Remote response exceeded size limit.")
+          {[data | chunks], size, done}
+
+        {:done, ^ref}, {chunks, size, _} ->
+          {chunks, size, true}
+
+        {:error, ^ref, _}, _ ->
+          raise Error, "Network response failed."
+
+        _, acc ->
+          acc
+      end)
+
+    if done,
+      do: chunks |> Enum.reverse() |> IO.iodata_to_binary(),
       else: receive_body(conn, ref, deadline, chunks, size)
   end
 

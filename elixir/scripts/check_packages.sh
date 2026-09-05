@@ -8,8 +8,9 @@ for archive in dist/*.tar.gz; do
   name=$(basename "$archive" .tar.gz)
   package=$work/$name
   (cd "$package" && sha256sum --check --quiet MANIFEST.sha256)
-  test -f "$package/source/deps/mint/LICENSE"
-  test -f "$package/source/deps/websockex/LICENSE"
+  for dep in mint websockex jason telemetry hpax; do
+    rg --files "$package/source/deps/$dep" | rg -i '/(license|copying)(\.[^/]*)?$' >/dev/null
+  done
   if tar -tzf "$archive" | rg '(^|/)(\.env|data|logs|_build|\.git)(/|$)'; then
     echo 'Runtime data leaked into package' >&2
     exit 1

@@ -223,6 +223,7 @@ defmodule ChorusDraft.Runner do
     else
       unless item["visibility"] in ["public", "unlisted", "private", "direct"],
         do: raise(Error, "Invalid visibility.")
+
       unless empty?(item["cw"]),
         do: Safety.validate_text!(item["cw"], client_call(runner, :limit))
     end
