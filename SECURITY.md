@@ -2,7 +2,7 @@
 
 ## Supported version
 
-Security fixes are provided for the latest 0.50 source and release artifacts.
+Security fixes are provided for the latest 0.51 source and release artifacts.
 Use a currently supported, security-patched Ruby release.
 
 ## Reporting a vulnerability
@@ -20,8 +20,12 @@ steps, and the security impact. Revoke any credential that may have been exposed
 - Every AI-generated post enters an interactive review queue. AI output has no
   unattended publishing path.
 - The built-in critical-targeting mode has been removed. Target and discovery
-  drafts must be respectful, are limited to five per rolling 24 hours, and may
+  drafts are limited to five per rolling 24 hours and may
   involve a given author at most once every 30 days.
+- AI instructions allow satire of software, products, public claims, and situations
+  while prohibiting personal humiliation, threats, private-information disclosure,
+  and harassment. These are model instructions, not a guarantee about generated
+  text. Comic framing does not bypass screening or publication review.
 - Public requests such as “stop replying to me” permanently add that account to
   local do-not-contact state. Operators can preconfigure additional accounts in
   `config/do_not_contact.txt`. Queued and manual interactions with those accounts

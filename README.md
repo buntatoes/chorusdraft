@@ -1,12 +1,32 @@
 # ChorusDraft
 
-ChorusDraft is an AI-assisted command-line publishing tool for Bluesky and
-Mastodon. It can draft posts, prepare replies, monitor mentions, search public
-posts, and build commentary from configured accounts. AI-generated content is
+ChorusDraft is an AI-assisted comedy drafting and publishing tool for Bluesky and
+Mastodon. It drafts dry observations about software, playful replies, and satirical
+commentary on public posts. It can also monitor mentions, search public posts,
+and prepare commentary from configured accounts. AI-generated content is
 always placed in a review queue so the account owner can inspect the exact text
 before it is published.
 
-Version 0.50 uses one shared Ruby codebase on Linux, macOS, and Windows.
+Version 0.51 uses one shared Ruby codebase on Linux, macOS, and Windows.
+
+## Comic voice
+
+New AI drafts aim for dry wit, light sarcasm, absurd comparisons, and
+self-deprecation. The joke should grow from the topic or conversation: a stubborn
+build, an overcomplicated app, or a corporate claim with more adjectives than evidence.
+Replies joke alongside people and avoid turning the author into the punchline.
+Serious help requests, grief, and distress call for sincere responses.
+
+Illustrative style examples, not captured model outputs:
+
+- “Our deployment has achieved sentience. Its first act was requesting a rollback.”
+- “This app has three settings: on, off, and consulting a forum from 2011.”
+
+The same voice is requested from local AI and Gemini for original drafts, replies,
+target commentary, and discovery. Results depend on the selected model and context;
+every AI draft still needs your review. Threats, personal attacks, invented
+allegations, and harassment are outside the comic brief. Manually supplied text
+and previously queued drafts keep their original wording.
 
 ## Features
 
@@ -48,14 +68,14 @@ Download the archive for the bot and operating system from the GitHub release:
 
 | Product | Linux | macOS | Windows |
 | --- | --- | --- | --- |
-| ChorusDraft for Bluesky | `chorusdraft-bluesky-v0.50-linux.tar.gz` | `chorusdraft-bluesky-v0.50-macos.tar.gz` | `chorusdraft-bluesky-v0.50-windows.zip` |
-| ChorusDraft for Mastodon | `chorusdraft-mastodon-v0.50-linux.tar.gz` | `chorusdraft-mastodon-v0.50-macos.tar.gz` | `chorusdraft-mastodon-v0.50-windows.zip` |
+| ChorusDraft for Bluesky | `chorusdraft-bluesky-v0.51-linux.tar.gz` | `chorusdraft-bluesky-v0.51-macos.tar.gz` | `chorusdraft-bluesky-v0.51-windows.zip` |
+| ChorusDraft for Mastodon | `chorusdraft-mastodon-v0.51-linux.tar.gz` | `chorusdraft-mastodon-v0.51-macos.tar.gz` | `chorusdraft-mastodon-v0.51-windows.zip` |
 
 On Linux or macOS:
 
 ```sh
-tar -xzf chorusdraft-bluesky-v0.50-linux.tar.gz
-cd chorusdraft-bluesky-v0.50-linux
+tar -xzf chorusdraft-bluesky-v0.51-linux.tar.gz
+cd chorusdraft-bluesky-v0.51-linux
 ruby setup.rb
 ```
 
@@ -222,7 +242,7 @@ ruby chorusdraft.rb --targets-only --target account.example
 ```
 
 Search and random-post commands only display public content. Discovery and
-target modes create respectful drafts for review. Unsolicited drafts are
+target modes create witty commentary on topics and situations for review. Unsolicited drafts are
 limited to five per rolling 24 hours and one per author every 30 days. The bot
 refuses to draft or publish interactions with accounts in do-not-contact state.
 
@@ -273,12 +293,12 @@ removes duplicate-prevention and interaction history.
 - Bluesky feed posts are public. Private visibility and content warnings are
   rejected because Bluesky feed posts do not support them.
 - ChorusDraft discards private, direct, and unknown-visibility Mastodon message bodies before
-  AI processing, logging, or storage. Version 0.50 does not reply to restricted
+  AI processing, logging, or storage. ChorusDraft does not reply to restricted
   Mastodon messages.
 - Source visibility is checked again immediately before publishing a reply or quote.
 - Suspected prompt-injection posts are skipped.
 - Dedicated critical targeting is not supported. Target and discovery prompts
-  must address topics without insulting, judging, or provoking their authors.
+  request satire about topics and situations without insulting or baiting their authors.
 - Clear public opt-out requests are honored permanently in local state. A
   configurable do-not-contact list also blocks queued and manual interactions.
 - Unsolicited interaction is limited to five drafts per day and one draft per
@@ -294,15 +314,21 @@ Human review remains responsible for factual accuracy, tone, and suitability.
 See [SECURITY.md](SECURITY.md) for supported versions, vulnerability reporting,
 and enforced safety boundaries.
 
-## Migrating to 0.50
+## Upgrading to 0.51
 
-Install 0.50 in a new directory. Copy only the credentials and target handles you
-intend to keep. Earlier queue and interaction files are not imported automatically.
-Stop old listeners, scheduled tasks, launch agents, or services before starting
-the new foreground clients.
+From ChorusDraft 0.50, stop the existing listener or daemon, extract 0.51 into a
+new directory, and securely copy your `.env`, configured target and do-not-contact
+files, and the entire `data` directory into it. State and configuration formats are
+unchanged. Keeping `data` preserves queued drafts, opt-outs, and duplicate and
+interaction history. Start only one installation for each account.
 
-The public product name and release filenames are now ChorusDraft. The
-platform names remain Bluesky and Mastodon in configuration variables and API terms.
+The new voice applies only to drafts generated after the upgrade. Review existing
+pending drafts normally; the upgrade does not regenerate or republish them.
+
+For the older Bluesky Bot and Mastodon Bot projects, install into a new directory
+and copy only the credentials and target handles you intend to keep. Their queue
+and interaction files are not imported automatically. Stop their listeners,
+scheduled tasks, launch agents, or services before starting ChorusDraft.
 
 ## Development
 
@@ -322,7 +348,7 @@ Tests use local fakes and do not log in, call an AI provider, or publish posts.
 
 ChorusDraft is distributed under the GNU General Public License v3.0.
 See [LICENSE](LICENSE). [NOTICE](NOTICE) records the original projects,
-modification date, scope of the version 0.50 rewrite, and third-party names.
+modification date, scope of the version 0.50 rewrite and 0.51 update, and third-party names.
 
 Version 0.50 is based on the feature sets of Bluesky Bot 1.0.3 and Mastodon Bot
 1.0.2 by Buntatoes. It begins a new shared Ruby release line under the

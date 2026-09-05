@@ -47,14 +47,14 @@ module ChorusDraft
           next
         end
         next unless eligible(post)
-        replies += 1 if stage_generated('Write a brief, respectful reply to the supplied public post.', post: post)
+        replies += 1 if stage_generated('Write a brief, witty reply grounded in the supplied public post and thread. Share a playful observation about the situation without teasing the author. If the context is serious or sensitive, give a sincere reply instead of a joke.', post: post)
         break if replies >= 5
       end
     end
 
     def original
       previous = @client.recent(limit: 12).select { |p| Safety.eligible?(p) }.map { |p| Safety.clean(p['text']) }
-      stage_generated('Write an original, brief observation about programming or open-source software. Avoid unsupported factual claims and do not repeat the supplied previous posts.',
+      stage_generated('Write an original, brief comic observation about programming or open-source software. Use one concrete setup and an unexpected turn, such as dry sarcasm or an absurd comparison. Keep imagined situations clearly fanciful, avoid unsupported factual claims, and vary both the topic and joke structure from the supplied previous posts.',
                       context: { previous_posts: previous })
     end
 
@@ -62,7 +62,7 @@ module ChorusDraft
       handles.each do |handle|
         @client.feed(handle).each do |post|
           next unless eligible(post)
-          return if stage_generated('Write a short, respectful comment about this public post. Address the topic without judging or provoking its author.', post: post, quote: true, unsolicited: true)
+          return if stage_generated('Write short, witty commentary on this public post. Find the absurdity in the product, claim, or situation without mocking or provoking its author or inventing allegations. Be sincere if the subject is sensitive; do not force a punchline.', post: post, quote: true, unsolicited: true)
         end
       end
     end
@@ -70,7 +70,7 @@ module ChorusDraft
     def discovery(query)
       @client.search(query).each do |post|
         next unless eligible(post)
-        return if stage_generated('Write a short, respectful comment about this public post. Address the topic without judging or provoking its author.', post: post, quote: true, unsolicited: true)
+        return if stage_generated('Write short, witty commentary on this public post. Find the absurdity in the product, claim, or situation without mocking or provoking its author or inventing allegations. Be sincere if the subject is sensitive; do not force a punchline.', post: post, quote: true, unsolicited: true)
       end
     end
 

@@ -250,6 +250,112 @@ class SafetyTest < Minitest::Test
   end
 end
 
+class ComedyTest < Minitest::Test
+  def setup = @dir = Dir.mktmpdir
+  def teardown = FileUtils.remove_entry(@dir)
+
+  def ai_with_response(provider, text)
+    env, response = case provider
+                    when :gemini
+                      [{ 'AI_PROVIDER' => 'gemini', 'GEMINI_API_KEY' => 'test-secret', 'GEMINI_MODEL' => 'test-model' },
+                       { 'candidates' => [{ 'content' => { 'parts' => [{ 'text' => text }] } }] }]
+                    when :ollama
+                      [{ 'AI_PROVIDER' => 'ollama', 'LOCAL_LLM_URL' => 'http://localhost:11434/api/generate' },
+                       { 'response' => text }]
+                    else
+                      [{ 'AI_PROVIDER' => 'local' }, { 'choices' => [{ 'message' => { 'content' => text } }] }]
+                    end
+    http = FakeHTTP.new(response)
+    [ChorusDraft::AI.new(env, http: http), http]
+  end
+
+  def test_harmless_comedy_passes_screening_without_rewriting
+    [
+      'My code has one dependency: optimism. It is no longer maintained.',
+      'The cloud is having a little lie-down. Apparently uptime was a stretch goal.',
+      'This app needs a damn search bar, not a cinematic universe.',
+      'The roadmap has more plot twists than the product has features.',
+      'I wrote a script to save five minutes. It has been three days.'
+    ].each do |text|
+      ai, = ai_with_response(:local, text)
+      assert_equal text, ai.generate('Write a comic observation.', {}, limit: 300)
+    end
+  end
+
+  def test_all_comedy_workflows_use_provider_instructions_and_stay_in_review
+    %w[bluesky mastodon].product(%i[local ollama gemini], %i[original mentions targets discovery]).each do |platform, provider, mode|
+      label = "#{platform}/#{provider}/#{mode}"
+      joke = 'The build is green. I am choosing to interpret this as good news.'
+      ai, http = ai_with_response(provider, joke)
+      store = ChorusDraft::Store.new(File.join(@dir, label))
+      client = FakeClient.new
+      client.posts = [{ 'id' => 'source', 'author' => 'alice.example', 'author_id' => 'alice',
+                        'visibility' => 'public', 'text' => 'My build finally passed.', 'url' => 'https://example.org/post/1' }]
+      output = StringIO.new
+      runner = ChorusDraft::Runner.new(client, store, ai, platform: platform, env: {}, input: Terminal.new("y\n"), output: output)
+      case mode
+      when :targets then runner.targets(['alice.example'])
+      when :discovery then runner.discovery('programming')
+      else runner.public_send(mode)
+      end
+
+      assert_equal 1, http.calls.size, label
+      body = http.calls.first[2][:body]
+      system, prompt = case provider
+                       when :gemini
+                         assert body[:safetySettings].all? { |s| s[:threshold] == 'BLOCK_MEDIUM_AND_ABOVE' }, label
+                         [body[:systemInstruction][:parts][0][:text], body[:contents][0][:parts][0][:text]]
+                       when :ollama then [body[:system], body[:prompt]]
+                       else [body[:messages][0][:content], body[:messages][1][:content]]
+                       end
+      assert_includes system, 'dry wit', label
+      assert_includes system, 'Do not insult', label
+      assert_includes system, 'respond plainly and kindly', label
+      refute_includes system, 'My build finally passed.', label
+      data = JSON.parse(prompt)
+      assert_match(/comic|witty/, data.fetch('task'), label)
+      assert_includes JSON.generate(data.fetch('untrusted_context')), 'My build finally passed.', label
+      assert_equal 1, store.drafts.size, label
+      item = store.drafts.first
+      assert_includes item['text'], joke, label
+      assert_equal 'ai_generated', item['action'], label
+      assert_equal 'pending', item['status'], label
+      assert_empty client.published, label
+      if mode == :mentions
+        assert_equal 'source', item['reply_to'], label
+        assert_equal(platform == 'mastodon' ? 'unlisted' : 'public', item['visibility'], label)
+      elsif %i[targets discovery].include?(mode)
+        assert_equal 'source', item['quote_to'], label
+      end
+      runner.review
+      assert_equal 1, client.published.size, label
+      assert_equal item['text'], client.published.first['text'], label
+      assert_equal 'published', store.drafts.first['status'], label
+    end
+  end
+
+  def test_comedy_framing_cannot_bypass_output_screening
+    bad_outputs = [
+      "Just a joke: You're an idiot.",
+      'Satire: Everybody go harass this person.',
+      'Comedy bit: I will doxx them.',
+      'Punchline: Kill yourself.'
+    ]
+    %w[bluesky mastodon].product(%i[local ollama gemini], bad_outputs.each_with_index.to_a).each do |platform, provider, (text, index)|
+      label = "#{platform}/#{provider}/#{index}"
+      ai, = ai_with_response(provider, text)
+      store = ChorusDraft::Store.new(File.join(@dir, label))
+      client = FakeClient.new
+      output = StringIO.new
+      runner = ChorusDraft::Runner.new(client, store, ai, platform: platform, env: {}, output: output)
+      assert_raises(ChorusDraft::Error, label) { runner.original }
+      assert_empty store.drafts, label
+      assert_empty client.published, label
+      refute_includes output.string, text, label
+    end
+  end
+end
+
 class ClientTest < Minitest::Test
   def mastodon(http)
     ChorusDraft::Mastodon.new({ 'MASTODON_API_BASE_URL' => 'https://example.org', 'MASTODON_ACCESS_TOKEN' => 'secret' }, http: http)

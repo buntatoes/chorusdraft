@@ -2,6 +2,31 @@
 
 This file records user-visible changes to ChorusDraft.
 
+## 0.51 — 2026-09-05
+
+### Changed
+
+- Original Bluesky and Mastodon drafts now request dry wit, playful exaggeration,
+  absurd comparisons, and varied punchlines about programming and open source.
+- Replies build on the conversation with gentle humor. Target and discovery
+  commentary can satirize products, claims, and situations without belittling
+  their authors.
+- Shared AI instructions include comic style examples and discourage generic
+  praise, lectures, repeated joke structures, and explanations of punchlines.
+- Serious help requests, grief, and distress call for sincere responses. Comic
+  exaggeration must be clearly fanciful; fabricated allegations, personal attacks,
+  and requests to harass someone remain prohibited.
+
+### Compatibility
+
+- The comic voice applies to new AI drafts with both local AI and Gemini. Existing
+  queued drafts and manually supplied text are not rewritten.
+- Configuration and account state are compatible with 0.50. Preserve the `data`
+  directory when upgrading to retain pending drafts, opt-outs, and interaction history.
+- Every AI draft still needs interactive approval. Output screening, privacy
+  controls, do-not-contact enforcement, interaction limits, and Gemini safety
+  settings remain in place.
+
 ## 0.50 — 2026-09-05
 
 Version 0.50 begins the ChorusDraft release line. Its Bluesky and Mastodon

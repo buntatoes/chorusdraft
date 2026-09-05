@@ -1,26 +1,30 @@
-# ChorusDraft 0.50
+# ChorusDraft 0.51
 
-ChorusDraft 0.50 is an AI-assisted command-line publishing tool for Bluesky and
-Mastodon. This release introduces a shared Ruby implementation for Linux, macOS,
-and Windows, with a human review queue for every AI-generated post.
+ChorusDraft 0.51 gives Bluesky and Mastodon drafts a clearer comic voice: dry wit,
+light sarcasm, absurd comparisons, and playful commentary on software and everyday
+internet situations. Every AI-generated post still goes through human review.
 
-## Highlights
+## What's new
 
-- Draft original posts, replies, quotes, discovery commentary, and target commentary.
-- Monitor mentions or prepare periodic drafts in a foreground process.
-- Use a local Ollama/OpenAI-compatible model or Google Gemini.
-- Review the exact text and publication metadata before any AI draft is posted.
-- Keep private Mastodon messages out of AI requests, logs, and local state.
-- Use per-account locked state, duplicate prevention, do-not-contact controls,
-  conservative interaction limits, and safe handling of uncertain network results.
-- Run the same Ruby source on Linux, macOS, and Windows without third-party gems.
+- Original drafts request concrete setups and unexpected turns, with varied topics
+  and joke structures.
+- Replies share gentle humor about the conversation. Target and discovery drafts
+  can satirize products, claims, and situations without humiliating their authors.
+- Shared instructions discourage generic praise and explanations of punchlines.
+  Serious help requests, grief, and distress call for sincere responses.
+- Local AI and Gemini receive the same comic brief. Output quality varies by model.
+
+The review queue, output screening, private-message exclusions, do-not-contact
+controls, interaction limits, and protection against duplicate publishing remain
+in place. The update changes newly generated drafts; existing queued drafts and
+manually supplied text keep their wording.
 
 ## Release files
 
 | Product | Linux | macOS | Windows |
 | --- | --- | --- | --- |
-| ChorusDraft for Bluesky | `chorusdraft-bluesky-v0.50-linux.tar.gz` | `chorusdraft-bluesky-v0.50-macos.tar.gz` | `chorusdraft-bluesky-v0.50-windows.zip` |
-| ChorusDraft for Mastodon | `chorusdraft-mastodon-v0.50-linux.tar.gz` | `chorusdraft-mastodon-v0.50-macos.tar.gz` | `chorusdraft-mastodon-v0.50-windows.zip` |
+| ChorusDraft for Bluesky | `chorusdraft-bluesky-v0.51-linux.tar.gz` | `chorusdraft-bluesky-v0.51-macos.tar.gz` | `chorusdraft-bluesky-v0.51-windows.zip` |
+| ChorusDraft for Mastodon | `chorusdraft-mastodon-v0.51-linux.tar.gz` | `chorusdraft-mastodon-v0.51-macos.tar.gz` | `chorusdraft-mastodon-v0.51-windows.zip` |
 
 Download `SHA256SUMS` with the selected archive. On Linux, verify with:
 
@@ -45,8 +49,12 @@ Run `ruby setup.rb`, edit `.env`, and use `ruby chorusdraft.rb --help` to see ev
 
 ## Compatibility notes
 
-- Version 0.50 begins a new release line under the ChorusDraft name.
-- Earlier queue and interaction files are not imported automatically.
+- State and configuration are compatible with ChorusDraft 0.50. Stop the old
+  instance and securely copy `.env`, configured target and do-not-contact files,
+  and the entire `data` directory into the new installation. Run only one instance
+  per account; preserve `data` to retain drafts, opt-outs, and interaction history.
+- Queue and interaction files from the older Bluesky Bot and Mastodon Bot projects
+  are not imported automatically.
 - AI drafts cannot be published without interactive review.
 - Automatic likes, favourites, boosts, and reposts are disabled.
 - Restricted Mastodon messages are not processed or answered.
