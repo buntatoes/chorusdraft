@@ -2,6 +2,12 @@
 
 This file records user-visible changes to ChorusDraft.
 
+## 0.51.2 — Unreleased (Ruby testing)
+
+- Created a Ruby maintenance branch from the 0.51.1 release baseline.
+- No user-visible 0.51.2 changes have been committed yet. The source version
+  remains 0.51.1 until verified release work begins.
+
 ## 0.51.1 — 2026-09-05
 
 ### Fixed

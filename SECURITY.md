@@ -2,8 +2,9 @@
 
 ## Supported version
 
-The latest published prerelease is 0.51.1. The controls below describe that
-release. Use a currently supported, security-patched Ruby release.
+The latest supported release is 0.51.1 from `main-ruby`. This branch is an
+unreleased Ruby maintenance baseline and currently contains the same safeguards.
+Use a currently supported, security-patched Ruby runtime.
 
 ## Reporting a vulnerability
 

@@ -1,5 +1,9 @@
 # ChorusDraft
 
+> **Branch status: 0.51.2 Ruby testing (unreleased).**
+> This branch currently matches the 0.51.1 Ruby baseline. It has no 0.51.2
+> release tag, packaged downloads, or user-visible changes yet.
+
 > **Current release: [0.51.1](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.1).**
 > This security update retains the 0.51 comic voice and strengthens opt-outs,
 > do-not-contact checks, and draft validation.
@@ -13,6 +17,19 @@ before it is published.
 
 Version 0.51.1 is available for the shared Ruby codebase on Linux, macOS, and
 Windows. The comic voice introduced in 0.51 is retained.
+
+## Release and development branches
+
+- `main-ruby` is the default branch and contains the supported Ruby release line.
+- `0.51.2-ruby-testing` is this branch. It is reserved for unreleased Ruby
+  maintenance work based on 0.51.1.
+- `elixir-experimental` contains a separate unfinished Elixir rewrite and is not
+  part of the supported Ruby releases.
+
+The version files remain at 0.51.1 until this branch contains an actual 0.51.2
+change. Use tagged assets from the
+[GitHub releases page](https://github.com/buntatoes/chorusdraft/releases) for a
+published build.
 
 ## What's new in 0.51.1
 
