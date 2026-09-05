@@ -4,6 +4,14 @@ ChorusDraft 0.51.1 is a security update for the Ruby releases on Linux, macOS,
 and Windows. It retains the comic voice introduced in 0.51 and the requirement
 that every AI-generated draft receive interactive review.
 
+## Source and release status
+
+- `main-ruby` is the default branch for the supported Ruby release line.
+- The immutable `v0.51.1` tag identifies the source used for this release.
+- `0.51.2-ruby-testing` contains future unreleased Ruby work.
+- `elixir-experimental` is an independent unfinished experiment and is not
+  included in the 0.51.1 source or downloads.
+
 ## Security changes
 
 - All fetched opt-out requests are recorded before reply limits or AI failures can
@@ -42,8 +50,8 @@ manually supplied text keep their wording.
 
 | Product | Linux | macOS | Windows |
 | --- | --- | --- | --- |
-| ChorusDraft for Bluesky | `chorusdraft-bluesky-v0.51.1-linux.tar.gz` | `chorusdraft-bluesky-v0.51.1-macos.tar.gz` | `chorusdraft-bluesky-v0.51.1-windows.zip` |
-| ChorusDraft for Mastodon | `chorusdraft-mastodon-v0.51.1-linux.tar.gz` | `chorusdraft-mastodon-v0.51.1-macos.tar.gz` | `chorusdraft-mastodon-v0.51.1-windows.zip` |
+| ChorusDraft for Bluesky | [Linux](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-bluesky-v0.51.1-linux.tar.gz) | [macOS](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-bluesky-v0.51.1-macos.tar.gz) | [Windows](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-bluesky-v0.51.1-windows.zip) |
+| ChorusDraft for Mastodon | [Linux](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-mastodon-v0.51.1-linux.tar.gz) | [macOS](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-mastodon-v0.51.1-macos.tar.gz) | [Windows](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-mastodon-v0.51.1-windows.zip) |
 
 Download `SHA256SUMS` with the selected archive. On Linux, verify with:
 

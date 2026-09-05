@@ -14,6 +14,17 @@ before it is published.
 Version 0.51.1 is available for the shared Ruby codebase on Linux, macOS, and
 Windows. The comic voice introduced in 0.51 is retained.
 
+## Release and development branches
+
+- `main-ruby` is the default branch and contains the supported Ruby release line.
+- `0.51.2-ruby-testing` is reserved for unreleased Ruby maintenance work.
+- `elixir-experimental` contains a separate unfinished Elixir rewrite and is not
+  part of the supported Ruby releases.
+
+Only tagged release assets from the
+[GitHub releases page](https://github.com/buntatoes/chorusdraft/releases) are
+published builds. Branch snapshots are source code for development or testing.
+
 ## What's new in 0.51.1
 
 - Opt-out requests are recorded before reply limits or AI failures can interrupt
