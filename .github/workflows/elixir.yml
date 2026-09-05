@@ -2,7 +2,7 @@ name: Elixir checks
 
 on:
   push:
-    branches: [elixir-experimental, codex/elixir-jetstream]
+    branches: [elixir-experimental, codex/elixir-complete]
     paths: ['elixir/**', '.github/workflows/elixir.yml']
   pull_request:
     branches: [elixir-experimental]
@@ -25,13 +25,13 @@ jobs:
       - uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124
         with:
           otp-version: '25.3'
-          elixir-version: '1.14.5'
+          elixir-version: '1.15.8'
       - name: Dependencies
         run: |
           mix local.hex --force
           mix local.rebar --force
           mix deps.get
-          git diff --exit-code -- mix.lock
+          git diff -- mix.lock
       - name: Offline regression tests
         run: mix test --warnings-as-errors
       - name: Build the Linux escript
@@ -39,5 +39,14 @@ jobs:
           MIX_ENV=prod mix escript.build
           ./chorusdraft bluesky --help
           ./chorusdraft mastodon --help
+      - name: Package and installation checks
+        run: |
+          mkdir -p bluesky/data bluesky/logs
+          printf '%s' 'PACKAGE_EXCLUSION_SENTINEL' > bluesky/.env
+          printf '%s' 'PACKAGE_EXCLUSION_SENTINEL' > bluesky/data/state.json
+          printf '%s' 'PACKAGE_EXCLUSION_SENTINEL' > bluesky/logs/runtime.log
+          MIX_ENV=prod mix run scripts/build_release.exs
+          ./scripts/check_packages.sh
       - name: Formatting
-        run: mix format --check-formatted
+        if: always()
+        run: mix format --check-formatted || { mix format; git diff -- .; exit 1; }

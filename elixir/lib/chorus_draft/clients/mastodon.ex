@@ -195,18 +195,22 @@ defmodule ChorusDraft.Clients.Mastodon do
   defp strip_html(text) do
     text
     |> String.replace(~r/<[^>]*>/u, " ")
-    |> String.replace(
-      ["&amp;", "&lt;", "&gt;", "&quot;", "&#39;", "&#x27;", "&apos;", "&nbsp;"],
-      fn
-        "&amp;" -> "&"
-        "&lt;" -> "<"
-        "&gt;" -> ">"
-        "&quot;" -> "\""
-        value when value in ["&#39;", "&#x27;", "&apos;"] -> "'"
-        "&nbsp;" -> " "
-      end
-    )
+    |> String.replace(~r/&(?:amp|lt|gt|quot|apos|nbsp|#[0-9]+|#[xX][0-9a-fA-F]+);/, &decode_entity/1)
     |> String.trim()
+  end
+
+  defp decode_entity(entity) do
+    named = %{"&amp;" => "&", "&lt;" => "<", "&gt;" => ">", "&quot;" => "\"", "&apos;" => "'", "&nbsp;" => " "}
+    case named[entity] do
+      nil ->
+        digits = entity |> String.trim_leading("&#") |> String.trim_trailing(";")
+        {digits, base} = if String.starts_with?(String.downcase(digits), "x"), do: {String.slice(digits, 1..-1//1), 16}, else: {digits, 10}
+        case Integer.parse(digits, base) do
+          {code, ""} when code in 0..0x10FFFF and code not in 0xD800..0xDFFF -> <<code::utf8>>
+          _ -> entity
+        end
+      decoded -> decoded
+    end
   end
 
   defp to_string_or_empty(nil), do: ""

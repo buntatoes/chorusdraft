@@ -1,5 +1,13 @@
 # Changelog
 
+## Linux implementation completion — September 5, 2026
+
+Completed Ruby workflow parity, reliable HTTP and daemon scheduling, read-only
+state import, crash-safe locking, setup, queue status/rejection, and separate
+Linux product packaging with install checks and offline source rebuilds.
+See PARITY.md for the pinned reference and validation scope. Live account
+acceptance remains outstanding; no Ruby branch or release is modified.
+
 ## Jetstream integration — unreleased
 
 - Added opt-in `--jetstream` for BlueBot's `--listen` and `--daemon` commands.

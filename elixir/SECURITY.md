@@ -1,6 +1,6 @@
 # Security policy for the Elixir experiment
 
-This is unfinished software on the `elixir-experimental` branch. The supported
+This is an unreleased separate implementation on the `elixir-experimental` branch. The supported
 release is Ruby 0.51.1 from `main-ruby`; future Ruby maintenance work is isolated
 on `ruby-testing`. Report vulnerabilities using GitHub private
 vulnerability reporting when available, or contact the maintainer privately
@@ -24,10 +24,11 @@ The Elixir port enforces these boundaries:
   one per author every 30 days. Automatic likes, favourites, boosts, and reposts
   are absent.
 - Remote endpoints require HTTPS and credential-bearing redirects are not
-  followed. Loopback HTTP is permitted only for a local AI service. Response size
+  followed. Mint HTTP/1 connections issue one request without automatic retries,
+  including on 503 responses. Loopback HTTP is permitted only for a local AI service. Streaming response size and header
   limits and generic errors reduce accidental disclosure.
 - State is isolated by platform and account, stored with private permissions, and
-  replaced atomically. A Linux process lock prevents concurrent writers. Corrupt
+  replaced atomically. A Linux kernel flock prevents concurrent writers and releases on process exit. Corrupt
   state fails closed. Publishing requests are not automatically retried; uncertain
   results require manual account inspection.
 

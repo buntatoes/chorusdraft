@@ -162,21 +162,15 @@ defmodule ChorusDraft.Runner do
   end
 
   def targets(runner, handles) do
-    Enum.reduce_while(handles, nil, fn handle, _ ->
-      post = client_call(runner, :feed, [handle, 8]) |> Enum.find(&eligible?(runner, &1))
-
-      if post do
-        item = commentary(runner, post)
-        if item, do: {:halt, item}, else: {:cont, nil}
-      else
-        {:cont, nil}
-      end
+    Enum.find_value(handles, fn handle ->
+      client_call(runner, :feed, [handle, 8])
+      |> Enum.find_value(fn post -> if eligible?(runner, post), do: commentary(runner, post) end)
     end)
   end
 
   def discovery(runner, query) do
-    post = client_call(runner, :search, [query, 20]) |> Enum.find(&eligible?(runner, &1))
-    if post, do: commentary(runner, post)
+    client_call(runner, :search, [query, 20])
+    |> Enum.find_value(fn post -> if eligible?(runner, post), do: commentary(runner, post) end)
   end
 
   def manual(runner, text, opts \\ []) do
@@ -196,7 +190,8 @@ defmodule ChorusDraft.Runner do
     text =
       if quote_to && runner.platform == "mastodon", do: text <> "\n\n#{post["url"]}", else: text
 
-    item = draft(runner, text, "manual", post, not is_nil(quote_to)) |> Map.put("cw", cw)
+    item = draft(runner, text, "manual", post, not is_nil(quote_to))
+    item = if is_nil(cw), do: item, else: Map.put(item, "cw", cw)
     validate_draft!(runner, item)
     saved = Store.stage(runner.store, item)
     if is_nil(saved), do: raise(Error, "Queue is full; review existing drafts first.")
@@ -216,6 +211,7 @@ defmodule ChorusDraft.Runner do
       raise Error, "Draft belongs to a different account or platform."
     end
 
+    Store.validate_draft!(item)
     Safety.validate_text!(Map.fetch!(item, "text"), client_call(runner, :limit))
 
     if runner.platform == "bluesky" do
@@ -225,6 +221,8 @@ defmodule ChorusDraft.Runner do
       unless empty?(item["cw"]),
         do: raise(Error, "Content warnings are supported only for Mastodon.")
     else
+      unless item["visibility"] in ["public", "unlisted", "private", "direct"],
+        do: raise(Error, "Invalid visibility.")
       unless empty?(item["cw"]),
         do: Safety.validate_text!(item["cw"], client_call(runner, :limit))
     end
@@ -265,7 +263,7 @@ defmodule ChorusDraft.Runner do
     |> Store.drafts()
     |> Enum.filter(&(&1["status"] == "pending"))
     |> Enum.reduce_while(:ok, fn item, _ ->
-      validate_draft!(runner, item)
+      Store.validate_draft!(item)
       puts(runner, "\n#{item["id"]} | #{item["action"]} | #{item["visibility"]}")
       if item["reply_to"], do: puts(runner, "Reply: #{Safety.clean(item["reply_to"])}")
       if item["quote_to"], do: puts(runner, "Quote: #{Safety.clean(item["quote_to"])}")

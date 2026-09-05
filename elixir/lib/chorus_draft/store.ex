@@ -3,27 +3,69 @@ defmodule ChorusDraft.Store do
 
   @active_statuses ["pending", "publishing", "uncertain"]
   @lock_timeout 5_000
-  @stale_lock 300
 
   def new(dir) do
     File.mkdir_p!(dir)
-    File.chmod(dir, 0o700)
+    unless File.lstat!(dir).type == :directory, do: raise(Error, "State directory must not be a symlink.")
+    File.chmod!(dir, 0o700)
     dir
   end
 
   def transaction(dir, fun) do
-    lock = dir <> "/state.lock.d"
-    acquire_lock(lock, System.monotonic_time(:millisecond) + @lock_timeout)
+    lock = acquire_lock(Path.join(dir, "state.lock"))
 
     try do
-      state = read_state(dir <> "/state.json")
-      {result, state} = fun.(state)
+      original = read_state(Path.join(dir, "state.json"))
+      {result, state} = fun.(original)
       validate_state!(state)
-      write_state(dir <> "/state.json", state)
+      if state != original, do: write_state(Path.join(dir, "state.json"), state)
       result
     after
-      release_lock(lock)
+      if Port.info(lock), do: Port.close(lock)
     end
+  end
+
+  def import_state(dir, source, platform, account) do
+    source = Path.expand(source)
+    if source == Path.expand(Path.join(dir, "state.json")),
+      do: raise(Error, "Import requires a separate read-only source file.")
+    regular_file!(source, false)
+    raw = File.read!(source)
+    state = raw |> Jason.decode!() |> Map.put_new("blocked", []) |> validate_state!()
+    Enum.each(state["drafts"], fn draft ->
+      validate_draft!(draft)
+      unless draft["platform"] == platform and draft["account"] == account,
+        do: raise(Error, "Imported draft belongs to a different account or platform.")
+    end)
+    state = Map.update!(state, "drafts", fn drafts ->
+      Enum.map(drafts, fn draft ->
+        if draft["status"] == "publishing", do: Map.put(draft, "status", "uncertain"), else: draft
+      end)
+    end)
+    transaction(dir, fn original ->
+      unless original == default_state(), do: raise(Error, "Import requires empty destination state.")
+      unless File.read!(source) == raw, do: raise(Error, "Source changed during import; stop the source process first.")
+      {length(state["drafts"]), state}
+    end)
+  rescue
+    error in Error -> raise error
+    _ -> raise Error, "Could not import state; source must be a valid Ruby or Elixir state.json."
+  end
+
+  def validate_draft!(draft) do
+    required = ["platform", "account", "text", "action", "visibility", "language"]
+    optional = ["reply_to", "quote_to", "author", "cw"]
+    valid = is_map(draft) and Enum.all?(required, &is_binary(draft[&1])) and
+      Enum.all?(optional, &(is_nil(draft[&1]) or is_binary(draft[&1]))) and
+      draft["platform"] in ["bluesky", "mastodon"] and
+      draft["action"] in ["manual", "ai_generated"] and
+      draft["visibility"] in ["public", "unlisted", "private", "direct"] and
+      (is_nil(draft["reply_to"]) or is_nil(draft["quote_to"])) and
+      Enum.all?(required ++ optional, fn key ->
+        not Regex.match?(~r/[\x00-\x08\x0b-\x1f\x7f]/u, draft[key] || "")
+      end)
+    unless valid, do: raise(Error, "Draft metadata is invalid; refusing to publish.")
+    draft
   end
 
   def drafts(dir),
@@ -106,6 +148,8 @@ defmodule ChorusDraft.Store do
   def transition(dir, id, from, to, opts \\ []) do
     expected = Keyword.get(opts, :expected)
     from = List.wrap(from)
+    allowed = [{"pending", "publishing"}, {"pending", "rejected"}, {"publishing", "published"}, {"publishing", "uncertain"}]
+    unless Enum.all?(from, &({&1, to} in allowed)), do: raise(Error, "Invalid draft transition.")
 
     transaction(dir, fn state ->
       index = Enum.find_index(state["drafts"], &(&1["id"] == id and &1["status"] in from))
@@ -168,24 +212,45 @@ defmodule ChorusDraft.Store do
   end
 
   defp read_state(path) do
-    if File.regular?(path) do
-      case File.read!(path) |> Jason.decode() do
-        {:ok, state} -> validate_state!(state)
-        {:error, _} -> raise Error, "State JSON is corrupt; refusing to reset posting history."
-      end
-    else
-      default_state()
+    case regular_file!(path, true) do
+      :missing -> default_state()
+      :ok ->
+        case File.read!(path) |> Jason.decode() do
+          {:ok, state} -> validate_state!(state)
+          {:error, _} -> raise Error, "State JSON is corrupt; refusing to reset posting history."
+        end
     end
   end
 
   defp validate_state!(state) do
-    valid? =
-      is_map(state) and is_list(state["drafts"]) and is_list(state["seen"]) and
-        is_map(state["authors"]) and is_list(state["daily"]) and is_list(state["blocked"])
+    valid? = is_map(state) and is_list(state["drafts"]) and is_list(state["seen"]) and
+      is_map(state["authors"]) and is_list(state["daily"]) and is_list(state["blocked"])
+    unless valid?, do: raise(Error, "State is invalid; restore a backup before continuing.")
+    valid? = Enum.all?(state["seen"] ++ state["blocked"], &is_binary/1) and
+      Enum.all?(state["daily"], &(is_integer(&1) and &1 >= 0)) and
+      Enum.all?(state["authors"], fn {key, time} -> is_binary(key) and is_integer(time) and time >= 0 end) and
+      Enum.all?(state["drafts"], &valid_saved_draft?/1)
+    ids = Enum.map(state["drafts"], fn draft -> if is_map(draft), do: draft["id"] end)
+    unless valid? and length(ids) == length(Enum.uniq(ids)),
+      do: raise(Error, "State entries are invalid; refusing to reset posting history.")
+    state
+  end
 
-    if valid?,
-      do: state,
-      else: raise(Error, "State is invalid; restore a backup before continuing.")
+  defp valid_saved_draft?(draft) when is_map(draft) do
+    draft["status"] in ["pending", "publishing", "uncertain", "published", "rejected"] and
+      is_binary(draft["id"]) and Regex.match?(~r/^[0-9a-f-]{36}$/, draft["id"]) and
+      is_binary(draft["record_key"]) and Regex.match?(~r/^[234567a-z]{13}$/, draft["record_key"]) and
+      is_binary(draft["created_at"]) and match?({:ok, _, _}, DateTime.from_iso8601(draft["created_at"])) and
+      Enum.all?(["platform", "account", "text", "action", "visibility", "language", "reply_to", "quote_to", "author", "cw"], fn key -> is_nil(draft[key]) or is_binary(draft[key]) end)
+  end
+  defp valid_saved_draft?(_), do: false
+
+  defp regular_file!(path, missing?) do
+    case File.lstat(path) do
+      {:ok, %{type: :regular}} -> :ok
+      {:error, :enoent} when missing? -> :missing
+      _ -> raise Error, "Storage path must be a regular file, not a symlink or directory."
+    end
   end
 
   defp write_state(path, state) do
@@ -193,6 +258,7 @@ defmodule ChorusDraft.Store do
 
     try do
       {:ok, io} = File.open(temporary, [:write, :binary, :exclusive])
+      File.chmod!(temporary, 0o600)
       IO.binwrite(io, Jason.encode!(state, pretty: true))
       :ok = :file.sync(io)
       File.close(io)
@@ -203,48 +269,24 @@ defmodule ChorusDraft.Store do
     end
   end
 
-  defp acquire_lock(lock, deadline) do
-    case File.mkdir(lock) do
-      :ok ->
-        File.chmod(lock, 0o700)
-
-        File.write!(lock <> "/owner", Integer.to_string(System.pid() |> String.to_integer()), [
-          :exclusive
-        ])
-
-      {:error, :eexist} ->
-        recover_stale_lock(lock)
-
-        if System.monotonic_time(:millisecond) >= deadline do
-          raise Error, "State is busy; ensure only one process uses this account."
-        end
-
-        Process.sleep(50)
-        acquire_lock(lock, deadline)
-
-      {:error, _} ->
-        raise Error, "Could not lock state storage."
+  # The Linux kernel releases flock on process exit, including crashes. The
+  # descriptor also interoperates with Ruby's state.lock without deleting it.
+  defp acquire_lock(path) do
+    regular_file!(path, true)
+    {:ok, io} = File.open(path, [:append, :binary])
+    File.close(io)
+    File.chmod!(path, 0o600)
+    executable = System.find_executable("flock") || raise(Error, "Install util-linux (flock) to use state storage.")
+    port = Port.open({:spawn_executable, executable}, [:binary, :exit_status, :use_stdio, :hide,
+      args: ["--exclusive", "--timeout", "5", "--no-fork", path, "/bin/sh", "-c", "printf 'locked\\n'; read -r release"]])
+    receive do
+      {^port, {:data, "locked\n"}} -> port
+      {^port, {:exit_status, _}} -> raise Error, "State is busy or could not be locked."
+    after
+      @lock_timeout + 1_000 ->
+        if Port.info(port), do: Port.close(port)
+        raise Error, "State lock timed out."
     end
-  end
-
-  defp recover_stale_lock(lock) do
-    owner = lock <> "/owner"
-
-    with {:ok, stat} <- File.stat(owner, time: :posix),
-         true <- System.system_time(:second) - stat.mtime > @stale_lock,
-         {:ok, pid_text} <- File.read(owner),
-         {pid, ""} <- Integer.parse(pid_text),
-         false <- File.exists?("/proc/#{pid}") do
-      File.rm(owner)
-      File.rmdir(lock)
-    else
-      _ -> :ok
-    end
-  end
-
-  defp release_lock(lock) do
-    File.rm(lock <> "/owner")
-    File.rmdir(lock)
   end
 
   defp uuid do

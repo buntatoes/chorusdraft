@@ -9,6 +9,11 @@ The Linux Elixir build uses:
 - [Telemetry](https://github.com/beam-telemetry/telemetry), a WebSockex runtime
   dependency, Apache License 2.0. The resolved version is pinned in `mix.lock`.
 
-No package archive exists yet. Future packages must include the corresponding
-dependency source and original license/notice files. Running Mix downloads these
-dependencies for local builds; it does not create a distributable source bundle.
+- [Mint](https://github.com/elixir-mint/mint) 1.10.0 for bounded HTTP transport,
+  Apache License 2.0.
+- [HPAX](https://github.com/elixir-mint/hpax), a Mint dependency, Apache License 2.0.
+  Its resolved version is pinned in `mix.lock` (ChorusDraft selects HTTP/1 only).
+
+Packages include each resolved dependency's corresponding source and original
+license/notice files under `source/deps/`. The application is GPLv3; dependencies
+retain their own licenses. Erlang/OTP is a separately installed runtime.

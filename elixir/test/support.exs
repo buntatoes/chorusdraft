@@ -39,7 +39,10 @@ defmodule ChorusDraft.TestClient do
 
   def notifications(client), do: client.posts
   def recent(client, limit), do: Enum.take(client.posts, limit)
-  def feed(client, _account, limit), do: Enum.take(client.posts, limit)
+  def feed(client, _account, limit) do
+    if Process.get({__MODULE__, :feed_error}), do: raise(ChorusDraft.HTTPError, 503)
+    Enum.take(client.posts, limit)
+  end
   def search(client, _query, limit), do: Enum.take(client.posts, limit)
   def timeline(client, limit), do: Enum.take(client.posts, limit)
   def context(client, _post), do: client.posts
