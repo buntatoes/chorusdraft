@@ -1,13 +1,14 @@
 # Changelog
 
-This file records user-visible changes to BlueBot and Mastobot.
+This file records user-visible changes to ChorusDraft.
 
 ## 0.50 — 2026-09-05
 
-Version 0.50 begins the BlueBot and Mastobot release line. Both clients now share
-the same Ruby implementation and command-line interface on Linux, macOS, and Windows.
+Version 0.50 begins the ChorusDraft release line. Its Bluesky and Mastodon
+integrations share the same Ruby implementation and command-line interface on
+Linux, macOS, and Windows.
 
-### BlueBot
+### Bluesky integration
 
 - Added original post drafting, mention replies, public search, random-post
   selection, account targets, discovery, and foreground
@@ -19,7 +20,7 @@ the same Ruby implementation and command-line interface on Linux, macOS, and Win
 - Added custom PDS support through `BLUESKY_PDS_URL`.
 - Added deletion of posts owned by the authenticated account.
 
-### Mastobot
+### Mastodon integration
 
 - Added original post drafting, mention replies, public search, random-post
   selection, account targets, discovery, and foreground
@@ -77,12 +78,13 @@ the same Ruby implementation and command-line interface on Linux, macOS, and Win
 
 ### Compatibility and migration
 
-- Product names and archive filenames changed to BlueBot and Mastobot.
+- The project, commands, source namespace, and archive filenames use the
+  ChorusDraft name.
 - Ruby 3.2 or later is required for syntax compatibility; a currently supported,
   security-patched Ruby release is recommended for production.
 - Earlier draft and interaction files are not imported automatically. Install into
   a new directory and stop previous listeners or scheduled services before use.
 - `--reply-cid` and `--quote-cid` remain accepted for command compatibility, but
   the current Bluesky record is fetched instead of trusting a supplied CID.
-- BlueBot feed posts are public and do not accept Mastodon visibility or content
+- Bluesky feed posts are public and do not accept Mastodon visibility or content
   warning options.

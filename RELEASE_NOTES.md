@@ -1,6 +1,6 @@
-# BlueBot and Mastobot 0.50
+# ChorusDraft 0.50
 
-BlueBot and Mastobot 0.50 are AI-assisted command-line clients for Bluesky and
+ChorusDraft 0.50 is an AI-assisted command-line publishing tool for Bluesky and
 Mastodon. This release introduces a shared Ruby implementation for Linux, macOS,
 and Windows, with a human review queue for every AI-generated post.
 
@@ -19,8 +19,8 @@ and Windows, with a human review queue for every AI-generated post.
 
 | Product | Linux | macOS | Windows |
 | --- | --- | --- | --- |
-| BlueBot | `bluebot-v0.50-linux.tar.gz` | `bluebot-v0.50-macos.tar.gz` | `bluebot-v0.50-windows.zip` |
-| Mastobot | `mastobot-v0.50-linux.tar.gz` | `mastobot-v0.50-macos.tar.gz` | `mastobot-v0.50-windows.zip` |
+| ChorusDraft for Bluesky | `chorusdraft-bluesky-v0.50-linux.tar.gz` | `chorusdraft-bluesky-v0.50-macos.tar.gz` | `chorusdraft-bluesky-v0.50-windows.zip` |
+| ChorusDraft for Mastodon | `chorusdraft-mastodon-v0.50-linux.tar.gz` | `chorusdraft-mastodon-v0.50-macos.tar.gz` | `chorusdraft-mastodon-v0.50-windows.zip` |
 
 Download `SHA256SUMS` with the selected archive. On Linux, verify with:
 
@@ -41,11 +41,11 @@ shasum -a 256 -c SHA256SUMS
 - A Bluesky app password or Mastodon access token.
 - A configured local AI model or Gemini API key and model.
 
-Run `ruby setup.rb`, edit `.env`, and use `ruby bot.rb --help` to see every command.
+Run `ruby setup.rb`, edit `.env`, and use `ruby chorusdraft.rb --help` to see every command.
 
 ## Compatibility notes
 
-- Version 0.50 begins a new release line under the BlueBot and Mastobot names.
+- Version 0.50 begins a new release line under the ChorusDraft name.
 - Earlier queue and interaction files are not imported automatically.
 - AI drafts cannot be published without interactive review.
 - Automatic likes, favourites, boosts, and reposts are disabled.
@@ -54,7 +54,7 @@ Run `ruby setup.rb`, edit `.env`, and use `ruby bot.rb --help` to see every comm
   drafts are limited to five per day and one per author every 30 days.
 - Clear requests to stop replying and configured do-not-contact entries block all
   supplied reply, quote, target, and queued publication paths for that account.
-- BlueBot feed posts are public and do not support Mastodon content warnings.
+- Bluesky feed posts are public and do not support Mastodon content warnings.
 
 See `README.md` for installation, configuration, command examples, and state
 handling. See `CHANGELOG.md` for the complete feature and behavior list and

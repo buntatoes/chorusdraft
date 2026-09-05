@@ -2,7 +2,7 @@
 require 'minitest/autorun'
 require 'tmpdir'
 require 'stringio'
-require_relative '../lib/social_bots/cli'
+require_relative '../lib/chorus_draft/cli'
 
 class FakeHTTP
   attr_reader :calls
@@ -38,7 +38,7 @@ class FakeClient
   def get_post(id) = @posts.find { |p| p['id'] == id }
   def publish(draft)
     @published << draft
-    raise SocialBots::Error, 'Simulated timeout' if @failure
+    raise ChorusDraft::Error, 'Simulated timeout' if @failure
     {}
   end
 end
@@ -59,12 +59,12 @@ end
 class SafetyTest < Minitest::Test
   def setup
     @dir = Dir.mktmpdir
-    @store = SocialBots::Store.new(@dir)
+    @store = ChorusDraft::Store.new(@dir)
     @client, @ai, @out = FakeClient.new, FakeAI.new, StringIO.new
   end
   def teardown = FileUtils.remove_entry(@dir)
   def runner(input: StringIO.new)
-    SocialBots::Runner.new(@client, @store, @ai, platform: 'mastodon', env: {}, input: input, output: @out)
+    ChorusDraft::Runner.new(@client, @store, @ai, platform: 'mastodon', env: {}, input: input, output: @out)
   end
   def post(id = '1', visibility = 'public', text = 'An ordinary public post')
     { 'id' => id, 'visibility' => visibility, 'text' => text, 'author' => 'alice@example.org', 'author_id' => 'alice' }
@@ -103,13 +103,13 @@ class SafetyTest < Minitest::Test
     @store.block('@alice@example.org')
     runner.targets(['alice@example.org'])
     assert_empty @ai.calls
-    assert_raises(SocialBots::Error) { runner.manual('A manual response', reply_to: '1', publish: true) }
-    assert_raises(SocialBots::Error) { runner.publish_draft(item) }
+    assert_raises(ChorusDraft::Error) { runner.manual('A manual response', reply_to: '1', publish: true) }
+    assert_raises(ChorusDraft::Error) { runner.publish_draft(item) }
     assert_equal 'pending', @store.drafts.first['status']
     assert_empty @client.published
   end
   def test_generation_has_no_publish_path_even_with_legacy_staging_false
-    SocialBots::Runner.new(@client, @store, @ai, platform: 'mastodon', env: { 'STAGING_QUEUE' => 'false', 'AUTO_FAVOURITE_ENABLED' => 'true' }, output: @out).original
+    ChorusDraft::Runner.new(@client, @store, @ai, platform: 'mastodon', env: { 'STAGING_QUEUE' => 'false', 'AUTO_FAVOURITE_ENABLED' => 'true' }, output: @out).original
     assert_equal 1, @store.drafts.size
     assert_empty @client.published
   end
@@ -123,7 +123,7 @@ class SafetyTest < Minitest::Test
   end
   def test_review_requires_terminal_and_positive_per_draft_approval
     runner.original
-    assert_raises(SocialBots::Error) { runner(input: StringIO.new("yes\n")).review }
+    assert_raises(ChorusDraft::Error) { runner(input: StringIO.new("yes\n")).review }
     runner(input: Terminal.new("n\n")).review
     assert_empty @client.published
     runner(input: Terminal.new("yes\n")).review
@@ -140,13 +140,13 @@ class SafetyTest < Minitest::Test
   end
   def test_private_manual_reply_is_rejected
     @client.posts = [post('1', 'direct')]
-    assert_raises(SocialBots::Error) { runner.manual('Response', reply_to: '1', publish: true) }
+    assert_raises(ChorusDraft::Error) { runner.manual('Response', reply_to: '1', publish: true) }
     assert_empty @client.published
   end
   def test_uncertain_publish_is_never_automatically_retried
     runner.original
     @client.failure = true
-    assert_raises(SocialBots::Error) { runner(input: Terminal.new("yes\n")).review }
+    assert_raises(ChorusDraft::Error) { runner(input: Terminal.new("yes\n")).review }
     assert_equal 'uncertain', @store.drafts.first['status']
     runner(input: Terminal.new("yes\n")).review
     assert_equal 1, @client.published.size
@@ -154,28 +154,28 @@ class SafetyTest < Minitest::Test
   def test_claiming_draft_twice_fails
     item = runner.manual('Hello')
     @store.transition(item['id'], 'pending', 'publishing')
-    assert_raises(SocialBots::Error) { @store.transition(item['id'], 'pending', 'publishing') }
+    assert_raises(ChorusDraft::Error) { @store.transition(item['id'], 'pending', 'publishing') }
   end
   def test_changed_draft_cannot_publish_under_previous_approval
     item = runner.manual('Reviewed text')
     @store.transaction { |s| s['drafts'].first['text'] = 'Changed after review' }
-    assert_raises(SocialBots::Error) { runner.publish_draft(item) }
+    assert_raises(ChorusDraft::Error) { runner.publish_draft(item) }
     assert_empty @client.published
     assert_equal 'pending', @store.drafts.first['status']
   end
   def test_draft_from_other_server_cannot_be_reviewed
     runner.manual('Hello')
     @store.transaction { |s| s['drafts'].first['account'] = 'https://other.example:me' }
-    assert_raises(SocialBots::Error) { runner(input: Terminal.new("yes\n")).review }
+    assert_raises(ChorusDraft::Error) { runner(input: Terminal.new("yes\n")).review }
     assert_empty @client.published
   end
   def test_corrupt_state_fails_closed
     File.write(File.join(@dir, 'state.json'), '{broken')
-    assert_raises(SocialBots::Error) { @store.drafts }
+    assert_raises(ChorusDraft::Error) { @store.drafts }
     assert_equal '{broken', File.read(File.join(@dir, 'state.json'))
   end
   def test_concurrent_writers_do_not_lose_drafts
-    threads = 8.times.map { |i| Thread.new { 5.times { |j| SocialBots::Store.new(@dir).stage({ 'text' => "#{i}:#{j}" }) } } }
+    threads = 8.times.map { |i| Thread.new { 5.times { |j| ChorusDraft::Store.new(@dir).stage({ 'text' => "#{i}:#{j}" }) } } }
     threads.each(&:value)
     assert_equal 40, @store.drafts.size
     assert_equal 0600, File.stat(File.join(@dir, 'state.json')).mode & 0777 unless Gem.win_platform?
@@ -199,9 +199,9 @@ class SafetyTest < Minitest::Test
   end
   def test_harassing_output_is_rejected
     ['Kill yourself', "You're an idiot", 'Everybody go harass this person', 'I will doxx them'].each do |text|
-      assert_raises(SocialBots::Error) { SocialBots::Safety.validate_text!(text, 500) }
+      assert_raises(ChorusDraft::Error) { ChorusDraft::Safety.validate_text!(text, 500) }
     end
-    assert SocialBots::Safety.validate_text!('I disagree with this idea because the evidence is incomplete.', 500)
+    assert ChorusDraft::Safety.validate_text!('I disagree with this idea because the evidence is incomplete.', 500)
   end
   def test_queue_capacity_prevents_ai_calls
     100.times { @store.stage({}) }
@@ -212,22 +212,22 @@ class SafetyTest < Minitest::Test
     path = File.join(@dir, '.env')
     File.write(path, "KEY=$(touch sentinel)\nEXISTING=overwrite\nQUOTED='hello there'\n")
     env = { 'EXISTING' => 'keep' }
-    SocialBots::Config.load(path, env)
+    ChorusDraft::Config.load(path, env)
     assert_equal '$(touch sentinel)', env['KEY']
     assert_equal 'keep', env['EXISTING']
     assert_equal 'hello there', env['QUOTED']
   end
   def test_url_policy_rejects_insecure_remote_servers_credentials_and_redirects
     %w[http://example.org https://user:pass@example.org file:///tmp/foo].each do |url|
-      assert_raises(SocialBots::Error) { SocialBots::HTTP.validate_url(url) }
+      assert_raises(ChorusDraft::Error) { ChorusDraft::HTTP.validate_url(url) }
     end
-    assert SocialBots::HTTP.validate_url('http://127.0.0.1:11434/v1/chat/completions', local: true)
-    assert_raises(SocialBots::Error) { SocialBots::HTTP.validate_url('http://example.org', local: true) }
+    assert ChorusDraft::HTTP.validate_url('http://127.0.0.1:11434/v1/chat/completions', local: true)
+    assert_raises(ChorusDraft::Error) { ChorusDraft::HTTP.validate_url('http://example.org', local: true) }
   end
   def test_gemini_key_only_in_header_and_system_separate_from_data
     http = FakeHTTP.new({ 'candidates' => [{ 'content' => { 'parts' => [{ 'text' => 'A useful response.' }] } }] })
     env = { 'AI_PROVIDER' => 'gemini', 'GEMINI_MODEL' => 'configured-model', 'GEMINI_API_KEY' => 'secret-value' }
-    ai = SocialBots::AI.new(env, http: http)
+    ai = ChorusDraft::AI.new(env, http: http)
     assert_equal 'A useful response.', ai.generate('Reply', { post: 'untrusted' }, limit: 300)
     _, url, args = http.calls.first
     refute_includes url, 'secret-value'
@@ -238,24 +238,24 @@ class SafetyTest < Minitest::Test
   end
   def test_local_ai_and_output_validation
     http = FakeHTTP.new({ 'choices' => [{ 'message' => { 'content' => 'x' * 301 } }] })
-    assert_raises(SocialBots::Error) { SocialBots::AI.new({}, http: http).generate('Post', {}, limit: 300) }
+    assert_raises(ChorusDraft::Error) { ChorusDraft::AI.new({}, http: http).generate('Post', {}, limit: 300) }
     assert_equal 'system', http.calls.first[2][:body][:messages].first[:role]
     assert http.calls.first[2][:local]
   end
   def test_active_hours_honors_minutes_and_midnight
-    assert SocialBots::CLI.active?('22:30-06:15', Time.local(2026, 1, 1, 23, 0))
-    refute SocialBots::CLI.active?('22:30-06:15', Time.local(2026, 1, 1, 22, 29))
-    refute SocialBots::CLI.active?('22:30-06:15', Time.local(2026, 1, 1, 6, 15))
-    assert_raises(SocialBots::Error) { SocialBots::CLI.active?('25:00-06:00') }
+    assert ChorusDraft::CLI.active?('22:30-06:15', Time.local(2026, 1, 1, 23, 0))
+    refute ChorusDraft::CLI.active?('22:30-06:15', Time.local(2026, 1, 1, 22, 29))
+    refute ChorusDraft::CLI.active?('22:30-06:15', Time.local(2026, 1, 1, 6, 15))
+    assert_raises(ChorusDraft::Error) { ChorusDraft::CLI.active?('25:00-06:00') }
   end
 end
 
 class ClientTest < Minitest::Test
   def mastodon(http)
-    SocialBots::Mastodon.new({ 'MASTODON_API_BASE_URL' => 'https://example.org', 'MASTODON_ACCESS_TOKEN' => 'secret' }, http: http)
+    ChorusDraft::Mastodon.new({ 'MASTODON_API_BASE_URL' => 'https://example.org', 'MASTODON_ACCESS_TOKEN' => 'secret' }, http: http)
   end
   def bluesky(http)
-    SocialBots::Bluesky.new({ 'BLUESKY_HANDLE' => 'alice.test', 'BLUESKY_APP_PASSWORD' => 'secret' }, http: http)
+    ChorusDraft::Bluesky.new({ 'BLUESKY_HANDLE' => 'alice.test', 'BLUESKY_APP_PASSWORD' => 'secret' }, http: http)
   end
   def session = { 'did' => 'did:plc:me', 'accessJwt' => 'secret-access', 'refreshJwt' => 'secret-refresh' }
   def bpost
@@ -271,7 +271,7 @@ class ClientTest < Minitest::Test
   end
   def test_same_numeric_account_on_different_instances_has_distinct_key
     one = mastodon(FakeHTTP.new({ 'id' => '1' }))
-    two = SocialBots::Mastodon.new({ 'MASTODON_API_BASE_URL' => 'https://other.example', 'MASTODON_ACCESS_TOKEN' => 'secret' }, http: FakeHTTP.new({ 'id' => '1' }))
+    two = ChorusDraft::Mastodon.new({ 'MASTODON_API_BASE_URL' => 'https://other.example', 'MASTODON_ACCESS_TOKEN' => 'secret' }, http: FakeHTTP.new({ 'id' => '1' }))
     one.login
     two.login
     assert_equal one.identity, two.identity
@@ -279,7 +279,7 @@ class ClientTest < Minitest::Test
   end
   def test_mastodon_rechecks_visibility_before_publishing
     http = FakeHTTP.new({ 'id' => '1', 'visibility' => 'direct' })
-    assert_raises(SocialBots::Error) { mastodon(http).publish(draft.merge('reply_to' => '1')) }
+    assert_raises(ChorusDraft::Error) { mastodon(http).publish(draft.merge('reply_to' => '1')) }
     assert_equal [:get], http.calls.map(&:first)
   end
   def test_mastodon_preserves_unlisted_and_idempotency
@@ -319,27 +319,27 @@ class ClientTest < Minitest::Test
     assert_equal 'Ruby', facets[2]['features'][0]['tag']
   end
   def test_bluesky_refresh_on_401_but_not_on_ambiguous_failure
-    http = FakeHTTP.new(session, SocialBots::HTTPError.new(401), session, { 'posts' => [bpost] })
+    http = FakeHTTP.new(session, ChorusDraft::HTTPError.new(401), session, { 'posts' => [bpost] })
     client = bluesky(http)
     client.login
     assert_equal bpost['uri'], client.get_post(bpost['uri'])['id']
     assert_includes http.calls[2][1], 'refreshSession'
-    http2 = FakeHTTP.new(session, SocialBots::Error.new('timeout'))
+    http2 = FakeHTTP.new(session, ChorusDraft::Error.new('timeout'))
     client2 = bluesky(http2)
     client2.login
-    assert_raises(SocialBots::Error) { client2.get_post(bpost['uri']) }
+    assert_raises(ChorusDraft::Error) { client2.get_post(bpost['uri']) }
     assert_equal 2, http2.calls.size
   end
   def test_bluesky_rejects_private_visibility_without_network_calls
     http = FakeHTTP.new
-    assert_raises(SocialBots::Error) { bluesky(http).publish(draft.merge('visibility' => 'private')) }
+    assert_raises(ChorusDraft::Error) { bluesky(http).publish(draft.merge('visibility' => 'private')) }
     assert_empty http.calls
   end
   def test_no_delete_of_other_users_bluesky_posts
     http = FakeHTTP.new(session)
     client = bluesky(http)
     client.login
-    assert_raises(SocialBots::Error) { client.delete(bpost['uri']) }
+    assert_raises(ChorusDraft::Error) { client.delete(bpost['uri']) }
     assert_equal 1, http.calls.size
   end
 end
@@ -362,8 +362,8 @@ class TransportTest < Minitest::Test
     response['location'] = 'https://attacker.test/?secret=credential'
     transport = Transport.new(response)
     Net::HTTP.stub(:new, transport) do
-      error = assert_raises(SocialBots::HTTPError) do
-        SocialBots::HTTP.new.request(:post, 'https://example.org/api', headers: { 'x-goog-api-key' => 'SECRET' }, body: { x: 1 })
+      error = assert_raises(ChorusDraft::HTTPError) do
+        ChorusDraft::HTTP.new.request(:post, 'https://example.org/api', headers: { 'x-goog-api-key' => 'SECRET' }, body: { x: 1 })
       end
       assert_equal 302, error.status
       refute_includes error.message, 'SECRET'
@@ -376,12 +376,12 @@ class TransportTest < Minitest::Test
   def test_raw_transport_error_never_escapes
     transport = Transport.new(nil, IOError.new('https://example.org?key=SECRET and private body'))
     Net::HTTP.stub(:new, transport) do
-      error = assert_raises(SocialBots::Error) { SocialBots::HTTP.new.request(:get, 'https://example.org') }
+      error = assert_raises(ChorusDraft::Error) { ChorusDraft::HTTP.new.request(:get, 'https://example.org') }
       refute_includes error.message, 'SECRET'
       refute_includes error.message, 'private body'
     end
   end
   def test_state_record_key_uses_tid_shape
-    assert_match(/\A[234567a-z]{13}\z/, SocialBots::Store.record_key)
+    assert_match(/\A[234567a-z]{13}\z/, ChorusDraft::Store.record_key)
   end
 end

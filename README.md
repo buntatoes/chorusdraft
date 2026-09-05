@@ -1,7 +1,7 @@
-# BlueBot and Mastobot
+# ChorusDraft
 
-BlueBot and Mastobot are AI-assisted command-line clients for Bluesky and
-Mastodon. They can draft posts, prepare replies, monitor mentions, search public
+ChorusDraft is an AI-assisted command-line publishing tool for Bluesky and
+Mastodon. It can draft posts, prepare replies, monitor mentions, search public
 posts, and build commentary from configured accounts. AI-generated content is
 always placed in a review queue so the account owner can inspect the exact text
 before it is published.
@@ -10,7 +10,7 @@ Version 0.50 uses one shared Ruby codebase on Linux, macOS, and Windows.
 
 ## Features
 
-| Feature | BlueBot | Mastobot |
+| Feature | Bluesky | Mastodon |
 | --- | --- | --- |
 | AI-assisted original drafts | Yes | Yes |
 | Manual posts | Yes | Yes |
@@ -36,7 +36,7 @@ Mastodon posts are excluded from AI input.
 
 - Ruby 3.2 or later for syntax compatibility. Use a currently supported,
   security-patched Ruby release in production.
-- A Bluesky app password for BlueBot, or a Mastodon access token for Mastobot.
+- A Bluesky app password or a Mastodon access token.
 - A local Ollama/OpenAI-compatible endpoint or a Google Gemini API key and model.
 
 The release contains no third-party Ruby gems and does not require a Go or Rust
@@ -48,18 +48,18 @@ Download the archive for the bot and operating system from the GitHub release:
 
 | Product | Linux | macOS | Windows |
 | --- | --- | --- | --- |
-| BlueBot | `bluebot-v0.50-linux.tar.gz` | `bluebot-v0.50-macos.tar.gz` | `bluebot-v0.50-windows.zip` |
-| Mastobot | `mastobot-v0.50-linux.tar.gz` | `mastobot-v0.50-macos.tar.gz` | `mastobot-v0.50-windows.zip` |
+| ChorusDraft for Bluesky | `chorusdraft-bluesky-v0.50-linux.tar.gz` | `chorusdraft-bluesky-v0.50-macos.tar.gz` | `chorusdraft-bluesky-v0.50-windows.zip` |
+| ChorusDraft for Mastodon | `chorusdraft-mastodon-v0.50-linux.tar.gz` | `chorusdraft-mastodon-v0.50-macos.tar.gz` | `chorusdraft-mastodon-v0.50-windows.zip` |
 
 On Linux or macOS:
 
 ```sh
-tar -xzf bluebot-v0.50-linux.tar.gz
-cd bluebot-v0.50-linux
+tar -xzf chorusdraft-bluesky-v0.50-linux.tar.gz
+cd chorusdraft-bluesky-v0.50-linux
 ruby setup.rb
 ```
 
-Substitute the Mastobot or macOS archive name as needed.
+Substitute the Mastodon or macOS archive name as needed.
 
 Verify a downloaded archive against `SHA256SUMS` before extracting it. On Linux:
 
@@ -111,7 +111,7 @@ GEMINI_MODEL=replace_with_an_available_model
 Gemini receives eligible public post text and public thread context used to build
 a draft. There is no automatic fallback between local AI and Gemini.
 
-### BlueBot
+### Bluesky
 
 ```dotenv
 BLUESKY_PDS_URL=https://bsky.social
@@ -122,7 +122,7 @@ BLUESKY_APP_PASSWORD=xxxx-xxxx-xxxx-xxxx
 Use a Bluesky app password rather than the primary account password. Change
 `BLUESKY_PDS_URL` only when the account uses another HTTPS personal data server.
 
-### Mastobot
+### Mastodon
 
 ```dotenv
 MASTODON_API_BASE_URL=https://mastodon.social
@@ -158,7 +158,7 @@ Blank lines and lines beginning with `#` are ignored.
 
 ## Usage
 
-Run `ruby bot.rb` inside an extracted package. The platform launchers forward the
+Run `ruby chorusdraft.rb` inside an extracted package. The platform launchers forward the
 same arguments:
 
 ```sh
@@ -172,8 +172,8 @@ run.bat --help
 ### Draft and publish
 
 ```sh
-ruby bot.rb --post-only
-ruby bot.rb --process-queue
+ruby chorusdraft.rb --post-only
+ruby chorusdraft.rb --process-queue
 ```
 
 Each draft displays its exact text, visibility, reply or quote target, and content
@@ -183,8 +183,8 @@ Review requires an interactive terminal.
 Stage a post you wrote, or publish that supplied text explicitly:
 
 ```sh
-ruby bot.rb --text "Hello from BlueBot"
-ruby bot.rb --text "Hello from BlueBot" --publish
+ruby chorusdraft.rb --text "Hello from ChorusDraft"
+ruby chorusdraft.rb --text "Hello from ChorusDraft" --publish
 ```
 
 `--publish` applies only to text supplied with `--text`. AI-generated content has
@@ -193,45 +193,45 @@ no direct-publish option.
 ### Replies and quotes
 
 ```sh
-ruby bot.rb --replies-only
-ruby bot.rb --text "Thanks for the details" --reply-to POST_ID
-ruby bot.rb --text "Useful context" --quote-uri POST_ID
+ruby chorusdraft.rb --replies-only
+ruby chorusdraft.rb --text "Thanks for the details" --reply-to POST_ID
+ruby chorusdraft.rb --text "Useful context" --quote-uri POST_ID
 ```
 
-For BlueBot, `POST_ID` is an `at://.../app.bsky.feed.post/...` URI and
-`--reply-uri` is an alias. For Mastobot, it is a numeric status ID. BlueBot creates
-a native quote embed after fetching the current record. Mastobot adds the public
-source URL to the commentary. `--reply-cid` and `--quote-cid` are accepted for
-compatibility, but supplied CIDs are not trusted.
+For Bluesky, `POST_ID` is an `at://.../app.bsky.feed.post/...` URI and
+`--reply-uri` is an alias. For Mastodon, it is a numeric status ID. The Bluesky
+integration creates a native quote embed after fetching the current record. The
+Mastodon integration adds the public source URL to the commentary. `--reply-cid`
+and `--quote-cid` are accepted for compatibility, but supplied CIDs are not trusted.
 
 Add a Mastodon content warning:
 
 ```sh
-ruby bot.rb --text "Post body" --cw "Topic warning"
+ruby chorusdraft.rb --text "Post body" --cw "Topic warning"
 ```
 
 ### Search, discovery, and targets
 
 ```sh
-ruby bot.rb --search "ruby programming" --limit 5
-ruby bot.rb --random-post "open source"
-ruby bot.rb --text "Manual response" --random-reply "open source"
-ruby bot.rb --discover --query "ruby"
-ruby bot.rb --targets-only
-ruby bot.rb --targets-only --target account.example
+ruby chorusdraft.rb --search "ruby programming" --limit 5
+ruby chorusdraft.rb --random-post "open source"
+ruby chorusdraft.rb --text "Manual response" --random-reply "open source"
+ruby chorusdraft.rb --discover --query "ruby"
+ruby chorusdraft.rb --targets-only
+ruby chorusdraft.rb --targets-only --target account.example
 ```
 
-Search and random-post commands only display public content. Discovery,
-and target modes create respectful drafts for review. Unsolicited drafts are
+Search and random-post commands only display public content. Discovery and
+target modes create respectful drafts for review. Unsolicited drafts are
 limited to five per rolling 24 hours and one per author every 30 days. The bot
 refuses to draft or publish interactions with accounts in do-not-contact state.
 
 ### Foreground monitoring
 
 ```sh
-ruby bot.rb --listen --poll-interval 60
-ruby bot.rb --daemon --interval 120
-ruby bot.rb --daemon --active-hours 08:30-22:00 --jitter 10
+ruby chorusdraft.rb --listen --poll-interval 60
+ruby chorusdraft.rb --daemon --interval 120
+ruby chorusdraft.rb --daemon --active-hours 08:30-22:00 --jitter 10
 ```
 
 `--listen` checks mentions. `--daemon` checks mentions and periodically prepares
@@ -246,11 +246,12 @@ do not install or detach a background service.
 ### Delete a post
 
 ```sh
-ruby bot.rb --delete POST_ID
+ruby chorusdraft.rb --delete POST_ID
 ```
 
 Deletion is limited to the authenticated account and requires typing `delete` in
-an interactive terminal. BlueBot accepts your post's full AT URI or record key.
+an interactive terminal. The Bluesky integration accepts your post's full AT URI
+or record key.
 
 ## Review queue and state
 
@@ -269,9 +270,9 @@ removes duplicate-prevention and interaction history.
 ## Privacy and safety
 
 - AI-generated content always requires per-draft approval.
-- BlueBot feed posts are public. Private visibility and content warnings are
+- Bluesky feed posts are public. Private visibility and content warnings are
   rejected because Bluesky feed posts do not support them.
-- Mastobot discards private, direct, and unknown-visibility message bodies before
+- ChorusDraft discards private, direct, and unknown-visibility Mastodon message bodies before
   AI processing, logging, or storage. Version 0.50 does not reply to restricted
   Mastodon messages.
 - Source visibility is checked again immediately before publishing a reply or quote.
@@ -300,7 +301,7 @@ intend to keep. Earlier queue and interaction files are not imported automatical
 Stop old listeners, scheduled tasks, launch agents, or services before starting
 the new foreground clients.
 
-The public product names and release filenames are now BlueBot and Mastobot. The
+The public product name and release filenames are now ChorusDraft. The
 platform names remain Bluesky and Mastodon in configuration variables and API terms.
 
 ## Development
@@ -308,8 +309,8 @@ platform names remain Bluesky and Mastodon in configuration variables and API te
 From the source repository:
 
 ```sh
-ruby bluebot/bot.rb --help
-ruby mastobot/bot.rb --help
+ruby bluesky/chorusdraft.rb --help
+ruby mastodon/chorusdraft.rb --help
 ruby test/safety_test.rb
 ruby scripts/build_release.rb
 ```
@@ -319,10 +320,10 @@ Tests use local fakes and do not log in, call an AI provider, or publish posts.
 
 ## License and acknowledgements
 
-BlueBot and Mastobot are distributed under the GNU General Public License v3.0.
+ChorusDraft is distributed under the GNU General Public License v3.0.
 See [LICENSE](LICENSE). [NOTICE](NOTICE) records the original projects,
 modification date, scope of the version 0.50 rewrite, and third-party names.
 
 Version 0.50 is based on the feature sets of Bluesky Bot 1.0.3 and Mastodon Bot
-1.0.2 by Buntatoes. It begins a new shared Ruby release line under the BlueBot and
-Mastobot names.
+1.0.2 by Buntatoes. It begins a new shared Ruby release line under the
+ChorusDraft name.

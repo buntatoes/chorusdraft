@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require_relative 'core'
 
-module SocialBots
+module ChorusDraft
   class Mastodon
     attr_reader :identity
     def initialize(env = ENV, http: HTTP.new)

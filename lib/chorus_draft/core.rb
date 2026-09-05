@@ -8,7 +8,7 @@ require 'securerandom'
 require 'fileutils'
 require 'cgi'
 
-module SocialBots
+module ChorusDraft
   VERSION = '0.50'
   class Error < StandardError; end
   class HTTPError < Error

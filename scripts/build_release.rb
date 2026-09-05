@@ -4,23 +4,23 @@ require 'fileutils'
 require 'digest'
 require 'zlib'
 require 'rubygems/package'
-require_relative '../lib/social_bots/core'
+require_relative '../lib/chorus_draft/core'
 
 root = File.expand_path('..', __dir__)
 dist = File.join(root, 'dist')
 FileUtils.mkdir_p(dist)
 archives = []
-products = %w[bluebot mastobot]
-products.product(%w[linux macos windows]).each do |bot, platform|
-  name = "#{bot}-v#{SocialBots::VERSION}-#{platform}"
+integrations = %w[bluesky mastodon]
+integrations.product(%w[linux macos windows]).each do |integration, platform|
+  name = "chorusdraft-#{integration}-v#{ChorusDraft::VERSION}-#{platform}"
   target = File.join(dist, name)
   # Remove only files retired by this release. Any other unexpected file still
   # stops the build instead of being silently archived.
   %w[SECURITY_AUDIT.md config/critical_targets.txt.example].each do |retired|
     FileUtils.rm_f(File.join(target, retired))
   end
-  expected_names = %w[README.md CHANGELOG.md RELEASE_NOTES.md SECURITY.md NOTICE LICENSE VERSION setup.rb bot.rb .env.example
-                      lib/social_bots/core.rb lib/social_bots/clients.rb lib/social_bots/cli.rb
+  expected_names = %w[README.md CHANGELOG.md RELEASE_NOTES.md SECURITY.md NOTICE LICENSE VERSION setup.rb chorusdraft.rb .env.example
+                      lib/chorus_draft/core.rb lib/chorus_draft/clients.rb lib/chorus_draft/cli.rb
                       test/safety_test.rb config/target_accounts.txt.example config/do_not_contact.txt.example]
   expected_names << (platform == 'windows' ? 'run.bat' : 'run.sh')
   existing = Dir.glob(File.join(target, '**', '*'), File::FNM_DOTMATCH)
@@ -30,23 +30,23 @@ products.product(%w[linux macos windows]).each do |bot, platform|
   # Explicit source allowlist: never copy runtime .env, state, logs, or old binaries.
   FileUtils.mkdir_p(target)
   %w[README.md CHANGELOG.md RELEASE_NOTES.md SECURITY.md NOTICE LICENSE VERSION setup.rb].each { |f| FileUtils.cp(File.join(root, f), target) }
-  FileUtils.mkdir_p(File.join(target, 'lib', 'social_bots'))
+  FileUtils.mkdir_p(File.join(target, 'lib', 'chorus_draft'))
   %w[core.rb clients.rb cli.rb].each do |file|
-    FileUtils.cp(File.join(root, 'lib', 'social_bots', file), File.join(target, 'lib', 'social_bots', file))
+    FileUtils.cp(File.join(root, 'lib', 'chorus_draft', file), File.join(target, 'lib', 'chorus_draft', file))
   end
   FileUtils.mkdir_p(File.join(target, 'test'))
   FileUtils.cp(File.join(root, 'test', 'safety_test.rb'), File.join(target, 'test'))
-  entry = File.read(File.join(root, bot, 'bot.rb')).sub("require_relative '../lib/", "require_relative 'lib/")
-  File.write(File.join(target, 'bot.rb'), entry)
-  FileUtils.cp(File.join(root, bot, '.env.example'), target)
+  entry = File.read(File.join(root, integration, 'chorusdraft.rb')).sub("require_relative '../lib/", "require_relative 'lib/")
+  File.write(File.join(target, 'chorusdraft.rb'), entry)
+  FileUtils.cp(File.join(root, integration, '.env.example'), target)
   FileUtils.mkdir_p(File.join(target, 'config'))
   %w[target_accounts do_not_contact].each do |kind|
-    FileUtils.cp(File.join(root, bot, 'config', "#{kind}.txt.example"), File.join(target, 'config'))
+    FileUtils.cp(File.join(root, integration, 'config', "#{kind}.txt.example"), File.join(target, 'config'))
   end
   if platform == 'windows'
-    File.binwrite(File.join(target, 'run.bat'), "@echo off\r\ncd /d \"%~dp0\"\r\nruby bot.rb %*\r\nexit /b %errorlevel%\r\n")
+    File.binwrite(File.join(target, 'run.bat'), "@echo off\r\ncd /d \"%~dp0\"\r\nruby chorusdraft.rb %*\r\nexit /b %errorlevel%\r\n")
   else
-    File.write(File.join(target, 'run.sh'), "#!/bin/sh\nset -eu\ncd -- \"$(dirname -- \"$0\")\"\nexec ruby bot.rb \"$@\"\n")
+    File.write(File.join(target, 'run.sh'), "#!/bin/sh\nset -eu\ncd -- \"$(dirname -- \"$0\")\"\nexec ruby chorusdraft.rb \"$@\"\n")
     File.chmod(0755, File.join(target, 'run.sh'))
   end
   files = Dir.glob(File.join(target, '**', '*'), File::FNM_DOTMATCH).select { |p| File.file?(p) }.sort

@@ -2,7 +2,7 @@
 require 'optparse'
 require_relative 'clients'
 
-module SocialBots
+module ChorusDraft
   class Runner
     def initialize(client, store, ai, platform:, env: ENV, input: $stdin, output: $stdout)
       @client, @store, @ai, @platform, @env, @input, @out = client, store, ai, platform, env, input, output
@@ -154,7 +154,7 @@ module SocialBots
   end
 
   class CLI
-    PRODUCTS = { 'bluesky' => 'BlueBot', 'mastodon' => 'Mastobot' }.freeze
+    PRODUCTS = { 'bluesky' => 'ChorusDraft for Bluesky', 'mastodon' => 'ChorusDraft for Mastodon' }.freeze
 
     def self.active?(spec, now = Time.now)
       return true if spec.to_s.empty?
@@ -170,7 +170,7 @@ module SocialBots
       product = PRODUCTS.fetch(platform)
       options = { poll: 60, interval: 120, jitter: 0, limit: 5 }
       parser = OptionParser.new do |o|
-        o.banner = "#{product} #{VERSION} — Ruby client for #{platform.capitalize}\nUsage: ruby bot.rb [options]\nAI output always requires review. No arguments prints help."
+        o.banner = "#{product} #{VERSION} — human-reviewed social drafting\nUsage: ruby chorusdraft.rb [options]\nAI output always requires review. No arguments prints help."
         o.on('-v', '--version', 'Show version') { puts VERSION; return 0 }
         o.on('-h', '--help', 'Show help') { puts o; return 0 }
         o.on('-m', '--text TEXT', 'Stage a manual post') { |v| options[:text] = v }

@@ -1,4 +1,4 @@
-BlueBot and Mastobot 0.50
+ChorusDraft 0.50
 Modification notice — September 5, 2026
 
 This distribution is a modified work based on the feature sets of Bluesky Bot
@@ -6,11 +6,11 @@ This distribution is a modified work based on the feature sets of Bluesky Bot
 GNU General Public License version 3.
 
 For version 0.50, the programs were reimplemented as a shared Ruby codebase,
-renamed BlueBot and Mastobot, and given new publication review, privacy,
+renamed ChorusDraft, and given new publication review, privacy,
 harassment prevention, state isolation, and release packaging controls. The
 complete user-visible change list is in CHANGELOG.md.
 
-BlueBot and Mastobot 0.50, including these modifications, are distributed under
+ChorusDraft 0.50, including these modifications, is distributed under
 the GNU General Public License version 3. See LICENSE for the complete terms.
 Copyright in the original and modified work remains with its respective
 copyright holders.
