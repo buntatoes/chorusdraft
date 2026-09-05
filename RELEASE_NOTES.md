@@ -7,7 +7,7 @@ line.
 The current supported release is
 [ChorusDraft 0.51.1](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.1),
 whose source lives on `main-ruby`. Unreleased Ruby maintenance work lives on
-`0.51.2-ruby-testing`.
+`ruby-testing`.
 
 The Elixir executable currently reports `0.52.0-testing` as a temporary internal
 identifier. There is no Elixir tag, GitHub release, archive, or supported upgrade

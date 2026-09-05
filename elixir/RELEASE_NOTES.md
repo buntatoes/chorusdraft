@@ -2,7 +2,7 @@
 
 This is an unfinished Linux rewrite of BlueBot and Mastobot on the
 `elixir-experimental` branch. It is separate from the supported Ruby 0.51.1
-release on `main-ruby` and the future Ruby work on `0.51.2-ruby-testing`.
+release on `main-ruby` and the future Ruby work on `ruby-testing`.
 
 The Mix project currently reports `0.52.0-testing` as a temporary internal build
 identifier. It is not the official Ruby 0.52 version and has no associated tag,

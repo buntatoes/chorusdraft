@@ -7,7 +7,7 @@
 
 The current supported version is the Ruby
 [ChorusDraft 0.51.1 release](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.1).
-Future Ruby maintenance work lives on `0.51.2-ruby-testing`. This branch is only
+Future Ruby maintenance work lives on `ruby-testing`. This branch is only
 for the Elixir experiment.
 
 The experimental executable currently reports `0.52.0-testing`. That is a

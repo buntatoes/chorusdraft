@@ -4,7 +4,7 @@ This directory contains the separate Linux Elixir rewrite of BlueBot for Bluesky
 and Mastobot for Mastodon. Development lives on the `elixir-experimental` branch.
 It is an unfinished experiment and is not part of the official Ruby release line.
 The supported Ruby release remains 0.51.1, with future Ruby work isolated on
-`0.51.2-ruby-testing`.
+`ruby-testing`.
 
 The executable currently reports `0.52.0-testing` as a temporary internal build
 identifier. That identifier is not a release, tag, compatibility promise, or the

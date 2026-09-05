@@ -2,7 +2,7 @@
 
 This is unfinished software on the `elixir-experimental` branch. The supported
 release is Ruby 0.51.1 from `main-ruby`; future Ruby maintenance work is isolated
-on `0.51.2-ruby-testing`. Report vulnerabilities using GitHub private
+on `ruby-testing`. Report vulnerabilities using GitHub private
 vulnerability reporting when available, or contact the maintainer privately
 through the GitHub profile. Never include credentials, private posts, or exploit
 details in a public issue.
