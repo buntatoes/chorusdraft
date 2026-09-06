@@ -1,7 +1,7 @@
 defmodule ChorusDraft.StoreTest do
   use ExUnit.Case
   import Bitwise
-  alias ChorusDraft.{Error, Store}
+  alias ChorusDraft.{Error, Platform, Store}
 
   setup do
     dir = Path.join(System.tmp_dir!(), "chorus-draft-store-#{System.unique_integer([:positive])}")
@@ -14,7 +14,9 @@ defmodule ChorusDraft.StoreTest do
     assert item = Store.stage(dir, %{"text" => "hello"})
     assert [saved] = Store.drafts(dir)
     assert saved["id"] == item["id"]
-    assert (File.stat!(Path.join(dir, "state.json")).mode &&& 0o777) == 0o600
+
+    if Platform.os() != "windows",
+      do: assert((File.stat!(Path.join(dir, "state.json")).mode &&& 0o777) == 0o600)
   end
 
   test "corrupt state fails closed and remains untouched", %{dir: dir} do

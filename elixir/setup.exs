@@ -1,4 +1,5 @@
 Code.require_file("lib/chorus_draft.ex", __DIR__)
+Code.require_file("lib/chorus_draft/platform.ex", __DIR__)
 Code.require_file("lib/chorus_draft/setup.ex", __DIR__)
 
 case System.argv() do

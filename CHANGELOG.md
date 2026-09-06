@@ -5,6 +5,18 @@ This changelog covers the ChorusDraft Elixir version on
 Elixir release has been published. Ruby history stays on `main-ruby` and
 `ruby-testing`.
 
+## Linux, macOS, and Windows packages — 2026-09-06 (unreleased)
+
+- Add native Elixir package builds for Linux (`.tar.gz`), macOS (`.tar.gz`), and
+  Windows (`.zip`), each containing both Bluesky and Mastodon modes.
+- Add PowerShell run, setup, install, manifest-verification, and package-test
+  scripts for Windows; make Unix checksum and permission checks work on macOS.
+- Preserve crash-released state locking on Linux and add compatible Python
+  standard-library locks on macOS/Windows. Apply private Windows ACLs and use an
+  atomic Windows state-file replacement.
+- Expand CI to run the 64 offline regressions and native package checks on
+  Ubuntu 22.04, macOS 14, and Windows Server 2022.
+
 ## Documentation after Ruby 0.51.2 promotion — 2026-09-06 (unreleased)
 
 - Track the tested Ruby 0.51.2 source on `main-ruby` and the synchronized

@@ -1,14 +1,15 @@
-# Linux Elixir implementation checkpoint
+# Linux, macOS, and Windows Elixir implementation checkpoint
 
 `0.52.0-testing` remains an internal, unreleased Elixir identifier. It does not
 replace or change the tagged Ruby 0.51.1 release. Ruby 0.51.2 source has been
 merged into `main-ruby` and synchronized to `ruby-testing`; tagging/publication
 remain pending. Elixir continues to use the pinned Ruby 0.51.1 parity reference.
 
-The separate Linux version implements the Ruby 0.51.1 workflows and safety
+The separate Elixir version implements the Ruby 0.51.1 workflows and safety
 controls, optional Bluesky Jetstream, read-only state import, non-overwriting
-setup, queue status/rejection, and one ChorusDraft package containing both
-platform modes, checksums, and corresponding application/dependency source.
+setup, queue status/rejection, and native Linux, macOS, and Windows packages.
+Each package contains both platform modes, checksums, and corresponding
+application/dependency source.
 
 Parity fixes include advancing past seen target/search results, preserving source
 content warnings, decoding numeric HTML entities before opt-out checks, accepting
@@ -29,20 +30,22 @@ The latest hardening pass passed 64 tests, package integrity and installation
 checks, and an offline source rebuild. A credential-free connection also verified
 the public Jetstream TLS handshake; account workflows still need live acceptance.
 
-Build requirement: Elixir 1.15+ and Erlang/OTP 25+. Runtime: Linux, Erlang/OTP 25+
-and util-linux. Packaging/installing also uses `tar` and `sha256sum`.
+Build requirement: Elixir 1.15+ and Erlang/OTP 25+. Runtime packages require
+Erlang/OTP 25+; Linux also requires util-linux, macOS requires Python 3, and
+Windows requires Python 3 and PowerShell. Unix packages use `.tar.gz`; Windows
+uses `.zip`.
 
 The [Elixir verification workflow](https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml)
-passed 64 tests in [the verified Linux run](https://github.com/buntatoes/chorusdraft/actions/runs/34012077368),
-including Ruby-generated state import. The run also verified escript creation,
-package integrity, installation of the combined package, both platform modes,
-overwrite refusal, and rebuilding from shipped dependency source. CI used
-Ubuntu 22.04, OTP 25.3, and Elixir 1.15.8.
+runs 64 tests and native package checks on Ubuntu 22.04, macOS 14, and Windows
+Server 2022. It verifies escript creation, package integrity, installation, both
+platform modes, overwrite refusal, and rebuilding from shipped dependency source.
+Linux also checks Ruby-generated state import. CI uses OTP 25.3 and Elixir 1.15.8.
 
 Successful [Elixir checks](https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml)
-upload the `chorusdraft-elixir-linux` artifact for 30 days. It includes the
-ChorusDraft Linux archive and its SHA-256 file; these are untagged build
-artifacts. Local builds write the same package types to `dist/`.
+upload separate `chorusdraft-elixir-linux`, `chorusdraft-elixir-macos`, and
+`chorusdraft-elixir-windows` artifacts for 30 days. Each includes its native
+archive and SHA-256 file; these are untagged build artifacts. Local builds write
+the matching package type to `dist/`.
 
 Live Bluesky/Mastodon/AI acceptance and a sustained daemon soak require a test
 account and have not been performed. An independent release security audit also

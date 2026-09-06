@@ -1,6 +1,6 @@
 # Third-party notices
 
-The Linux Elixir build uses:
+The Linux, macOS, and Windows Elixir builds use:
 
 - [Jason](https://github.com/michalmuskala/jason) 1.4.5 for JSON encoding and
   decoding, copyright (c) 2016 Michał Muskała, Apache License 2.0.

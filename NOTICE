@@ -1,10 +1,10 @@
 ChorusDraft Elixir version — unreleased
 Modification notice — September 6, 2026
 
-This branch contains the Linux Elixir implementation of ChorusDraft with support
-for Bluesky and Mastodon. It derives its feature set from ChorusDraft 0.51.1 and
-is developed separately on the elixir-experimental branch. The Ruby branches are
-retained separately and are not modified by this implementation.
+This branch contains the Linux, macOS, and Windows Elixir implementation of
+ChorusDraft with support for Bluesky and Mastodon. It derives its feature set
+from ChorusDraft 0.51.1 and is developed separately on the
+elixir-experimental branch. The Ruby branches are retained separately.
 
 ChorusDraft was authored by Buntatoes and is distributed under the GNU General
 Public License version 3. The Elixir implementation remains under GPLv3. See

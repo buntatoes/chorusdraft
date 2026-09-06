@@ -5,18 +5,26 @@ if [ "$#" -ne 1 ]; then
   echo 'Usage: ./install.sh NEW_DIRECTORY (must not exist)' >&2
   exit 1
 fi
-src=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+src=$(CDPATH= cd "$(dirname "$0")" && pwd)
 dest=$1
 case "$dest" in /*) ;; *) dest=$PWD/$dest ;; esac
 if [ -e "$dest" ] || [ -L "$dest" ]; then
   echo 'Destination already exists; install into a new version directory.' >&2
   exit 1
 fi
-(cd "$src" && sha256sum --check --quiet MANIFEST.sha256)
-mkdir -m 700 -- "$dest"
-for item in chorusdraft run.sh setup.sh install.sh bluesky mastodon source README.md RELEASE_NOTES.md SECURITY.md PARITY.md LICENSE NOTICE THIRD_PARTY_NOTICES.md VERSION MANIFEST.sha256; do
-  cp -R -- "$src/$item" "$dest/$item"
+verify() {
+  manifest=$1
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum --check --quiet "$manifest"
+  else
+    shasum -a 256 --check "$manifest" >/dev/null
+  fi
+}
+(cd "$src" && verify MANIFEST.sha256)
+mkdir -m 700 "$dest"
+for item in chorusdraft run.sh setup.sh install.sh bluesky mastodon source README.md RELEASE_NOTES.md CHANGELOG.md SECURITY.md PARITY.md LICENSE NOTICE THIRD_PARTY_NOTICES.md VERSION MANIFEST.sha256; do
+  cp -R "$src/$item" "$dest/$item"
 done
-(cd "$dest" && sha256sum --check --quiet MANIFEST.sha256)
+(cd "$dest" && verify MANIFEST.sha256)
 "$dest/setup.sh"
 echo "Installed ChorusDraft in $dest. Edit bluesky/.env and/or mastodon/.env before use."

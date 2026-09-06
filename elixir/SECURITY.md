@@ -29,10 +29,13 @@ The Elixir port enforces these boundaries:
   followed. Mint HTTP/1 connections issue one request without automatic retries,
   including on 503 responses. Loopback HTTP is permitted only for a local AI
   service. Streaming response size/header limits and generic errors reduce accidental disclosure.
-- State is isolated by platform and account, stored with private permissions, and
-  replaced atomically. A Linux kernel flock prevents concurrent writers and
-  releases on process exit. Corrupt state fails closed. Publishing requests are not automatically retried; uncertain
-  results require manual account inspection.
+- State is isolated by platform and account, stored with private permissions,
+  and replaced atomically. Linux uses a kernel `flock`; macOS uses `fcntl`, and
+  Windows uses `msvcrt` plus an atomic .NET file replacement. The helper locks
+  release when their owning VM exits. Windows configuration and state use ACLs
+  limited to the current user and SYSTEM. Corrupt state fails closed. Publishing
+  requests are not automatically retried; uncertain results require manual
+  account inspection.
 - Import reads the old state without modifying it, requires an empty destination,
   and preserves publication IDs and interaction history. Interrupted publications
   become uncertain; import never makes them eligible for automatic replay.

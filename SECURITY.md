@@ -2,10 +2,11 @@
 
 The latest published Ruby release is tagged `v0.51.1`; `main-ruby` and the
 synchronized `ruby-testing` baseline now contain the native-tested 0.51.2 source,
-which awaits tagging/publication. The Linux Elixir version of ChorusDraft on
-`elixir-experimental` is unreleased and retains its pinned Ruby 0.51.1 reference. Its offline regression, state-import, and
-package checks have passed; live platform verification, a sustained daemon soak,
-and an independent release security audit remain outstanding.
+which awaits tagging/publication. The Linux, macOS, and Windows Elixir version
+on `elixir-experimental` is unreleased and retains its pinned Ruby 0.51.1
+reference. Its credential-free regression and native-package checks are part of
+the branch CI; live platform verification, a sustained daemon soak, and an
+independent release security audit remain outstanding.
 
 The latest targeted review hardened optional Jetstream reception: frames and
 fragmented messages have limits checked before payload reads, and handshake

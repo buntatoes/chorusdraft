@@ -1,18 +1,30 @@
 #!/bin/sh
 set -eu
 work=$(mktemp -d)
-trap 'rm -rf -- "$work"' EXIT HUP INT TERM
-set -- dist/ChorusDraft-elixir-*-linux.tar.gz
+trap 'rm -rf "$work"' EXIT HUP INT TERM
+case $(uname -s) in
+  Darwin) package_os=macos ;;
+  Linux) package_os=linux ;;
+  *) echo 'Use check_packages.ps1 on Windows.' >&2; exit 1 ;;
+esac
+set -- dist/ChorusDraft-elixir-*-$package_os.tar.gz
 if [ "$#" -ne 1 ] || [ ! -f "$1" ]; then
-  echo 'Expected exactly one ChorusDraft Linux archive.' >&2
+  echo "Expected exactly one ChorusDraft $package_os archive." >&2
   exit 1
 fi
 archive=$1
-(cd dist && sha256sum --check "$(basename "$archive").sha256")
+verify() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum --check "$1"
+  else
+    shasum -a 256 --check "$1"
+  fi
+}
+(cd dist && verify "$(basename "$archive").sha256")
 tar -xzf "$archive" -C "$work"
 name=$(basename "$archive" .tar.gz)
 package=$work/$name
-(cd "$package" && sha256sum --check --quiet MANIFEST.sha256)
+(cd "$package" && verify MANIFEST.sha256 >/dev/null)
 for dep in mint websockex jason telemetry hpax; do
   find "$package/source/deps/$dep" -type f | grep -Ei '/(license|copying)(\.[^/]*)?$' >/dev/null
 done
@@ -27,7 +39,12 @@ installed=$work/installed-$name
 printf '%s\n' 'SENTINEL=$(do-not-execute)' > "$installed/bluesky/.env"
 "$installed/setup.sh"
 test "$(cat "$installed/bluesky/.env")" = 'SENTINEL=$(do-not-execute)'
-test "$(stat -c %a "$installed/bluesky/.env")" = 600
+if [ "$package_os" = macos ]; then
+  permissions=$(stat -f %Lp "$installed/bluesky/.env")
+else
+  permissions=$(stat -c %a "$installed/bluesky/.env")
+fi
+test "$permissions" = 600
 if "$package/install.sh" "$installed"; then
   echo 'Installer overwrote an existing directory' >&2
   exit 1

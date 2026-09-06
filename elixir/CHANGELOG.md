@@ -4,6 +4,20 @@ Changes to the ChorusDraft Elixir version on `elixir-experimental`, newest first
 is `0.52.0-testing`; the branch remains unreleased. Ruby 0.51.1 code is a read-only
 feature reference.
 
+## Linux, macOS, and Windows packages — 2026-09-06 (unreleased)
+
+- Add native `.tar.gz` packages for Linux and macOS and a native `.zip` package
+  for Windows. Each archive contains both Bluesky and Mastodon modes, checksums,
+  full application/dependency source, and original dependency licenses.
+- Add PowerShell launch, setup, non-overwriting install, manifest verification,
+  and package regression scripts. Make Unix checksum and mode checks portable
+  between GNU/Linux and macOS tools.
+- Retain util-linux `flock` on Linux; use Python standard-library `fcntl` on
+  macOS and `msvcrt` on Windows. Add private Windows ACLs and atomic state-file
+  replacement through PowerShell/.NET.
+- Expand CI into Ubuntu 22.04, macOS 14, and Windows Server 2022 jobs, each
+  running the 64 regressions and its native package checks.
+
 ## Documentation after Ruby 0.51.2 promotion — 2026-09-06 (unreleased)
 
 - Track the tested Ruby 0.51.2 source on `main-ruby` and the synchronized

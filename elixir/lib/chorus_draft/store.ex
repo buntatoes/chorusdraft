@@ -1,8 +1,7 @@
 defmodule ChorusDraft.Store do
-  alias ChorusDraft.{Error, Safety}
+  alias ChorusDraft.{Error, Lock, Platform, Safety}
 
   @active_statuses ["pending", "publishing", "uncertain"]
-  @lock_timeout 5_000
 
   def new(dir) do
     File.mkdir_p!(dir)
@@ -10,7 +9,7 @@ defmodule ChorusDraft.Store do
     unless File.lstat!(dir).type == :directory,
       do: raise(Error, "State directory must not be a symlink.")
 
-    File.chmod!(dir, 0o700)
+    Platform.private_directory!(dir)
     dir
   end
 
@@ -311,55 +310,24 @@ defmodule ChorusDraft.Store do
 
     try do
       {:ok, io} = File.open(temporary, [:write, :binary, :exclusive])
-      File.chmod!(temporary, 0o600)
       IO.binwrite(io, Jason.encode!(state, pretty: true))
       :ok = :file.sync(io)
       File.close(io)
-      File.chmod!(temporary, 0o600)
-      File.rename!(temporary, path)
+      Platform.private_file!(temporary)
+      Platform.replace_file!(temporary, path)
     after
       File.rm(temporary)
     end
   end
 
-  # The Linux kernel releases flock on process exit, including crashes. The
-  # descriptor also interoperates with Ruby's state.lock without deleting it.
+  # Keep a persistent lock file; unlinking it could split concurrent owners.
   defp acquire_lock(path) do
     regular_file!(path, true)
     {:ok, io} = File.open(path, [:append, :binary])
     File.close(io)
-    File.chmod!(path, 0o600)
+    Platform.private_file!(path)
 
-    executable =
-      System.find_executable("flock") ||
-        raise(Error, "Install util-linux (flock) to use state storage.")
-
-    port =
-      Port.open({:spawn_executable, executable}, [
-        :binary,
-        :exit_status,
-        :use_stdio,
-        :hide,
-        args: [
-          "--exclusive",
-          "--timeout",
-          "5",
-          "--no-fork",
-          path,
-          "/bin/sh",
-          "-c",
-          "printf 'locked\\n'; read -r release"
-        ]
-      ])
-
-    receive do
-      {^port, {:data, "locked\n"}} -> port
-      {^port, {:exit_status, _}} -> raise Error, "State is busy or could not be locked."
-    after
-      @lock_timeout + 1_000 ->
-        if Port.info(port), do: Port.close(port)
-        raise Error, "State lock timed out."
-    end
+    Lock.acquire(path)
   end
 
   defp uuid do

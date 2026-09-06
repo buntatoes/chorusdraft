@@ -15,16 +15,23 @@ defmodule ChorusDraft.Package do
     File.mkdir!(work)
 
     try do
-      name = "ChorusDraft-elixir-#{ChorusDraft.version()}-linux"
+      os = ChorusDraft.Platform.os()
+      name = "ChorusDraft-elixir-#{ChorusDraft.version()}-#{os}"
       package = Path.join(work, name)
       File.mkdir!(package)
 
-      for file <- @documents -- ["CHANGELOG.md"], do: copy(root, package, file)
+      for file <- @documents, do: copy(root, package, file)
       File.cp!(Path.join(root, license), Path.join(package, "LICENSE"))
       copy(root, package, "chorusdraft")
-      File.cp!(Path.join(root, "scripts/install.sh"), Path.join(package, "install.sh"))
-      File.write!(Path.join(package, "run.sh"), run_launcher())
-      File.write!(Path.join(package, "setup.sh"), setup_launcher())
+
+      if os == "windows" do
+        for file <- ~w(run.ps1 setup.ps1 install.ps1 verify.ps1),
+            do: File.cp!(Path.join(root, "scripts/" <> file), Path.join(package, file))
+      else
+        File.cp!(Path.join(root, "scripts/install.sh"), Path.join(package, "install.sh"))
+        File.write!(Path.join(package, "run.sh"), run_launcher())
+        File.write!(Path.join(package, "setup.sh"), setup_launcher())
+      end
 
       for platform <- @platforms do
         copy(root, package, platform <> "/.env.example")
@@ -33,8 +40,10 @@ defmodule ChorusDraft.Package do
             do: copy(root, package, platform <> "/config/" <> file)
       end
 
-      for file <- ~w(chorusdraft run.sh setup.sh install.sh),
-          do: File.chmod!(Path.join(package, file), 0o755)
+      if os != "windows" do
+        for file <- ~w(chorusdraft run.sh setup.sh install.sh),
+            do: File.chmod!(Path.join(package, file), 0o755)
+      end
 
       source = Path.join(package, "source")
       File.mkdir!(source)
@@ -70,8 +79,17 @@ defmodule ChorusDraft.Package do
         end) <> "\n"
 
       File.write!(Path.join(package, "MANIFEST.sha256"), manifest)
-      archive = Path.join(dist, name <> ".tar.gz")
-      {_, 0} = System.cmd("tar", ["-czf", archive, "-C", work, name], stderr_to_stdout: true)
+      archive = Path.join(dist, name <> if(os == "windows", do: ".zip", else: ".tar.gz"))
+
+      File.cd!(work, fn ->
+        if os == "windows" do
+          entries = regular_files(package) |> Enum.map(&String.to_charlist(name <> "/" <> &1))
+          {:ok, _} = :zip.create(String.to_charlist(archive), entries)
+        else
+          :ok =
+            :erl_tar.create(String.to_charlist(archive), [String.to_charlist(name)], [:compressed])
+        end
+      end)
 
       digest =
         File.read!(archive) |> then(&:crypto.hash(:sha256, &1)) |> Base.encode16(case: :lower)
@@ -88,7 +106,7 @@ defmodule ChorusDraft.Package do
     #!/bin/sh
     set -eu
     umask 077
-    base=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+    base=$(CDPATH= cd "$(dirname "$0")" && pwd)
     if [ "$#" -lt 1 ]; then
       echo 'Usage: ./run.sh bluesky|mastodon [options]' >&2
       exit 1
@@ -108,7 +126,7 @@ defmodule ChorusDraft.Package do
     #!/bin/sh
     set -eu
     umask 077
-    base=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+    base=$(CDPATH= cd "$(dirname "$0")" && pwd)
     if [ "$#" -eq 0 ]; then
       "$base/chorusdraft" bluesky --base "$base/bluesky" --setup
       exec "$base/chorusdraft" mastodon --base "$base/mastodon" --setup
@@ -163,7 +181,10 @@ defmodule ChorusDraft.Package do
   defp regular_files(root, relative \\ "") do
     Enum.flat_map(File.ls!(Path.join(root, relative)) |> Enum.sort(), fn entry ->
       path = Path.join(relative, entry)
-      if File.dir?(Path.join(root, path)), do: regular_files(root, path), else: [path]
+
+      if File.dir?(Path.join(root, path)),
+        do: regular_files(root, path),
+        else: [String.replace(path, "\\", "/")]
     end)
   end
 end

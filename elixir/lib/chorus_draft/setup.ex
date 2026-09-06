@@ -1,16 +1,16 @@
 defmodule ChorusDraft.Setup do
-  alias ChorusDraft.Error
+  alias ChorusDraft.{Error, Platform}
 
   def run(base) do
     File.mkdir_p!(base)
-    File.chmod!(base, 0o700)
+    Platform.private_directory!(base)
     config = Path.join(base, "config")
     File.mkdir_p!(config)
 
     unless File.lstat!(config).type == :directory,
       do: raise(Error, "Configuration directory must not be a symlink.")
 
-    File.chmod!(config, 0o700)
+    Platform.private_directory!(config)
 
     for {source, destination} <- [
           {".env.example", ".env"},
@@ -23,18 +23,19 @@ defmodule ChorusDraft.Setup do
       case File.open(target, [:write, :binary, :exclusive]) do
         {:ok, io} ->
           try do
-            File.chmod!(target, 0o600)
             IO.binwrite(io, content)
           after
             File.close(io)
           end
 
+          Platform.private_file!(target)
           IO.puts("Created #{destination}")
 
         {:error, :eexist} ->
           unless File.lstat!(target).type == :regular,
             do: raise(Error, "Existing configuration must be a regular file.")
 
+          Platform.private_file!(target)
           IO.puts("Preserved existing #{destination}")
 
         {:error, _} ->

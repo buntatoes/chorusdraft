@@ -1,7 +1,7 @@
 defmodule ChorusDraft.MigrationTest do
   use ExUnit.Case
   import Bitwise
-  alias ChorusDraft.{Error, Runner, Setup, Store, TestClient}
+  alias ChorusDraft.{Error, Platform, Runner, Setup, Store, TestClient}
 
   setup do
     root = Path.join(System.tmp_dir!(), "migration-#{System.unique_integer([:positive])}")
@@ -122,8 +122,16 @@ defmodule ChorusDraft.MigrationTest do
   } do
     File.mkdir!(Path.join(source, "state.json"))
     assert_raise Error, fn -> Store.drafts(source) end
-    File.ln_s!(Path.join(source, "state.json"), Path.join(destination, "state.json"))
-    assert_raise Error, fn -> Store.drafts(destination) end
+
+    case File.ln_s(Path.join(source, "state.json"), Path.join(destination, "state.json")) do
+      :ok ->
+        assert_raise Error, fn -> Store.drafts(destination) end
+
+      {:error, reason} ->
+        if Platform.os() == "windows" and reason in [:eacces, :eperm],
+          do: :ok,
+          else: flunk("Could not create test symlink: #{inspect(reason)}")
+    end
   end
 
   test "kernel locking prevents concurrent reviewers claiming the same draft", %{source: source} do
@@ -179,6 +187,8 @@ defmodule ChorusDraft.MigrationTest do
     File.write!(Path.join(base, ".env"), "KEEP=$(literal)")
     Setup.run(base)
     assert File.read!(Path.join(base, ".env")) == "KEEP=$(literal)"
-    assert (File.stat!(Path.join(base, ".env")).mode &&& 0o777) == 0o600
+
+    if Platform.os() != "windows",
+      do: assert((File.stat!(Path.join(base, ".env")).mode &&& 0o777) == 0o600)
   end
 end

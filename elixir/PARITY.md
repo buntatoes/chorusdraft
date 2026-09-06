@@ -4,8 +4,8 @@ Read-only baseline: the historical Ruby 0.51.1 reference commit
 `68b83694ec34b1161839b5ff62a857a774415ece`. This commit remains pinned in CI.
 Ruby 0.51.2 source is now merged into `main-ruby`, and `ruby-testing` is
 synchronized with that merge. Its Ruby 4.0 requirement and short commands are
-outside this parity baseline; no Elixir implementation or reference pin changed.
-The rewrite targets Linux. It does not replace the Windows/macOS Ruby builds.
+outside this parity baseline; no reference pin changed. The Elixir rewrite now
+targets Linux, macOS, and Windows. It remains separate from the Ruby builds.
 
 | Ruby behavior | Elixir implementation | Verification |
 |---|---|---|
@@ -18,9 +18,9 @@ The rewrite targets Linux. It does not replace the Windows/macOS Ruby builds.
 | CLI compatibility aliases | `--reply-uri`, `--quote-only`, `--staging`, `--poll`, CID arguments | Parity tests; supplied CIDs are deliberately re-fetched |
 | Polling, daemon, local active hours and jitter | Foreground loops, monotonic scheduling and isolated job failures | Schedule and HTTP-error regression tests |
 | Privacy exclusions, opt-outs and interaction budgets | Restricted bodies discarded; persistent blocks; daily/author limits | Safety, client, runner and store tests |
-| Account-scoped atomic state and idempotency | Kernel flock, private files, stable IDs/record keys, uncertain outcomes | Concurrency, crash recovery and transport tests |
+| Account-scoped atomic state and idempotency | Native kernel locks, private modes/Windows ACLs, stable IDs/record keys, uncertain outcomes | Concurrency, crash recovery, native CI and transport tests |
 | Existing state and configuration | Read-only import into an empty account store; non-overwriting setup | Migration tests, including Ruby-generated state in CI |
-| Linux packaging and install/upgrade | One ChorusDraft archive with both platform modes, source/dependency source, manifest, and new-directory installer | CI extraction, installation, overwrite refusal and offline rebuild |
+| Linux, macOS, and Windows packaging and install/upgrade | One native archive per OS with both platform modes, source/dependency source, manifest, and new-directory installer | Native CI extraction, installation, overwrite refusal and offline rebuild |
 | Jetstream | Optional Bluesky notification wake-up with periodic API catch-up and bounded passive reception | Protocol, reconnect, coalescing, oversized/fragmented message, handshake, heartbeat, and timeout tests |
 
 Intentional differences: Elixir uses no Ruby runtime. Packaging requires Erlang

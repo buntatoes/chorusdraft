@@ -1,5 +1,5 @@
 defmodule ChorusDraft do
-  @moduledoc "Shared runtime for the Linux Elixir testing build."
+  @moduledoc "Shared runtime for the Linux, macOS, and Windows Elixir testing builds."
   @version "0.52.0-testing"
   def version, do: @version
 end
