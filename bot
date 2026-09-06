@@ -1,0 +1,18 @@
+#!/bin/sh
+set -eu
+cd -- "$(dirname -- "$0")"
+case "${1:-help}" in
+  bluesky|mastodon)
+    platform=$1
+    shift
+    exec "./$platform/bot" "$@"
+    ;;
+  help|-h|--help)
+    echo 'Usage: ./bot bluesky COMMAND or ./bot mastodon COMMAND'
+    echo 'For shorter commands: cd bluesky (or mastodon), then ./bot help'
+    ;;
+  *)
+    echo 'Choose a bot: ./bot bluesky COMMAND or ./bot mastodon COMMAND' >&2
+    exit 1
+    ;;
+esac

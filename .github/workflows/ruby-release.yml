@@ -1,0 +1,60 @@
+name: Ruby release checks
+
+on:
+  push:
+    branches: [main-ruby, ruby-testing, 'codex/ruby-release-*']
+  pull_request:
+    branches: [main-ruby, ruby-testing]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ruby-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build release archives
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+      - name: Build the six release archives
+        run: ruby scripts/build_release.rb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ruby-release-archives
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14
+
+  native:
+    name: Native checks (${{ matrix.os }})
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025, macos-15, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+      - name: Install test dependency
+        run: gem install minitest --version 6.0.0 --no-document
+      - name: Report native runtime
+        run: ruby -e 'puts RUBY_DESCRIPTION; puts RUBY_PLATFORM'
+      - name: Source safety and command tests
+        run: ruby -Itest -e 'Dir["test/*_test.rb"].sort.each { |file| require_relative file }'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ruby-release-archives
+          path: dist
+      - name: Test extracted release packages and native launchers
+        run: python scripts/verify_release.py

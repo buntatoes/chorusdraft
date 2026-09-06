@@ -1,97 +1,47 @@
-# ChorusDraft 0.51.1 release notes
+# ChorusDraft Elixir branch notes
 
-ChorusDraft 0.51.1 is a security update for the Ruby releases on Linux, macOS,
-and Windows. It retains the comic voice introduced in 0.51 and the requirement
-that every AI-generated draft receive interactive review.
+`elixir-experimental` contains one Linux Elixir implementation of ChorusDraft
+with Bluesky and Mastodon modes. Its internal version is
+`0.52.0-testing`; it remains unreleased and does not replace the Ruby builds on
+`main-ruby` or `ruby-testing`.
 
-## Source and release status
+The branch includes the Ruby command workflows, local AI and Gemini adapters,
+interactive AI draft review, optional Bluesky Jetstream, state safeguards,
+read-only state import, setup, and a Linux package containing both platform
+modes. The package includes launchers, a non-overwriting installer, SHA-256
+checksums, and corresponding application/dependency source with notices.
 
-- `main-ruby` is the default branch for the supported Ruby release line.
-- The immutable `v0.51.1` tag identifies the source used for this release.
-- `ruby-testing` contains the unreleased Ruby 0.51.2 candidate, requiring
-  Ruby 4.0+ and adding short `bot` commands. Those changes are not in 0.51.1.
-- `elixir-experimental` contains the Linux Elixir implementation under testing
-  (`0.52.0-testing`) and is not included in the 0.51.1 source or downloads.
+The latest unreleased hardening bounds Jetstream frame and fragmented-message
+sizes before payload reads, handshake headers, fragment counts, and receive
+deadlines. Reconnect and notification catch-up remain active.
 
-## Security changes
+Running the package requires Linux, Erlang/OTP 25+, and util-linux. Building or
+testing also requires Elixir 1.15+ and Mix. Packaging/installing uses `tar` and
+`sha256sum`. The packaged application does not require Ruby or Elixir.
 
-- All fetched opt-out requests are recorded before reply limits or AI failures can
-  interrupt notification processing.
-- Unicode-aware matching recognizes common curly-apostrophe, full-width, and
-  invisible-formatting variations without rewriting the text being reviewed.
-- Do-not-contact checks cover explicit mentions in generated, manual, and queued
-  text and Mastodon content warnings. Local Mastodon handles match their fully
-  qualified form on the configured instance.
-- New opt-outs no longer evict older entries from local state.
-- Mastodon content warnings receive length, control-character, harassment, and
-  do-not-contact validation before staging, display, and publication.
+The implementation checks cover 64 offline regressions, Ruby-generated state import,
+escript creation, package installation, checksum checks, overwrite refusal, and
+an offline source rebuild. Successful
+[Elixir checks](https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml)
+upload the `chorusdraft-elixir-linux` artifact for 30 days.
 
-## Comic drafting
+Live Bluesky, Mastodon, and AI acceptance, a sustained daemon soak, and an
+independent release security audit have not been completed. Offline tests do not
+establish live-service acceptance. No Elixir tag or GitHub release has been
+published.
 
-ChorusDraft 0.51 gives Bluesky and Mastodon drafts a clearer comic voice: dry wit,
-light sarcasm, absurd comparisons, and playful commentary on software and everyday
-internet situations. Every AI-generated post still goes through human review.
+See [the usage and migration guide](elixir/README.md),
+[implementation details](elixir/RELEASE_NOTES.md),
+[feature parity](elixir/PARITY.md), and [security limits](elixir/SECURITY.md).
 
-## What's new
+## Promotion and publication
 
-- Original drafts request concrete setups and unexpected turns, with varied topics
-  and joke structures.
-- Replies share gentle humor about the conversation. Target and discovery drafts
-  can satirize products, claims, and situations without humiliating their authors.
-- Shared instructions discourage generic praise and explanations of punchlines.
-  Serious help requests, grief, and distress call for sincere responses.
-- Local AI and Gemini receive the same comic brief. Output quality varies by model.
+The source merge preserves the native-tested runtime, launchers, and safeguards.
+The native workflow also runs for pushes to `main-ruby` and `ruby-testing` and
+for temporary `codex/ruby-release-*` validation branches. Future Ruby changes
+should start from this shared merge baseline.
 
-The review queue, output screening, private-message exclusions, do-not-contact
-controls, interaction limits, and protection against duplicate publishing remain
-in place. The update changes newly generated drafts; existing queued drafts and
-manually supplied text keep their wording.
-
-## Release files
-
-| Product | Linux | macOS | Windows |
-| --- | --- | --- | --- |
-| ChorusDraft for Bluesky | [Linux](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-bluesky-v0.51.1-linux.tar.gz) | [macOS](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-bluesky-v0.51.1-macos.tar.gz) | [Windows](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-bluesky-v0.51.1-windows.zip) |
-| ChorusDraft for Mastodon | [Linux](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-mastodon-v0.51.1-linux.tar.gz) | [macOS](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-mastodon-v0.51.1-macos.tar.gz) | [Windows](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-mastodon-v0.51.1-windows.zip) |
-
-Download `SHA256SUMS` with the selected archive. On Linux, verify with:
-
-```sh
-sha256sum --ignore-missing -c SHA256SUMS
-```
-
-On macOS:
-
-```sh
-shasum -a 256 -c SHA256SUMS
-```
-
-## Requirements
-
-- Ruby 3.2 or later for syntax compatibility; use a currently supported,
-  security-patched Ruby release in production.
-- A Bluesky app password or Mastodon access token.
-- A configured local AI model or Gemini API key and model.
-
-Run `ruby setup.rb`, edit `.env`, and use `ruby chorusdraft.rb --help` to see every command.
-
-## Compatibility notes
-
-- State and configuration are compatible with ChorusDraft 0.50 and 0.51. Stop the old
-  instance and securely copy `.env`, configured target and do-not-contact files,
-  and the entire `data` directory into the new installation. Run only one instance
-  per account; preserve `data` to retain drafts, opt-outs, and interaction history.
-- Queue and interaction files from the older Bluesky Bot and Mastodon Bot projects
-  are not imported automatically.
-- AI drafts cannot be published without interactive review.
-- Automatic likes, favourites, boosts, and reposts are disabled.
-- Restricted Mastodon messages are not processed or answered.
-- Dedicated critical targeting is not included. Unsolicited target and discovery
-  drafts are limited to five per day and one per author every 30 days.
-- Clear requests to stop replying and configured do-not-contact entries block all
-  supplied reply, quote, target, and queued publication paths for that account.
-- Bluesky feed posts are public and do not support Mastodon content warnings.
-
-See `README.md` for installation, configuration, command examples, and state
-handling. See `CHANGELOG.md` for the complete feature and behavior list and
-`SECURITY.md` for vulnerability reporting and the enforced safety boundaries.
+Before publishing 0.51.2, select the final main commit, complete live-account
+acceptance, create its release tag, and attach the archives and checksums tested
+for that commit. Offline/native fixture checks do not establish live-service
+acceptance. This merge does not publish posts or create a release.

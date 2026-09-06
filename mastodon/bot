@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+cd -- "$(dirname -- "$0")"
+# Use rbenv even when this terminal has not loaded its shell initialization.
+if command -v rbenv >/dev/null 2>&1; then
+  exec rbenv exec ruby chorusdraft.rb "$@"
+elif [ -x "${RBENV_ROOT:-$HOME/.rbenv}/bin/rbenv" ]; then
+  exec "${RBENV_ROOT:-$HOME/.rbenv}/bin/rbenv" exec ruby chorusdraft.rb "$@"
+fi
+exec ruby chorusdraft.rb "$@"
