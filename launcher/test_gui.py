@@ -7,8 +7,7 @@ import tempfile
 import time
 import unittest
 from unittest.mock import patch
-import tkinter as tk
-from app import Launcher
+from bridge import arguments
 from process import Session, bot_command
 
 
@@ -54,34 +53,15 @@ class DesktopTests(unittest.TestCase):
             time.sleep(0.1)
         self.assertTrue(session.finished)
 
-    def test_window_selection_launch_output_and_review_response(self):
-        window = tk.Tk()
-        try:
-            with tempfile.TemporaryDirectory() as folder:
-                app = Launcher(window, folder)
-                window.update()
-                self.assertEqual(window.title(), 'ChorusDraft')
-                app.runtime.set('Elixir')
-                app.platform.set('Mastodon')
-                with patch('app.bot_command', return_value=['escript', 'bot']), patch('app.Session') as mock:
-                    instance = mock.return_value
-                    instance.finished = False
-                    instance.events = queue.Queue()
-                    app.launch('review')
-                    self.assertEqual(str(app.selectors[0].cget('state')), 'disabled')
-                    instance.events.put(('output', 'Exact draft text.\nPublish this exact draft? [y/N/d/q]: '))
-                    app.poll()
-                    self.assertIn('Exact draft text.', app.output.get('1.0', 'end'))
-                    app.input.insert(0, 'y')
-                    app.send()
-                    instance.send.assert_called_once_with('y')
-                    instance.events.put(('exit', 0))
-                    instance.finished = True
-                    app.poll()
-                    self.assertEqual(app.status.get(), 'Ready')
-                    self.assertEqual(str(app.selectors[0].cget('state')), 'readonly')
-        finally:
-            window.destroy()
+    def test_desktop_commands_cannot_inject_flags_or_skip_approval(self):
+        text = 'quotes "hello" & pipes | $HOME; café'
+        self.assertEqual(arguments({'runtime': 'ruby', 'platform': 'bluesky', 'action': 'post', 'text': text}),
+                         ('ruby', 'bluesky', ['post', text]))
+        for request in ({'runtime': 'ruby', 'platform': 'bluesky', 'action': '--publish'},
+                        {'runtime': 'python', 'platform': 'mastodon', 'action': 'review'},
+                        {'runtime': 'elixir', 'platform': '../bluesky', 'action': 'review'}):
+            with self.assertRaises(ValueError):
+                arguments(request)
 
     def test_missing_elixir_never_falls_back_to_ruby(self):
         with tempfile.TemporaryDirectory() as folder, patch('process.shutil.which', return_value='/fake/escript'):

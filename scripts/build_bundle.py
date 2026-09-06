@@ -40,7 +40,8 @@ checked(elixir_archive, elixir_digest)
 
 with tempfile.TemporaryDirectory(prefix='chorusdraft-bundle-') as temporary:
     work = Path(temporary)
-    name = f'chorusdraft-v{VERSION}-{OS}'
+    architecture = {'amd64': 'x64', 'x86_64': 'x64', 'aarch64': 'arm64'}.get(platform.machine().lower(), platform.machine().lower())
+    name = f'chorusdraft-v{VERSION}-{OS}-{architecture}'
     package = work / name
     package.mkdir()
     for bot in ('bluesky', 'mastodon'):
@@ -59,12 +60,19 @@ with tempfile.TemporaryDirectory(prefix='chorusdraft-bundle-') as temporary:
     gui = DIST / 'gui' / ('ChorusDraft.app' if OS == 'macos' else 'ChorusDraft')
     assert gui.exists(), 'Build the desktop launcher with scripts/build_gui.py first'
     shutil.copytree(gui, package / ('ChorusDraft.app' if OS == 'macos' else 'launcher'), symlinks=True)
-    for source in ('app.py', 'process.py', 'test_gui.py', 'requirements-build.txt', 'NOTICE'):
+    for source in ('bridge.py', 'process.py', 'test_gui.py', 'requirements-build.txt', 'NOTICE'):
         destination = package / 'launcher-source' / source
         destination.parent.mkdir(exist_ok=True)
         shutil.copy2(ROOT / 'launcher' / source, destination)
+    for folder in ('src', 'electron', 'test'):
+        shutil.copytree(ROOT / 'desktop' / folder, package / 'desktop-source' / folder)
+    for file in ('package.json', 'package-lock.json', 'package.cjs', 'vite.config.mjs', 'index.html'):
+        shutil.copy2(ROOT / 'desktop' / file, package / 'desktop-source' / file)
+    (package / 'build-scripts').mkdir()
+    for script in ('build_gui.py', 'build_bundle.py'):
+        shutil.copy2(ROOT / 'scripts' / script, package / 'build-scripts' / script)
     files = sorted(p for p in package.rglob('*') if p.is_file())
-    assert all(p.resolve().is_relative_to(package) for p in package.rglob('*') if p.is_symlink())
+    assert all(p.resolve().is_relative_to(package.resolve()) for p in package.rglob('*') if p.is_symlink())
     assert not any(set(p.relative_to(package).parts) & {'.env', 'data', 'logs', '.git', '_build'} for p in files)
     manifest = package / 'MANIFEST.sha256'
     manifest.write_text(''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(package).as_posix()}\n' for p in files))

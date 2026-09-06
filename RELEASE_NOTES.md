@@ -1,6 +1,6 @@
 # ChorusDraft 0.51.3 preview
 
-Version 0.51.3 brings Ruby and Elixir together in one download with a desktop GUI
+Version 0.51.3 brings Ruby and Elixir together in one download with a React desktop GUI
 launcher for Linux, macOS, and Windows. This version is not yet a stable release.
 
 ## Launch a bot
@@ -12,7 +12,7 @@ settings.
 
 The desktop window displays activity and interactive review prompts. Send review
 responses through its input field. Drafts remain queued until you approve them.
-Use **Stop** to end monitoring. Packaged builds include the GUI runtime.
+Use **Stop session** to end monitoring. Packaged builds include the GUI runtime.
 
 ## Commands and compatibility
 
@@ -30,7 +30,7 @@ or Python 3 on macOS/Windows. Build Elixir sources with Elixir 1.15+ and Mix.
 Stop the previous bot and back up its configuration and complete `data`
 directory. Extract the new package into a new directory. Preserve each
 implementation's configuration and state in its corresponding platform folder.
-Run only one bot per social account. Choosing another implementation in the menu
+Run only one bot per social account. Choosing another implementation in the launcher
 does not migrate state; use the documented Elixir import command when needed.
 
 The build identifier is `0.51.3-testing` during preview testing.

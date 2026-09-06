@@ -23,7 +23,8 @@ def run(command, cwd, code=0, env=None):
     return result.stdout + result.stderr
 
 
-name = f'chorusdraft-v{VERSION}-{OS}'
+architecture = {'amd64': 'x64', 'x86_64': 'x64', 'aarch64': 'arm64'}.get(platform.machine().lower(), platform.machine().lower())
+name = f'chorusdraft-v{VERSION}-{OS}-{architecture}'
 archive = ROOT / 'dist' / (name + ('.zip' if OS == 'windows' else '.tar.gz'))
 digest, filename = Path(str(archive) + '.sha256').read_text().split()
 assert filename == archive.name
@@ -73,7 +74,7 @@ with tempfile.TemporaryDirectory(prefix='ChorusDraft combined test ') as tempora
     text = 'spaces & pipes | dollars $HOME; (parentheses) café'
     run(command + ['ruby', 'bluesky', 'post', text], work, env=environment)
     import json
-    assert json.loads(report.read_text()) == ['post', text]
+    assert json.loads(report.read_text(encoding='utf-8')) == ['post', text]
     if OS != 'windows':
         # A pseudo-terminal exercises the actual menu, back navigation and actions.
         import pty

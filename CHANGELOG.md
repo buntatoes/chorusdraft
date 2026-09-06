@@ -6,9 +6,9 @@ This file records user-visible changes to ChorusDraft.
 
 ### Added
 
-- A desktop GUI launcher for Ruby and Elixir, with Bluesky and Mastodon choices.
+- A React desktop GUI launcher for Ruby and Elixir, with Bluesky and Mastodon choices.
 - Buttons for setup, configuration, drafting, review, monitoring, search, and manual posts.
-- Embedded activity output, interactive review responses, and a Stop control.
+- Grouped action cards, an activity panel, per-draft review buttons, and a Stop control.
 - Double-click launchers for macOS and Windows.
 - Combined platform packages containing both implementations and their source.
 - Elixir support for the short commands introduced in Ruby 0.51.2.

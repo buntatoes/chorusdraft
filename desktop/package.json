@@ -1,0 +1,25 @@
+{
+  "name": "chorusdraft-desktop",
+  "version": "0.51.3-testing",
+  "private": true,
+  "description": "ChorusDraft desktop launcher",
+  "author": "Buntatoes",
+  "license": "GPL-3.0-only",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "build": "vite build",
+    "start": "npm run build && electron .",
+    "test": "node --test test/*.test.cjs",
+    "package": "node package.cjs"
+  },
+  "dependencies": {
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@electron/packager": "20.3.0",
+    "electron": "44.2.0",
+    "playwright": "1.58.2",
+    "vite": "6.4.3"
+  }
+}

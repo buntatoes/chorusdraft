@@ -4,7 +4,8 @@ if exist "%~dp0launcher\ChorusDraft.exe" (
   start "" "%~dp0launcher\ChorusDraft.exe"
   exit /b 0
 )
-pyw -3 "%~dp0launcher\app.py"
+cd /d "%~dp0desktop"
+call npm start
 exit /b %errorlevel%
 :command
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0bot.ps1" %*

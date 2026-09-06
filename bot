@@ -78,10 +78,11 @@ menu() {
 gui() {
   if [ -x "$base/launcher/ChorusDraft" ]; then exec "$base/launcher/ChorusDraft"; fi
   if [ -d "$base/ChorusDraft.app" ]; then exec open "$base/ChorusDraft.app"; fi
-  if command -v python3 >/dev/null 2>&1 && python3 -c 'import tkinter' 2>/dev/null; then
-    exec python3 "$base/launcher/app.py"
+  if command -v npm >/dev/null 2>&1 && [ -d "$base/desktop/node_modules" ]; then
+    cd "$base/desktop"
+    exec npm start
   fi
-  echo 'The source GUI requires Python 3 with Tk. Use a combined desktop download or ./bot menu.' >&2
+  echo 'For the source GUI: cd desktop && npm ci && npm start. Or use a combined desktop download.' >&2
   exit 1
 }
 if [ "$#" -eq 0 ]; then gui; fi

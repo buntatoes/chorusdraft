@@ -30,7 +30,7 @@ and model. Connect with a Bluesky app password or Mastodon access token.
 
 The 0.51.3 preview packages are available as artifacts from successful
 [Combined bot checks](https://github.com/buntatoes/chorusdraft/actions/workflows/bot-testing.yml)
-runs. Choose your operating system and extract the download. Each package
+runs. Choose your operating system and processor architecture, then extract the download. Each package
 contains both implementations and both social platforms, with a SHA-256 sidecar
 and a file checksum manifest.
 
@@ -42,13 +42,13 @@ and a file checksum manifest.
 
 Choose an implementation and platform in the desktop window. Click **Set up**,
 then **Open configuration** to add your account and AI settings. Click
-**Draft a post** to create a draft and **Review drafts** to approve or reject it.
+**Create a draft** to create a draft and **Open review** to approve or reject it.
 
 Activity and review prompts appear in the window. Type your response in the
-**Response** field and click **Send**. During review, `y` publishes the displayed
-draft, `d` rejects it, and `q` finishes review.
+**Response** field and click **Send**. During review, use **Publish this draft** or **Reject draft**. You can also send
+`y` to publish, `d` to reject, or `q` to finish review.
 
-Use **Start monitoring** for continuous drafting and **Stop** to end a running
+Use **Start monitoring** for continuous drafting and **Stop session** to end a running
 session. Select another bot after the session ends. Closing the window asks
 before stopping an active bot. AI-generated posts always need individual approval.
 
@@ -103,7 +103,7 @@ Each bot has its own configuration and account state:
 
 Setup preserves existing files. Stop the old bot and back up its configuration
 and complete `data` directory before upgrading. Keep each implementation's state
-separate and run only one bot per social account at a time. Switching the menu
+separate and run only one bot per social account at a time. Switching the bot
 selection does not migrate credentials or state.
 
 See [Ruby usage and configuration](RUBY.md) or
@@ -111,8 +111,9 @@ See [Ruby usage and configuration](RUBY.md) or
 
 ## Build from source
 
-The source GUI requires Python 3.12+ with Tk; Windows also requires `pywinpty`.
-The combined downloads include these GUI dependencies. Ruby is ready to use after
+The source GUI uses React and Electron. Development requires Node.js 24 and
+Python 3.12+; Windows also requires `pywinpty`. From `desktop/`, run `npm ci`
+and `npm start`. The combined downloads include the GUI and bridge runtimes. Ruby is ready to use after
 installing its runtime. To build the Elixir executable:
 
 ```sh
@@ -130,7 +131,9 @@ To build a combined package, first run `ruby scripts/build_release.rb` from the
 root and `MIX_ENV=prod mix run scripts/build_release.exs` from `elixir/`. Then run
 `python -m pip install -r launcher/requirements-build.txt`,
 `python scripts/build_gui.py`, and `python scripts/build_bundle.py` from the root.
-Build tools include Python 3 with Tk and `zip`.
+Run `npm ci --prefix desktop` before building. Build tools include Node.js 24,
+Python 3, and `zip`. macOS downloads distinguish Apple Silicon (`arm64`) from
+Intel (`x64`); Linux and Windows builds target `x64`.
 
 ## Privacy and security
 
