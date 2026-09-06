@@ -2,36 +2,7 @@
 
 This file records user-visible changes to ChorusDraft.
 
-## Ruby branch cleanup — 2026-09-06 (unreleased)
-
-- Retire `ruby-testing`, `codex/ruby-release-0512-validation`, and
-  `codex/ruby-release-0512-main-promotion` after confirming that main contains
-  their runtime changes. Keep `main-ruby` as the sole maintained Ruby branch.
-- Remove active documentation and CI references to the retired testing branch;
-  retain short-lived topic/validation branches for future changes as needed.
-- Preserve the independent `elixir-experimental` branch and its working files.
-- Keep 0.51.2 source and release-candidate status unchanged. Tagging and
-  publication remain pending.
-
-## Ruby 0.51.2 source promotion — 2026-09-06 (unreleased)
-
-- Merge the tested Ruby 0.51.2 source into `main-ruby` and synchronize
-  `ruby-testing` with the merge as the baseline for future Ruby changes.
-- Update root usage, release notes, security status, and notices for Ruby 4.0+
-  and the short commands on main. Existing 0.51.1 tags/assets are unchanged;
-  0.51.2 has not yet been tagged or published.
-- Retain temporary validation branches when they help verify a merge candidate.
-
-## Documentation and privacy review — 2026-09-06 (unreleased)
-
-- Align branch status, runtime requirements, packaging, and verification claims
-  with the published Ruby 0.51.1 release, Ruby 0.51.2 candidate, and separate
-  Linux Elixir implementation. Published release behavior is unchanged.
-- Record the targeted privacy review in SECURITY.md. No confirmed credentials
-  or unintended personal data were found in the reviewed branch/history/assets;
-  synthetic fixture matches were classified separately from real secrets.
-
-## 0.51.2 — Unreleased (merged into main-ruby)
+## 0.51.2 — 2026-09-06
 
 - Target Ruby 4.0+, with Ruby 4.0.6 selected for source development.
 - Add short `bot` commands for setup, drafting, review, posting, replies, quotes,
@@ -43,6 +14,11 @@ This file records user-visible changes to ChorusDraft.
 - Preserve per-draft AI review, configuration/state formats, and 0.51.1 safeguards.
 - Add native release CI for Linux, Windows, and both Apple Silicon and Intel
   macOS, testing the actual archives and launchers with Ruby 4.0.6.
+- Consolidate Ruby development on `main-ruby` and retire completed testing and
+  validation branches. The independent Elixir branch is unchanged.
+- Update root documentation and download links for the 0.51.2 release.
+- Record the targeted branch, history, and artifact privacy review in SECURITY.md;
+  no confirmed credentials or unintended personal data were found.
 
 ## 0.51.1 — 2026-09-05
 

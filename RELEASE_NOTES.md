@@ -1,9 +1,9 @@
-# ChorusDraft 0.51.2 release notes — unreleased
+# ChorusDraft 0.51.2 release notes
 
-Ruby 0.51.2 is merged into `main-ruby`, the sole maintained Ruby branch.
-It supports Bluesky and Mastodon on Linux, macOS,
-and Windows. Tagging and GitHub publication remain pending; the latest published
-release is still [0.51.1](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.1).
+Released September 6, 2026 from `main-ruby`, the sole maintained Ruby branch.
+This release supports Bluesky and Mastodon on Linux, macOS, and Windows.
+Download the platform archives and `SHA256SUMS` from the
+[0.51.2 release](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.2).
 
 ## Ruby
 
@@ -60,20 +60,17 @@ and command suites, checksums, paths with spaces, setup preservation, argument
 forwarding, and draft queue behavior without live API calls. All native jobs
 must pass before treating a candidate as validated for release.
 
-[The candidate validation run](https://github.com/buntatoes/chorusdraft/actions/runs/34013804319) passed all four
+[Native validation](https://github.com/buntatoes/chorusdraft/actions/runs/34014831624) passed all four
 native jobs, with 55 source tests and both packaged test suites per OS. It used
-fixtures rather than live account credentials. Passing candidate checks does not
-create a tag or publish a release.
+fixtures rather than live account credentials. Live account login, AI-provider
+behavior, and social publication have not been validated by these offline checks.
 
-## Promotion and publication
+## Release and development
 
-The source merge preserves the native-tested runtime, launchers, and safeguards.
+The `v0.51.2` tag identifies the release source. Release assets are the six
+archives and checksums from the successful native workflow for that commit.
+
 The native workflow runs for pushes and pull requests targeting `main-ruby`,
 and for temporary `codex/ruby-release-*` validation branches. Future Ruby changes
 should start from main and return through a reviewed pull request with passing
 native checks. Completed temporary branches are removed after integration.
-
-Before publishing 0.51.2, select the final main commit, complete live-account
-acceptance, create its release tag, and attach the archives and checksums tested
-for that commit. Offline/native fixture checks do not establish live-service
-acceptance. This merge does not publish posts or create a release.

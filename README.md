@@ -1,10 +1,9 @@
 # ChorusDraft
 
-> **Main Ruby source: 0.51.2 — Ruby 4.0 and simpler commands.**
-> Ruby 4.0.6 passed native Linux, Windows, and Apple Silicon/Intel macOS checks.
-> Version 0.51.2 is merged into `main-ruby` and awaits tagging/publication.
-> The latest published release remains
-> [0.51.1](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.1).
+> **ChorusDraft 0.51.2 — Ruby 4.0 and simpler commands.**
+> Released September 6, 2026 for Linux, Windows, and macOS.
+> [Download 0.51.2](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.2).
+> Native validation uses Ruby 4.0.6 on Linux, Windows, and Apple Silicon/Intel macOS.
 
 ChorusDraft is an AI-assisted comedy drafting and publishing tool for Bluesky and
 Mastodon. It drafts dry observations about software, playful replies, and satirical
@@ -25,9 +24,8 @@ Version 0.51.2 uses the shared Ruby codebase on Linux, macOS, and Windows. The c
   a pull request back to main, and delete the branch after integration. Temporary
   `codex/ruby-release-*` branches may be used for native validation when needed.
 
-The 0.51.2 merge is a source promotion, not a published release. Release downloads
-are identified by their tags; existing 0.51.1 downloads still require Ruby 3.2+
-and use the older flag-based commands. The instructions below describe 0.51.2.
+Release downloads are identified by their tags. The instructions below describe
+0.51.2; older 0.51.1 downloads require Ruby 3.2+ and use flag-based commands.
 
 ## What's new in 0.51.2
 
@@ -96,18 +94,16 @@ toolchain. Setup does not download software, install services, or start a bot.
 
 ## Download and install
 
-Build the 0.51.2 release candidate with `rbenv exec ruby scripts/build_release.rb`
-(or `ruby scripts/build_release.rb` when Ruby 4.0+ is already on your PATH).
-The six archives and `SHA256SUMS` are written to `dist/`:
+Download the archive for your bot and operating system from the
+[0.51.2 release](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.2):
 
 | Product | Linux | macOS | Windows |
 | --- | --- | --- | --- |
-| Bluesky | `chorusdraft-bluesky-v0.51.2-linux.tar.gz` | `chorusdraft-bluesky-v0.51.2-macos.tar.gz` | `chorusdraft-bluesky-v0.51.2-windows.zip` |
-| Mastodon | `chorusdraft-mastodon-v0.51.2-linux.tar.gz` | `chorusdraft-mastodon-v0.51.2-macos.tar.gz` | `chorusdraft-mastodon-v0.51.2-windows.zip` |
+| Bluesky | [Linux](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.2/chorusdraft-bluesky-v0.51.2-linux.tar.gz) | [macOS](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.2/chorusdraft-bluesky-v0.51.2-macos.tar.gz) | [Windows](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.2/chorusdraft-bluesky-v0.51.2-windows.zip) |
+| Mastodon | [Linux](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.2/chorusdraft-mastodon-v0.51.2-linux.tar.gz) | [macOS](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.2/chorusdraft-mastodon-v0.51.2-macos.tar.gz) | [Windows](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.2/chorusdraft-mastodon-v0.51.2-windows.zip) |
 
-Published downloads are listed on the
-[GitHub releases page](https://github.com/buntatoes/chorusdraft/releases).
-The instructions below apply to the 0.51.2 archives.
+Download [SHA256SUMS](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.2/SHA256SUMS) alongside your archive
+to verify its checksum. Ruby 4.0+ must be installed separately.
 
 On Linux or macOS:
 
@@ -419,7 +415,7 @@ Tests use local fakes and do not log in, call an AI provider, or publish posts.
 
 The `Ruby release checks` GitHub Actions workflow builds the six archives once,
 then tests those same artifacts on Ubuntu, Windows, macOS Apple Silicon, and
-macOS Intel with Ruby 4.0.6. [The candidate verification run](https://github.com/buntatoes/chorusdraft/actions/runs/34013804319)
+macOS Intel with Ruby 4.0.6. [Native verification](https://github.com/buntatoes/chorusdraft/actions/runs/34014831624)
 passed all four native jobs: 55 source tests plus both packaged suites and
 launcher/setup/queue checks on each OS. These checks used fakes, without live
 account login, AI-provider calls, or social publication. Archive checks also
@@ -440,7 +436,7 @@ the exact tested archives and checksums for 14 days.
 ChorusDraft is distributed under the GNU General Public License v3.0.
 See [LICENSE](LICENSE). [NOTICE](NOTICE) records the original projects,
 modification date, scope of the version 0.50 rewrite, the 0.51 comic update, the
-0.51.1 security update, and third-party names.
+0.51.1 security update, 0.51.2 runtime and command update, and third-party names.
 
 Version 0.50 is based on the feature sets of Bluesky Bot 1.0.3 and Mastodon Bot
 1.0.2 by Buntatoes. It begins a new shared Ruby release line under the

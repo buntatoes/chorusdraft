@@ -2,10 +2,9 @@
 
 ## Supported version
 
-The latest published release is 0.51.1. The `main-ruby` source contains the
-native-tested 0.51.2 update, which retains
-those safeguards and requires Ruby 4.0 or newer. Version 0.51.2 has not yet been
-tagged or published; development/runtime validation uses Ruby 4.0.6.
+The supported release is [0.51.2](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.2),
+maintained on `main-ruby`. It retains the 0.51.1 safeguards and requires Ruby 4.0
+or newer. Native runtime and package validation uses Ruby 4.0.6.
 Use a currently supported, security-patched Ruby runtime.
 
 ## Reporting a vulnerability
