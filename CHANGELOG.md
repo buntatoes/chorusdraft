@@ -4,21 +4,23 @@ This file records user-visible changes to ChorusDraft.
 
 ## 0.51.2 — 2026-09-06
 
-- Target Ruby 4.0+, with Ruby 4.0.6 selected for source development.
-- Add short `bot` commands for setup, drafting, review, posting, replies, quotes,
-  search, discovery, targets, monitoring, and deletion. Existing flags remain valid.
-- Add Linux/macOS launchers that find rbenv without shell initialization and
-  Windows `bot.bat` launchers; preserve the package `run.sh`/`run.bat` entrypoints.
-- Allow setup from the bot command without credentials or network access.
-- Make transport tests independent of the optional Minitest mock gem.
-- Preserve per-draft AI review, configuration/state formats, and 0.51.1 safeguards.
-- Add native release CI for Linux, Windows, and both Apple Silicon and Intel
-  macOS, testing the actual archives and launchers with Ruby 4.0.6.
-- Consolidate Ruby development on `main-ruby` and retire completed testing and
-  validation branches. The independent Elixir branch is unchanged.
-- Update root documentation and download links for the 0.51.2 release.
-- Record the targeted branch, history, and artifact privacy review in SECURITY.md;
-  no confirmed credentials or unintended personal data were found.
+### Changed
+
+- Raised the minimum Ruby version from 3.2 to 4.0. Tested with Ruby 4.0.6.
+- Added short commands for setup, drafting, review, posts, replies, quotes,
+  search, discovery, account monitoring, and deletion.
+- Added `bot` launchers for Linux and macOS with automatic rbenv detection,
+  and `bot.bat` launchers for Windows.
+- Added `bot setup` to create missing configuration files without credentials
+  or network access. Existing configuration files are preserved.
+
+### Compatibility
+
+- Existing command-line flags and package `run.sh`/`run.bat` launchers remain
+  supported.
+- Configuration and state formats are unchanged. Existing drafts, opt-outs,
+  and interaction history are preserved when the `data` directory is retained.
+- AI-generated content continues to require individual review before publication.
 
 ## 0.51.1 — 2026-09-05
 
