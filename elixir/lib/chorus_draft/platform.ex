@@ -93,7 +93,7 @@ defmodule ChorusDraft.Platform do
 
   defp run_powershell!(script, env, message) do
     shell =
-      System.find_executable("powershell.exe") || System.find_executable("pwsh.exe") ||
+      System.find_executable("pwsh.exe") || System.find_executable("powershell.exe") ||
         raise(Error, "PowerShell is required for secure Windows storage.")
 
     script =

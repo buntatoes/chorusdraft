@@ -12,6 +12,8 @@ feature reference.
 - Add PowerShell launch, setup, non-overwriting install, manifest verification,
   and package regression scripts. Make Unix checksum and mode checks portable
   between GNU/Linux and macOS tools.
+- Prefer PowerShell 7 when available so ACL cmdlets load correctly from native
+  package launchers; retain Windows PowerShell as the desktop fallback.
 - Retain util-linux `flock` on Linux; use Python standard-library `fcntl` on
   macOS and `msvcrt` on Windows. Add private Windows ACLs and atomic state-file
   replacement through Python `os.replace`.

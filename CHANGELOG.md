@@ -11,6 +11,8 @@ Elixir release has been published. Ruby history stays on `main-ruby` and
   Windows (`.zip`), each containing both Bluesky and Mastodon modes.
 - Add PowerShell run, setup, install, manifest-verification, and package-test
   scripts for Windows; make Unix checksum and permission checks work on macOS.
+- Prefer PowerShell 7 when available so ACL cmdlets load correctly from native
+  package launchers; retain Windows PowerShell as the desktop fallback.
 - Preserve crash-released state locking on Linux and add compatible Python
   standard-library locks on macOS/Windows. Apply private Windows ACLs and use an
   atomic Python `os.replace` state-file replacement on Windows.
