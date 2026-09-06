@@ -35,3 +35,7 @@ does not migrate state; use the documented Elixir import command when needed.
 
 The build identifier is `0.51.3-testing` during preview testing.
 See [README.md](README.md) for launch instructions and configuration locations.
+
+On Ubuntu systems with restricted user namespaces, the combined Linux download
+includes `launcher-source/linux_sandbox.py` for one-time, path-specific sandbox
+setup. See the README before launching.

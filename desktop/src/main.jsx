@@ -129,6 +129,9 @@ function App() {
   const [result, setResult] = useState("");
   const logRef = useRef(null);
   const escapeTail = useRef("");
+  const promptBuffer = useRef("");
+  const approvalAvailable = useRef(false);
+  const [reviewPrompt, setReviewPrompt] = useState(false);
   const clean = (chunk) => {
     let value = escapeTail.current + chunk;
     const incomplete = value.match(/\x1b(?:\[[0-?]*[ -/]*|\][^\x07]*)?$/);
@@ -149,10 +152,18 @@ function App() {
       .then((info) => setVersion(info.version))
       .catch((e) => setError(e.message));
     return api.onEvent((event) => {
-      if (event.type === "output")
-        setActivity((previous) =>
-          (previous + clean(event.value)).slice(-160000),
-        );
+      if (event.type === "output") {
+        const output = clean(event.value);
+        if (output) {
+          promptBuffer.current = (promptBuffer.current + output).slice(-4096);
+          const ready = /Publish this exact draft\? \[[^\]]+\]:\s*$/.test(
+            promptBuffer.current,
+          );
+          approvalAvailable.current = ready;
+          setReviewPrompt(ready);
+          setActivity((previous) => (previous + output).slice(-160000));
+        }
+      }
       if (event.type === "started") {
         setRunning(true);
         setAction(event.action);
@@ -202,21 +213,26 @@ function App() {
     setResult("");
     setResponse("");
     escapeTail.current = "";
+    promptBuffer.current = "";
+    approvalAvailable.current = false;
+    setReviewPrompt(false);
     await invoke(() =>
       api.run({ runtime, platform, action: nextAction, text: suppliedText }),
     );
   };
   const send = async (value) => {
     if (!api || !running) return;
+    if (action === "review" && !approvalAvailable.current) return;
+    approvalAvailable.current = false;
+    promptBuffer.current = "";
+    setReviewPrompt(false);
     setResponse("");
     // Prevent repeated approval clicks before the next prompt arrives.
     setActivity((previous) => previous + "\n");
     await invoke(() => api.respond(value));
   };
-  const reviewReady =
-    running &&
-    action === "review" &&
-    /Publish this exact draft\? \[[^\]]+\]:\s*$/.test(activity);
+  const reviewReady = running && action === "review" && reviewPrompt;
+  const canRespond = running && (action !== "review" || reviewReady);
   const selected = `${runtime === "ruby" ? "Ruby" : "Elixir"} · ${platform === "bluesky" ? "Bluesky" : "Mastodon"}`;
   const configure = () =>
     api && invoke(() => api.configure({ runtime, platform }));
@@ -490,13 +506,13 @@ function App() {
                 aria-label="Review response"
                 value={response}
                 onChange={(e) => setResponse(e.target.value)}
-                disabled={!running}
+                disabled={!canRespond}
                 placeholder="Respond to a prompt…"
               />
               <button
                 className="send-button"
                 type="submit"
-                disabled={!running}
+                disabled={!canRespond}
                 aria-label="Send response"
               >
                 <Icon name="send" size={17} />

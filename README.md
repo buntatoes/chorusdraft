@@ -40,6 +40,12 @@ and a file checksum manifest.
 | macOS | Double-click `bot.command`, or run `./bot` in Terminal |
 | Windows | Double-click `bot.bat`, or run `.\bot.bat` in PowerShell |
 
+On Ubuntu 24.04 and other systems that restrict user namespaces, run
+`sudo python3 launcher-source/linux_sandbox.py` once from the extracted folder
+before opening the GUI. This enables Electron's sandbox for that download's exact
+path. Run `./bot` as your normal user afterward. Repeat setup if you move the folder;
+use the same script with `--remove` before removing an old download.
+
 Choose an implementation and platform in the desktop window. Click **Set up**,
 then **Open configuration** to add your account and AI settings. Click
 **Create a draft** to create a draft and **Open review** to approve or reject it.

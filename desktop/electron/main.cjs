@@ -221,8 +221,31 @@ app
         'new Promise(resolve => requestAnimationFrame(() => resolve(document.body.textContent.includes("Your bot workspace"))))',
       );
       if (!rendered) app.exit(1);
-      else window.close();
+      else {
+        await window.webContents.executeJavaScript(`(async () => {
+          const info = await window.chorus.info();
+          for (const runtime of ['ruby', 'elixir']) {
+            for (const platform of ['bluesky', 'mastodon']) {
+              await new Promise((resolve, reject) => {
+                let output = '';
+                const timer = setTimeout(() => { unsubscribe(); reject(new Error('Bot version check timed out')); }, 20000);
+                const finish = error => { clearTimeout(timer); unsubscribe(); error ? reject(error) : resolve(); };
+                const unsubscribe = window.chorus.onEvent(event => {
+                  if (event.type === 'output') output += event.value;
+                  if (event.type === 'error') finish(new Error(event.value));
+                  if (event.type === 'exit') finish(event.value === 0 && output.includes(info.version) ? null : new Error(runtime + '/' + platform + ': ' + output));
+                });
+                window.chorus.run({runtime, platform, action: 'version'}).catch(finish);
+              });
+            }
+          }
+        })()`);
+        window.close();
+      }
     }
   })
-  .catch(() => app.exit(1));
+  .catch((error) => {
+    console.error(error);
+    app.exit(1);
+  });
 app.on("window-all-closed", () => app.quit());

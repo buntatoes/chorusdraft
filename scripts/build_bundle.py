@@ -60,7 +60,7 @@ with tempfile.TemporaryDirectory(prefix='chorusdraft-bundle-') as temporary:
     gui = DIST / 'gui' / ('ChorusDraft.app' if OS == 'macos' else 'ChorusDraft')
     assert gui.exists(), 'Build the desktop launcher with scripts/build_gui.py first'
     shutil.copytree(gui, package / ('ChorusDraft.app' if OS == 'macos' else 'launcher'), symlinks=True)
-    for source in ('bridge.py', 'process.py', 'test_gui.py', 'requirements-build.txt', 'NOTICE'):
+    for source in ('bridge.py', 'process.py', 'test_gui.py', 'requirements-build.txt', 'linux_sandbox.py', 'NOTICE'):
         destination = package / 'launcher-source' / source
         destination.parent.mkdir(exist_ok=True)
         shutil.copy2(ROOT / 'launcher' / source, destination)

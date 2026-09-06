@@ -44,7 +44,15 @@ with tempfile.TemporaryDirectory(prefix='ChorusDraft combined test ') as tempora
     gui = root / ('ChorusDraft.app/Contents/MacOS/ChorusDraft' if OS == 'macos' else
                   'launcher/ChorusDraft.exe' if OS == 'windows' else 'launcher/ChorusDraft')
     assert gui.is_file(), 'Desktop executable is missing'
-    run([str(gui), '--smoke-test'], work)
+    configure_sandbox = OS == 'linux' and os.environ.get('CHORUSDRAFT_TEST_SANDBOX') == '1'
+    sandbox = ["sudo", __import__('sys').executable, str(root / 'launcher-source/linux_sandbox.py')]
+    try:
+        if configure_sandbox:
+            subprocess.run(sandbox, check=True)
+        run([str(gui), '--smoke-test'], work)
+    finally:
+        if configure_sandbox:
+            subprocess.run(sandbox + ['--remove'], check=True)
     command = [str(root / ('bot.bat' if OS == 'windows' else 'bot'))]
     assert 'desktop launcher' in run(command + ['help'], work)
     assert 'interactive terminal' in run(command + ['menu'], work, code=1)

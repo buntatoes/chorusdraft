@@ -10,8 +10,8 @@ test(
   { timeout: 120000 },
   async () => {
     const source = path.resolve(__dirname, "../..");
-    const root = await fs.mkdtemp(
-      path.join(os.tmpdir(), "ChorusDraft desktop test "),
+    const root = await fs.realpath(
+      await fs.mkdtemp(path.join(os.tmpdir(), "ChorusDraft desktop test ")),
     );
     let application, page;
     try {
@@ -84,6 +84,14 @@ ChorusDraft::Mastodon.define_singleton_method(:new) { |*_| DesktopClient.new }
       await page.getByText("Session complete", { exact: true }).waitFor();
       await assert.rejects(fs.access(path.join(root, "published.txt")));
       await page
+        .getByRole("button", { name: "Write a post", exact: true })
+        .click();
+      await page
+        .getByRole("textbox", { name: "Post text" })
+        .fill("This second draft needs its own approval.");
+      await page.getByRole("button", { name: "Add to review queue" }).click();
+      await page.getByText("Session complete", { exact: true }).waitFor();
+      await page
         .getByRole("button", { name: "Open review", exact: true })
         .click();
       await page
@@ -93,6 +101,24 @@ ChorusDraft::Mastodon.define_singleton_method(:new) { |*_| DesktopClient.new }
       await assert.rejects(fs.access(path.join(root, "published.txt")));
       await page
         .getByRole("button", { name: "Publish this draft", exact: true })
+        .evaluate((button) => {
+          button.click();
+          button.click();
+        });
+      await page
+        .getByRole("button", { name: "Reject draft", exact: true })
+        .waitFor();
+      assert.ok(
+        (await page.getByRole("log").innerText()).includes(
+          "This second draft needs its own approval.",
+        ),
+      );
+      assert.equal(
+        await fs.readFile(path.join(root, "published.txt"), "utf8"),
+        text,
+      );
+      await page
+        .getByRole("button", { name: "Reject draft", exact: true })
         .click();
       await page.getByText("Session complete", { exact: true }).waitFor();
       assert.equal(
@@ -100,13 +126,21 @@ ChorusDraft::Mastodon.define_singleton_method(:new) { |*_| DesktopClient.new }
         text,
       );
     } catch (error) {
+      console.error(error);
       if (page) console.error(await page.locator("body").innerText());
       throw error;
     } finally {
       if (application) {
-        await application.evaluate(({ app }) => app.exit(0)).catch(() => {});
+        if (page)
+          await page.evaluate(() => window.chorus.stop()).catch(() => {});
+        await application.close();
       }
-      await fs.rm(root, { recursive: true, force: true });
+      await fs.rm(root, {
+        recursive: true,
+        force: true,
+        maxRetries: 10,
+        retryDelay: 200,
+      });
     }
   },
 );

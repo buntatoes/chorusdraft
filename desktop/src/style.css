@@ -762,8 +762,12 @@ h1 {
   .selection-group select {
     min-width: 126px;
   }
+  .response-bar {
+    flex-wrap: wrap;
+  }
   .response-bar > span {
-    display: none;
+    flex-basis: 100%;
+    margin-left: 0;
   }
   .action-card {
     padding: 17px;
