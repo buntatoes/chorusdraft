@@ -80,7 +80,6 @@ defmodule ChorusDraft.Platform do
           $acl.AddAccessRule($rule)
         }
       }
-      $acl.SetOwner($sid)
       $acl.SetAccessRuleProtection($true, $false)
       Set-Acl -LiteralPath $env:CHORUSDRAFT_PRIVATE_PATH -AclObject $acl
       """,
@@ -97,15 +96,34 @@ defmodule ChorusDraft.Platform do
       System.find_executable("powershell.exe") || System.find_executable("pwsh.exe") ||
         raise(Error, "PowerShell is required for secure Windows storage.")
 
-    script = "$ErrorActionPreference = 'Stop'\n" <> script
+    script =
+      "$ErrorActionPreference = 'Stop'\ntry {\n" <>
+        script <>
+        ~S"""
+        } catch {
+          [Console]::Out.WriteLine('CHORUSDRAFT_ERROR_TYPE=' + $_.Exception.GetType().FullName)
+          [Console]::Out.WriteLine('CHORUSDRAFT_ERROR_CODE=' + $_.Exception.HResult)
+          exit 1
+        }
+        """
+
     encoded = script |> :unicode.characters_to_binary(:utf8, {:utf16, :little}) |> Base.encode64()
 
     case System.cmd(shell, ["-NoProfile", "-NonInteractive", "-EncodedCommand", encoded],
            env: env,
            stderr_to_stdout: true
          ) do
-      {_, 0} -> :ok
-      _ -> raise Error, message
+      {_, 0} ->
+        :ok
+
+      {output, _} ->
+        detail =
+          output
+          |> String.split(~r/\R/)
+          |> Enum.filter(&String.starts_with?(&1, "CHORUSDRAFT_ERROR_"))
+          |> Enum.join(" ")
+
+        raise Error, if(detail == "", do: message, else: message <> " " <> detail)
     end
   end
 end

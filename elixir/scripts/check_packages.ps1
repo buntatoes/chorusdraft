@@ -61,6 +61,7 @@ try {
 
     $installed = Join-Path $work "installed-$name"
     & (Join-Path $package 'install.ps1') $installed
+    Assert-Exit 'Package installation failed.'
     Set-Content -LiteralPath (Join-Path $installed 'bluesky/.env') -NoNewline -Encoding utf8 -Value 'SENTINEL=$(do-not-execute)'
     & (Join-Path $installed 'setup.ps1')
     Assert-Exit 'Installed setup command failed.'
