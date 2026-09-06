@@ -53,7 +53,9 @@ class Session:
             environment.pop('LD_LIBRARY_PATH', None)
         if os.name == 'nt':
             from winpty import PtyProcess
-            self.process = PtyProcess.spawn(command, cwd=str(cwd), env=environment, dimensions=(40, 160))
+            wrapper = [sys.executable, '--terminal-child'] if getattr(sys, 'frozen', False) else [
+                sys.executable, str(Path(__file__).with_name('terminal_child.py'))]
+            self.process = PtyProcess.spawn([*wrapper, *command], cwd=str(cwd), env=environment, dimensions=(40, 160))
         else:
             import fcntl
             import pty

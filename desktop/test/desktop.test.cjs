@@ -131,8 +131,9 @@ ChorusDraft::Mastodon.define_singleton_method(:new) { |*_| DesktopClient.new }
       throw error;
     } finally {
       if (application) {
-        if (page)
-          await page.evaluate(() => window.chorus.stop()).catch(() => {});
+        await application.evaluate(({ dialog }) => {
+          dialog.showMessageBox = async () => ({ response: 1 });
+        });
         await application.close();
       }
       await fs.rm(root, {

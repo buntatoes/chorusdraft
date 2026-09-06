@@ -94,6 +94,11 @@ def serve(root):
 
 
 if __name__ == '__main__':
+    if sys.argv[1:2] == ['--terminal-child']:
+        from terminal_child import main
+        main(sys.argv[2:])
     if len(sys.argv) != 2 or not Path(sys.argv[1]).is_dir():
         raise SystemExit('Expected the ChorusDraft package directory.')
+    sys.stdin.reconfigure(encoding='utf-8')
+    sys.stdout.reconfigure(encoding='utf-8')
     serve(Path(sys.argv[1]).resolve())

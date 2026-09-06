@@ -93,6 +93,7 @@ jobs:
         if: runner.os == 'Linux'
         run: xvfb-run -a npm test --prefix desktop
       - name: Desktop tests (macOS and Windows)
+        timeout-minutes: 3
         if: runner.os != 'Linux'
         run: npm test --prefix desktop
       - name: Build desktop launcher
