@@ -1,16 +1,30 @@
-ChorusDraft Elixir version — unreleased
+ChorusDraft 0.51.2 main Ruby source — unreleased
 Modification notice — September 6, 2026
 
-This branch contains the Linux Elixir implementation of ChorusDraft with support
-for Bluesky and Mastodon. It derives its feature set from ChorusDraft 0.51.1 and
-is developed separately on the elixir-experimental branch. The Ruby branches are
-retained separately and are not modified by this implementation.
+Version 0.51.2 updates the runtime to Ruby 4.0+ and adds simpler bot commands
+and launchers. The tested source is merged into main-ruby and synchronized with
+ruby-testing. Version 0.51.2 has not been tagged or published to GitHub.
 
-ChorusDraft was authored by Buntatoes and is distributed under the GNU General
-Public License version 3. The Elixir implementation remains under GPLv3. See
-LICENSE for the complete terms and elixir/THIRD_PARTY_NOTICES.md for dependency
-notices.
+This distribution is a modified work based on the feature sets of Bluesky Bot
+1.0.3 and Mastodon Bot 1.0.2, authored by Buntatoes and distributed under the
+GNU General Public License version 3.
 
-Bluesky and Mastodon are third-party services and projects. ChorusDraft is not
-endorsed by or affiliated with Bluesky Social PBC, Mastodon gGmbH, or operators
-of independent Mastodon servers.
+For version 0.50, the programs were reimplemented as a shared Ruby codebase,
+renamed ChorusDraft, and given new publication review, privacy,
+harassment prevention, state isolation, and release packaging controls. The
+complete user-visible change list is in CHANGELOG.md.
+
+Version 0.51 adds a shared comic voice for original drafts, replies, and public
+commentary while retaining publication review and harassment prevention controls.
+
+Version 0.51.1 hardens opt-out processing, do-not-contact checks for
+mentions, Unicode screening, and Mastodon content-warning validation.
+
+ChorusDraft, including these modifications, is distributed under
+the GNU General Public License version 3. See LICENSE for the complete terms.
+Copyright in the original and modified work remains with its respective
+copyright holders.
+
+Bluesky and Mastodon are names of third-party services and projects. This
+software is not endorsed by or affiliated with Bluesky Social PBC, Mastodon
+gGmbH, or operators of independent Mastodon servers.

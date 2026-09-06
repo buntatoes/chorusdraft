@@ -1,45 +1,76 @@
-# ChorusDraft Elixir branch notes
+# ChorusDraft 0.51.2 release notes — unreleased
 
-`elixir-experimental` contains one Linux Elixir implementation of ChorusDraft
-with Bluesky and Mastodon modes. Its internal version is
-`0.52.0-testing`; it remains unreleased and does not replace the Ruby builds on
-`main-ruby` or `ruby-testing`.
+Ruby 0.51.2 is merged into `main-ruby`, with `ruby-testing` synchronized to the
+same baseline for future work. It supports Bluesky and Mastodon on Linux, macOS,
+and Windows. Tagging and GitHub publication remain pending; the latest published
+release is still [0.51.1](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.1).
 
-The branch includes the Ruby command workflows, local AI and Gemini adapters,
-interactive AI draft review, optional Bluesky Jetstream, state safeguards,
-read-only state import, setup, and a Linux package containing both platform
-modes. The package includes launchers, a non-overwriting installer, SHA-256
-checksums, and corresponding application/dependency source with notices.
+## Ruby
 
-The latest unreleased hardening bounds Jetstream frame and fragmented-message
-sizes before payload reads, handshake headers, fragment counts, and receive
-deadlines. Reconnect and notification catch-up remain active.
+Ruby 4.0 or newer is now required. Development is pinned to and tested on Ruby
+4.0.6 in `.ruby-version`. The bot uses Ruby's bundled libraries without external
+runtime gems. Tests require Minitest.
 
-Running the package requires Linux, Erlang/OTP 25+, and util-linux. Building or
-testing also requires Elixir 1.15+ and Mix. Packaging/installing uses `tar` and
-`sha256sum`. The packaged application does not require Ruby or Elixir.
+Linux/macOS launchers use rbenv when available, including `~/.rbenv` when shell
+initialization has not run; otherwise they use Ruby on PATH. Extracted packages
+use your selected Ruby 4.0+ rather than pinning one patch release. Windows uses
+Ruby on PATH. Launchers do not install Ruby or change global Ruby settings.
 
-The implementation checks cover 64 offline regressions, Ruby-generated state import,
-escript creation, package installation, checksum checks, overwrite refusal, and
-an offline source rebuild. Successful
-[Elixir checks](https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml)
-upload the `chorusdraft-elixir-linux` artifact for 30 days.
+## Short commands
 
-Live Bluesky, Mastodon, and AI acceptance, a sustained daemon soak, and an
-independent release security audit have not been completed. Offline tests do not
-establish live-service acceptance. No Elixir tag or GitHub release has been
-published.
+In the extracted folder, run:
 
-See [the usage and migration guide](elixir/README.md),
-[implementation details](elixir/RELEASE_NOTES.md),
-[feature parity](elixir/PARITY.md), and [security limits](elixir/SECURITY.md).
+```sh
+./bot setup
+# Edit .env with your account and AI settings.
+./bot draft
+./bot review
+./bot start
+```
+
+On Windows use `.\bot.bat` in place of `./bot`. In a source checkout, first enter
+`bluesky` or `mastodon`, or use `./bot bluesky COMMAND` from the root.
+
+`post "TEXT"`, `reply ID "TEXT"`, `quote ID "TEXT"`, `search "QUERY"`, `random`,
+`discover`, `targets`, `replies`, `listen`, and `delete ID` are also available.
+Run `./bot help` for the quick guide or `./bot --help` for advanced options.
+Existing flags and package `run.sh`/`run.bat` launchers remain supported.
+
+AI drafts still require explicit review. `start` prepares drafts in the
+foreground; Ctrl+C stops it. Setup preserves existing configuration files.
+
+## Upgrade and packaging
+
+Stop the old bot, extract the new archive into a new directory, and copy your
+`.env`, configured target/do-not-contact files, and complete `data` directory.
+State and configuration formats are unchanged from 0.51.1. Run only one
+installation per account.
+
+Build with `rbenv exec ruby scripts/build_release.rb` (or Ruby 4.0+ on PATH).
+The builder writes six archives and `SHA256SUMS` under `dist/`. Runtime secrets,
+state, logs, and the experimental Elixir project are excluded.
+
+## Native release validation
+
+The `Ruby release checks` workflow tests Ruby 4.0.6 on Ubuntu 24.04, Windows
+2025, macOS 15 Apple Silicon, and macOS 15 Intel. It builds archives once and
+runs both bots' extracted packages on their native operating systems, including
+`bot.bat` and `run.bat` through Windows cmd.exe. Checks cover the full safety
+and command suites, checksums, paths with spaces, setup preservation, argument
+forwarding, and draft queue behavior without live API calls. All native jobs
+must pass before treating a candidate as validated for release.
+
+[The candidate validation run](https://github.com/buntatoes/chorusdraft/actions/runs/34013804319) passed all four
+native jobs, with 55 source tests and both packaged test suites per OS. It used
+fixtures rather than live account credentials. Passing candidate checks does not
+create a tag or publish a release.
 
 ## Promotion and publication
 
 The source merge preserves the native-tested runtime, launchers, and safeguards.
 The native workflow also runs for pushes to `main-ruby` and `ruby-testing` and
-for temporary `codex/ruby-release-*` validation branches. Future Ruby changes
-should start from this shared merge baseline.
+for temporary `codex/ruby-release-*` branches. Future Ruby changes should start
+from this shared merge baseline.
 
 Before publishing 0.51.2, select the final main commit, complete live-account
 acceptance, create its release tag, and attach the archives and checksums tested
