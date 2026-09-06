@@ -33,13 +33,18 @@ jobs:
       run:
         working-directory: elixir
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           persist-credentials: false
       - uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124
         with:
           otp-version: '25.3'
           elixir-version: '1.15.8'
+      - name: Set up Ruby for the pinned state fixture
+        if: matrix.package_os == 'linux'
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b
+        with:
+          ruby-version: '4.0.6'
       - name: Dependencies
         shell: bash
         run: |
@@ -49,7 +54,7 @@ jobs:
           git diff --exit-code -- mix.lock
       - name: Check out pinned Ruby reference for read-only parity testing
         if: matrix.package_os == 'linux'
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           ref: 17985ef1b0645015ccff5e7ae72aab9ac5c817c2
           path: ruby-reference
