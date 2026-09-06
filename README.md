@@ -17,13 +17,18 @@ Windows. The comic voice introduced in 0.51 is retained.
 ## Release and development branches
 
 - `main-ruby` is the default branch and contains the supported Ruby release line.
-- `ruby-testing` is reserved for unreleased Ruby maintenance work.
-- `elixir-experimental` contains a separate unfinished Elixir rewrite and is not
-  part of the supported Ruby releases.
+- `ruby-testing` contains the unreleased 0.51.2 candidate: Ruby 4.0+,
+  short `bot` commands, and native Linux/Windows/macOS validation.
+- `elixir-experimental` contains the Linux Elixir implementation under testing
+  (`0.52.0-testing`), with one package for both platforms; it has no tagged release.
 
 Only tagged release assets from the
 [GitHub releases page](https://github.com/buntatoes/chorusdraft/releases) are
 published builds. Branch snapshots are source code for development or testing.
+
+Ruby 0.51.1 on this branch retains its Ruby 3.2+ requirement and flag-based
+commands. The Ruby 4.0 requirement, short commands, and native 0.51.2 checks
+belong to `ruby-testing`; they do not describe the published 0.51.1 assets.
 
 ## What's new in 0.51.1
 
@@ -400,3 +405,10 @@ modification date, scope of the version 0.50 rewrite, the 0.51 comic update, the
 Version 0.50 is based on the feature sets of Bluesky Bot 1.0.3 and Mastodon Bot
 1.0.2 by Buntatoes. It begins a new shared Ruby release line under the
 ChorusDraft name.
+
+## Privacy review
+
+The 2026-09-06 branch, history, and release-artifact review found no confirmed
+credentials or unintended personal data. Synthetic test fixtures and public
+attribution were reviewed separately. See [SECURITY.md](SECURITY.md) for the
+scope and limits; this is not a guarantee or a full independent security audit.

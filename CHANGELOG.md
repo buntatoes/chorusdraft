@@ -2,6 +2,15 @@
 
 This file records user-visible changes to ChorusDraft.
 
+## Documentation and privacy review — 2026-09-06 (unreleased)
+
+- Align branch status, runtime requirements, packaging, and verification claims
+  with the published Ruby 0.51.1 release, Ruby 0.51.2 candidate, and separate
+  Linux Elixir implementation. Published release behavior is unchanged.
+- Record the targeted privacy review in SECURITY.md. No confirmed credentials
+  or unintended personal data were found in the reviewed branch/history/assets;
+  synthetic fixture matches were classified separately from real secrets.
+
 ## 0.51.1 — 2026-09-05
 
 ### Fixed
