@@ -17,13 +17,13 @@ Version 0.51.2 uses the shared Ruby codebase on Linux, macOS, and Windows. The c
 
 ## Release and development branches
 
-- `main-ruby` is the default Ruby branch and contains the tested 0.51.2 source.
-- `ruby-testing` is synchronized with the 0.51.2 merge and remains the staging
-  branch for future Ruby changes.
-- Temporary `codex/ruby-release-*` branches may validate candidates or merge
-  results before promotion; they are not separate release lines.
-- `elixir-experimental` contains the Linux Elixir implementation under testing
-  (`0.52.0-testing`), with one package for both platforms; it has no tagged release.
+- `main-ruby` is the default and sole maintained Ruby branch, containing the
+  tested 0.51.2 source.
+- `elixir-experimental` is an independent implementation with its own development
+  and release status.
+- Create a short-lived branch from `main-ruby` when changes need isolation, open
+  a pull request back to main, and delete the branch after integration. Temporary
+  `codex/ruby-release-*` branches may be used for native validation when needed.
 
 The 0.51.2 merge is a source promotion, not a published release. Release downloads
 are identified by their tags; existing 0.51.1 downloads still require Ruby 3.2+
@@ -412,9 +412,9 @@ the bot itself has no third-party gem dependencies. If Ruby 4.0+ is already
 on PATH without rbenv, omit `rbenv exec` in the commands above.
 
 The release builder produces six platform archives and `SHA256SUMS` under `dist/`.
-Promote verified changes from `ruby-testing` into `main-ruby`, then synchronize
-`ruby-testing` with the merge. Tagging and publishing tested archives are separate
-release steps; temporary validation branches can be used when needed.
+Start future Ruby changes from `main-ruby` and merge them back after review and
+passing native checks. Remove temporary branches once their work is integrated.
+Tagging and publishing tested archives remain separate release steps.
 Tests use local fakes and do not log in, call an AI provider, or publish posts.
 
 The `Ruby release checks` GitHub Actions workflow builds the six archives once,

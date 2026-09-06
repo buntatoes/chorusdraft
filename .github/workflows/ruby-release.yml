@@ -2,9 +2,9 @@ name: Ruby release checks
 
 on:
   push:
-    branches: [main-ruby, ruby-testing, 'codex/ruby-release-*']
+    branches: [main-ruby, 'codex/ruby-release-*']
   pull_request:
-    branches: [main-ruby, ruby-testing]
+    branches: [main-ruby]
   workflow_dispatch:
 
 permissions:

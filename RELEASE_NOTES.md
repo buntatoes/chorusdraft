@@ -1,7 +1,7 @@
 # ChorusDraft 0.51.2 release notes — unreleased
 
-Ruby 0.51.2 is merged into `main-ruby`, with `ruby-testing` synchronized to the
-same baseline for future work. It supports Bluesky and Mastodon on Linux, macOS,
+Ruby 0.51.2 is merged into `main-ruby`, the sole maintained Ruby branch.
+It supports Bluesky and Mastodon on Linux, macOS,
 and Windows. Tagging and GitHub publication remain pending; the latest published
 release is still [0.51.1](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.1).
 
@@ -68,9 +68,10 @@ create a tag or publish a release.
 ## Promotion and publication
 
 The source merge preserves the native-tested runtime, launchers, and safeguards.
-The native workflow also runs for pushes to `main-ruby` and `ruby-testing` and
-for temporary `codex/ruby-release-*` branches. Future Ruby changes should start
-from this shared merge baseline.
+The native workflow runs for pushes and pull requests targeting `main-ruby`,
+and for temporary `codex/ruby-release-*` validation branches. Future Ruby changes
+should start from main and return through a reviewed pull request with passing
+native checks. Completed temporary branches are removed after integration.
 
 Before publishing 0.51.2, select the final main commit, complete live-account
 acceptance, create its release tag, and attach the archives and checksums tested

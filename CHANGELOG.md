@@ -2,6 +2,17 @@
 
 This file records user-visible changes to ChorusDraft.
 
+## Ruby branch cleanup — 2026-09-06 (unreleased)
+
+- Retire `ruby-testing`, `codex/ruby-release-0512-validation`, and
+  `codex/ruby-release-0512-main-promotion` after confirming that main contains
+  their runtime changes. Keep `main-ruby` as the sole maintained Ruby branch.
+- Remove active documentation and CI references to the retired testing branch;
+  retain short-lived topic/validation branches for future changes as needed.
+- Preserve the independent `elixir-experimental` branch and its working files.
+- Keep 0.51.2 source and release-candidate status unchanged. Tagging and
+  publication remain pending.
+
 ## Ruby 0.51.2 source promotion — 2026-09-06 (unreleased)
 
 - Merge the tested Ruby 0.51.2 source into `main-ruby` and synchronize

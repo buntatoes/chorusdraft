@@ -2,8 +2,8 @@
 
 ## Supported version
 
-The latest published release is 0.51.1. The `main-ruby` source and synchronized
-`ruby-testing` baseline now contain the native-tested 0.51.2 update, which retains
+The latest published release is 0.51.1. The `main-ruby` source contains the
+native-tested 0.51.2 update, which retains
 those safeguards and requires Ruby 4.0 or newer. Version 0.51.2 has not yet been
 tagged or published; development/runtime validation uses Ruby 4.0.6.
 Use a currently supported, security-patched Ruby runtime.
