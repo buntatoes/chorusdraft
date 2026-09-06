@@ -44,7 +44,7 @@ feature reference.
   Installation uses a new directory and preserves the previous installation.
 - Passed 56 regression tests, Ruby-generated state import, both package installs,
   checksum checks, overwrite refusal, and offline source rebuilds in the
-  [implementation verification run](https://github.com/buntatoes/chorusdraft/actions/runs/33999085832).
+  [Elixir verification workflow](https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml).
 
 See [PARITY.md](PARITY.md) for the pinned reference and verification scope.
 Live account acceptance, a sustained daemon soak, and an independent release

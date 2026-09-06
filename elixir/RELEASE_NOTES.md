@@ -30,7 +30,7 @@ the public Jetstream TLS handshake; account workflows still need live acceptance
 Build requirement: Elixir 1.15+ and Erlang/OTP 25+. Runtime: Linux, Erlang/OTP 25+
 and util-linux. Packaging/installing also uses `tar` and `sha256sum`.
 
-The [implementation verification run](https://github.com/buntatoes/chorusdraft/actions/runs/33999085832)
+The [Elixir verification workflow](https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml)
 passed 56 tests, Ruby-generated state import, escript creation, package integrity,
 both product installs, overwrite refusal, and rebuilding from shipped dependency
 source. CI used Ubuntu 22.04, OTP 25.3, and Elixir 1.15.8.
