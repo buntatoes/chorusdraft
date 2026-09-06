@@ -1,18 +1,107 @@
 #!/bin/sh
 set -eu
-cd -- "$(dirname -- "$0")"
-case "${1:-help}" in
+base=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+help() {
+  cat <<'HELP'
+ChorusDraft
+Run ./bot to open the desktop launcher. Use ./bot menu for the terminal menu.
+Usage: ./bot ruby|elixir bluesky|mastodon COMMAND [options]
+Examples:
+  ./bot ruby bluesky setup
+  ./bot elixir mastodon review
+The older ./bot bluesky COMMAND form continues to select Ruby.
+HELP
+}
+run_bot() (
+  runtime=$1
+  platform=$2
+  shift 2
+  case "$platform" in bluesky|mastodon) ;; *) echo 'Choose bluesky or mastodon.' >&2; exit 1 ;; esac
+  case "$runtime" in
+    ruby) exec "$base/$platform/bot" "$@" ;;
+    elixir)
+      if ! command -v escript >/dev/null 2>&1; then
+        echo 'Elixir bots require Erlang/OTP 25+ (escript on PATH).' >&2
+        exit 1
+      fi
+      if [ ! -f "$base/elixir/chorusdraft" ]; then
+        echo 'Build the Elixir bot first: cd elixir && mix deps.get && MIX_ENV=prod mix escript.build' >&2
+        exit 1
+      fi
+      exec escript "$base/elixir/chorusdraft" "$platform" "$@" --base "$base/elixir/$platform"
+      ;;
+    *) echo 'Choose ruby or elixir.' >&2; exit 1 ;;
+  esac
+)
+read_choice() {
+  printf '%s' "$1"
+  if ! IFS= read -r choice; then printf '\n'; exit 0; fi
+  case "$choice" in q|Q) exit 0 ;; esac
+}
+menu() {
+  if [ ! -t 0 ]; then echo 'The menu needs an interactive terminal. Use ./bot help for direct commands.' >&2; exit 1; fi
+  while :; do
+    printf '\nChorusDraft\n1) Ruby\n2) Elixir\nq) Quit\n'
+    read_choice 'Implementation: '
+    case "$choice" in 1) runtime=ruby ;; 2) runtime=elixir ;; *) echo 'Choose 1, 2, or q.'; continue ;; esac
+    printf '\n1) Bluesky\n2) Mastodon\nb) Back\nq) Quit\n'
+    read_choice 'Platform: '
+    case "$choice" in 1) platform=bluesky ;; 2) platform=mastodon ;; b|B) continue ;; *) echo 'Choose 1, 2, b, or q.'; continue ;; esac
+    while :; do
+      printf '\n%s / %s\n' "$runtime" "$platform"
+      printf '%s\n' '1) Set up configuration' '2) Draft a post' '3) Review drafts' '4) Start drafting and monitoring' '5) Listen for mentions' '6) Draft replies to mentions' '7) Search public posts' '8) Write a post for review' '9) Command help' '10) Version' 'b) Change bot' 'q) Quit'
+      read_choice 'Action: '
+      case "$choice" in
+        1) set -- setup ;; 2) set -- draft ;; 3) set -- review ;;
+        4) set -- start ;; 5) set -- listen ;; 6) set -- replies ;;
+        7|8)
+          if [ "$choice" = 7 ]; then action=search; else action=post; fi
+          printf '%s' 'Text (blank cancels): '
+          if ! IFS= read -r value; then printf '\n'; exit 0; fi
+          [ -n "$value" ] || continue
+          set -- "$action" "$value"
+          ;;
+        9) set -- help ;; 10) set -- version ;; b|B) break ;;
+        *) echo 'Choose an action from the menu.'; continue ;;
+      esac
+      if run_bot "$runtime" "$platform" "$@"; then
+        if [ "$1" = setup ]; then
+          if [ "$runtime" = ruby ]; then config="$base/$platform/.env"; else config="$base/elixir/$platform/.env"; fi
+          printf '\nEdit %s with your account and AI settings before drafting.\n' "$config"
+        fi
+      else
+        echo 'The command did not complete. You can choose another action.' >&2
+      fi
+    done
+  done
+}
+gui() {
+  if [ -x "$base/launcher/ChorusDraft" ]; then exec "$base/launcher/ChorusDraft"; fi
+  if [ -d "$base/ChorusDraft.app" ]; then exec open "$base/ChorusDraft.app"; fi
+  if command -v python3 >/dev/null 2>&1 && python3 -c 'import tkinter' 2>/dev/null; then
+    exec python3 "$base/launcher/app.py"
+  fi
+  echo 'The source GUI requires Python 3 with Tk. Use a combined desktop download or ./bot menu.' >&2
+  exit 1
+}
+if [ "$#" -eq 0 ]; then gui; fi
+case "$1" in
+  help|-h|--help) help ;;
+  menu) menu ;;
+  gui) gui ;;
+  ruby|elixir)
+    runtime=$1
+    shift
+    if [ "$#" -eq 0 ]; then help >&2; exit 1; fi
+    platform=$1
+    shift
+    if [ "$#" -eq 0 ]; then set -- help; fi
+    run_bot "$runtime" "$platform" "$@"
+    ;;
   bluesky|mastodon)
     platform=$1
     shift
-    exec "./$platform/bot" "$@"
+    run_bot ruby "$platform" "$@"
     ;;
-  help|-h|--help)
-    echo 'Usage: ./bot bluesky COMMAND or ./bot mastodon COMMAND'
-    echo 'For shorter commands: cd bluesky (or mastodon), then ./bot help'
-    ;;
-  *)
-    echo 'Choose a bot: ./bot bluesky COMMAND or ./bot mastodon COMMAND' >&2
-    exit 1
-    ;;
+  *) help >&2; exit 1 ;;
 esac

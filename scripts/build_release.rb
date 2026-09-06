@@ -30,7 +30,7 @@ integrations.product(%w[linux macos windows]).each do |integration, platform|
   abort "Refusing package tree containing unexpected files: #{name}" unless unexpected.empty?
   # Explicit source allowlist: never copy runtime .env, state, logs, or old binaries.
   FileUtils.mkdir_p(target)
-  %w[README.md CHANGELOG.md RELEASE_NOTES.md SECURITY.md NOTICE LICENSE VERSION setup.rb].each { |f| FileUtils.cp(File.join(root, f), target) }
+  %w[README.md CHANGELOG.md RELEASE_NOTES.md SECURITY.md NOTICE LICENSE VERSION setup.rb].each { |f| FileUtils.cp(File.join(root, f == "README.md" ? "RUBY.md" : f), File.join(target, f)) }
   FileUtils.mkdir_p(File.join(target, 'lib', 'chorus_draft'))
   %w[core.rb clients.rb cli.rb runtime.rb setup.rb].each do |file|
     FileUtils.cp(File.join(root, 'lib', 'chorus_draft', file), File.join(target, 'lib', 'chorus_draft', file))

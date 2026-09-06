@@ -1,56 +1,37 @@
-# ChorusDraft 0.51.2 release notes
+# ChorusDraft 0.51.3 preview
 
-Released September 6, 2026.
-This release supports Bluesky and Mastodon on Linux, macOS, and Windows.
-Download the platform archives and `SHA256SUMS` from the
-[0.51.2 release](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.2).
+Version 0.51.3 brings Ruby and Elixir together in one download with a desktop GUI
+launcher for Linux, macOS, and Windows. This version is not yet a stable release.
 
-## Ruby
+## Launch a bot
 
-Ruby 4.0 or newer is now required. This release is tested with Ruby
-4.0.6. The bot uses Ruby's standard libraries without additional runtime gems.
+Run `./bot` on Linux, double-click `bot.command` on macOS, or double-click
+`bot.bat` on Windows. Choose Ruby or Elixir and Bluesky or Mastodon. Use the action buttons to set up,
+draft, review, search, or monitor. Open configuration edits the selected bot’s
+settings.
 
-Linux/macOS launchers use rbenv when available, including `~/.rbenv` when shell
-initialization has not run; otherwise they use Ruby on PATH. Extracted packages
-use your selected Ruby 4.0+ rather than pinning one patch release. Windows uses
-Ruby on PATH. Launchers do not install Ruby or change global Ruby settings.
+The desktop window displays activity and interactive review prompts. Send review
+responses through its input field. Drafts remain queued until you approve them.
+Use **Stop** to end monitoring. Packaged builds include the GUI runtime.
 
-## Short commands
+## Commands and compatibility
 
-In the extracted folder, run:
+Both implementations support `setup`, `draft`, `review`, `post`, `reply`, `quote`,
+`replies`, `search`, `random`, `discover`, `targets`, `start`, `listen`, `delete`,
+`help`, and `version`. Direct commands use
+`./bot ruby|elixir bluesky|mastodon COMMAND`; Windows uses `.\bot.bat`.
+Existing Ruby shorthand and both implementations' flags remain supported.
 
-```sh
-./bot setup
-# Edit .env with your account and AI settings.
-./bot draft
-./bot review
-./bot start
-```
-
-On Windows use `.\bot.bat` in place of `./bot`. In a source checkout, first enter
-`bluesky` or `mastodon`, or use `./bot bluesky COMMAND` from the root.
-
-`post "TEXT"`, `reply ID "TEXT"`, `quote ID "TEXT"`, `search "QUERY"`, `random`,
-`discover`, `targets`, `replies`, `listen`, and `delete ID` are also available.
-Run `./bot help` for the quick guide or `./bot --help` for advanced options.
-Existing flags and package `run.sh`/`run.bat` launchers remain supported.
-
-AI drafts still require explicit review. `start` prepares drafts in the
-foreground; Ctrl+C stops it. Setup preserves existing configuration files.
+Ruby requires 4.0+. Packaged Elixir requires Erlang/OTP 25+, plus `flock` on Linux
+or Python 3 on macOS/Windows. Build Elixir sources with Elixir 1.15+ and Mix.
 
 ## Upgrading
 
-Stop the old bot, extract the new archive into a new directory, and copy your
-`.env`, configured target/do-not-contact files, and complete `data` directory.
-State and configuration formats are unchanged from 0.51.1. Run only one
-installation per account.
+Stop the previous bot and back up its configuration and complete `data`
+directory. Extract the new package into a new directory. Preserve each
+implementation's configuration and state in its corresponding platform folder.
+Run only one bot per social account. Choosing another implementation in the menu
+does not migrate state; use the documented Elixir import command when needed.
 
-## Platform support
-
-Packages are available for both bots on Linux, macOS, and Windows. Each download
-includes setup, launchers, and usage documentation. Install Ruby 4.0+ separately
-and verify the archive against the release's `SHA256SUMS` before extraction.
-
-The release passed source and package tests on Ubuntu 24.04, Windows Server
-2025, and macOS 15 on Apple Silicon and Intel with Ruby 4.0.6. Automated tests
-use simulated API responses; live service integration is not covered.
+The build identifier is `0.51.3-testing` during preview testing.
+See [README.md](README.md) for launch instructions and configuration locations.

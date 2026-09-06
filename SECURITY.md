@@ -3,7 +3,9 @@
 ## Supported version
 
 The supported release is [0.51.2](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.2),
-which requires Ruby 4.0 or newer.
+which requires Ruby 4.0 or newer. Version 0.51.3 is a testing preview containing
+both Ruby and Elixir. See [Elixir security](elixir/SECURITY.md) for its additional
+transport, state, and platform safeguards.
 Use a currently supported, security-patched Ruby runtime.
 
 ## Reporting a vulnerability

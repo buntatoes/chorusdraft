@@ -1,0 +1,115 @@
+name: Elixir checks
+
+on:
+  push:
+    branches: [elixir-experimental]
+    paths: ['elixir/**', '.github/workflows/elixir.yml']
+  pull_request:
+    branches: [elixir-experimental]
+    paths: ['elixir/**', '.github/workflows/elixir.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Linux
+            runner: ubuntu-22.04
+            package_os: linux
+          - label: macOS
+            runner: macos-14
+            package_os: macos
+          - label: Windows
+            runner: windows-2022
+            package_os: windows
+    defaults:
+      run:
+        working-directory: elixir
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124
+        with:
+          otp-version: '25.3'
+          elixir-version: '1.15.8'
+      - name: Dependencies
+        shell: bash
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get
+          git diff --exit-code -- mix.lock
+      - name: Check out pinned Ruby reference for read-only parity testing
+        if: matrix.package_os == 'linux'
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: 68b83694ec34b1161839b5ff62a857a774415ece
+          path: ruby-reference
+          persist-credentials: false
+      - name: Offline regression tests with Ruby state fixture
+        if: matrix.package_os == 'linux'
+        shell: bash
+        run: RUBY_REFERENCE_ROOT="$GITHUB_WORKSPACE/ruby-reference" mix test --warnings-as-errors
+      - name: Offline regression tests
+        if: matrix.package_os != 'linux'
+        shell: bash
+        run: mix test --warnings-as-errors
+      - name: Build and inspect the escript
+        if: matrix.package_os != 'windows'
+        shell: bash
+        run: |
+          MIX_ENV=prod mix escript.build
+          escript ./chorusdraft bluesky --help
+          escript ./chorusdraft mastodon --help
+      - name: Build and inspect the Windows escript
+        if: matrix.package_os == 'windows'
+        shell: pwsh
+        run: |
+          $env:MIX_ENV = 'prod'
+          mix escript.build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          escript .\chorusdraft bluesky --help
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          escript .\chorusdraft mastodon --help
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Package and installation checks
+        if: matrix.package_os != 'windows'
+        shell: bash
+        run: |
+          mkdir -p bluesky/data bluesky/logs
+          printf '%s' 'PACKAGE_EXCLUSION_SENTINEL' > bluesky/.env
+          printf '%s' 'PACKAGE_EXCLUSION_SENTINEL' > bluesky/data/state.json
+          printf '%s' 'PACKAGE_EXCLUSION_SENTINEL' > bluesky/logs/runtime.log
+          MIX_ENV=prod mix run scripts/build_release.exs
+          ./scripts/check_packages.sh
+      - name: Windows package and installation checks
+        if: matrix.package_os == 'windows'
+        shell: pwsh
+        run: |
+          $null = New-Item -ItemType Directory -Force -Path 'bluesky/data','bluesky/logs'
+          [IO.File]::WriteAllText((Join-Path $PWD 'bluesky/.env'), 'PACKAGE_EXCLUSION_SENTINEL')
+          [IO.File]::WriteAllText((Join-Path $PWD 'bluesky/data/state.json'), 'PACKAGE_EXCLUSION_SENTINEL')
+          [IO.File]::WriteAllText((Join-Path $PWD 'bluesky/logs/runtime.log'), 'PACKAGE_EXCLUSION_SENTINEL')
+          $env:MIX_ENV = 'prod'
+          mix run scripts/build_release.exs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & .\scripts\check_packages.ps1
+      - name: Formatting
+        if: always()
+        shell: bash
+        run: mix format --check-formatted
+      - name: Save verified package
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: chorusdraft-elixir-${{ matrix.package_os }}
+          path: elixir/dist/ChorusDraft-elixir-*-${{ matrix.package_os }}.*
+          if-no-files-found: error
+          retention-days: 30

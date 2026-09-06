@@ -78,7 +78,7 @@ class CLITest < Minitest::Test
         assert_includes out, './bot'
         assert_empty err
       end
-      assert_equal [0, "0.51.2\n", ''], run_cli('bluesky', 'version')
+      assert_equal [0, "0.51.3-testing\n", ''], run_cli('bluesky', 'version')
       [['wat'], ['post'], ['reply', '123'], ['search'], ['setup', 'extra'],
        ['draft', '--publish'], ['draft', '--process-queue'], ['post', 'hello', 'extra']].each do |args|
         status, _, err = run_cli('bluesky', *args)
