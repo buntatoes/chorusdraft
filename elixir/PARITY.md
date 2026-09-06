@@ -1,8 +1,9 @@
 # Ruby → Elixir parity
 
 Read-only baseline: Ruby 0.51.1 on `main-ruby` at
-`68b83694ec34b1161839b5ff62a857a774415ece`; `ruby-testing` at
-`acc6ddc3505e4e06378dd07a45a25156b55f041f` has the same runtime code.
+`68b83694ec34b1161839b5ff62a857a774415ece`. This commit remains pinned in CI.
+`ruby-testing` has since advanced to the unreleased Ruby 0.51.2 candidate;
+its Ruby 4.0 requirement and short commands are outside this parity baseline.
 The rewrite targets Linux. It does not replace the Windows/macOS Ruby builds.
 
 | Ruby behavior | Elixir implementation | Verification |

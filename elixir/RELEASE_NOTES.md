@@ -31,9 +31,11 @@ Build requirement: Elixir 1.15+ and Erlang/OTP 25+. Runtime: Linux, Erlang/OTP 2
 and util-linux. Packaging/installing also uses `tar` and `sha256sum`.
 
 The [Elixir verification workflow](https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml)
-passed 56 tests, Ruby-generated state import, escript creation, package integrity,
-both product installs, overwrite refusal, and rebuilding from shipped dependency
-source. CI used Ubuntu 22.04, OTP 25.3, and Elixir 1.15.8.
+passed 64 tests in [the verified Linux run](https://github.com/buntatoes/chorusdraft/actions/runs/34012077368),
+including Ruby-generated state import. The run also verified escript creation,
+package integrity, installation of the combined package, both platform modes,
+overwrite refusal, and rebuilding from shipped dependency source. CI used
+Ubuntu 22.04, OTP 25.3, and Elixir 1.15.8.
 
 Successful [Elixir checks](https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml)
 upload the `chorusdraft-elixir-linux` artifact for 30 days. It includes the

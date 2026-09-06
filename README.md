@@ -4,7 +4,8 @@ This branch contains the Linux Elixir version of **ChorusDraft**, with support f
 both Bluesky and Mastodon through one application and one executable. Development
 lives on `elixir-experimental`.
 
-The Ruby builds remain on `main-ruby` and `ruby-testing`. Ruby source inherited
+The published Ruby release is 0.51.1 on `main-ruby`; `ruby-testing` contains
+the unreleased 0.51.2 candidate with Ruby 4.0+ and short commands. Ruby source inherited
 by this branch is kept as a read-only feature reference. The internal Elixir
 version is `0.52.0-testing`; it is not an official tagged release.
 
@@ -76,7 +77,8 @@ file under `elixir/dist/`. The archive contains both Bluesky and Mastodon modes.
 Successful [Elixir checks](https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml)
 also upload a `chorusdraft-elixir-linux` artifact for 30 days.
 
-Verification includes 64 passing offline regressions, state import generated
+[The verified Linux run](https://github.com/buntatoes/chorusdraft/actions/runs/34012077368)
+passed 64 offline regressions, state import generated
 by the pinned Ruby reference, package installation, checksum verification,
 overwrite refusal, an offline source rebuild, and adversarial WebSocket fixtures.
 Live account acceptance and a sustained daemon soak still require test
@@ -92,3 +94,10 @@ credentials; no live posts were made.
 
 ChorusDraft is GPLv3; see [LICENSE](LICENSE), [NOTICE](NOTICE), and
 [third-party notices](elixir/THIRD_PARTY_NOTICES.md).
+
+## Privacy review
+
+The 2026-09-06 branch, history, and release-artifact review found no confirmed
+credentials or unintended personal data. Synthetic test fixtures and public
+attribution were reviewed separately. See [SECURITY.md](SECURITY.md) for the
+scope and limits; this is not a guarantee or a full independent security audit.

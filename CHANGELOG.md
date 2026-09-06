@@ -5,6 +5,17 @@ This changelog covers the ChorusDraft Elixir version on
 Elixir release has been published. Ruby history stays on `main-ruby` and
 `ruby-testing`.
 
+## Documentation and privacy review — 2026-09-06 (unreleased)
+
+- Align branch status, runtime requirements, packaging, and verification claims
+  with the published Ruby 0.51.1 release, Ruby 0.51.2 candidate, and separate
+  Linux Elixir implementation. Published release behavior is unchanged.
+- Record the targeted privacy review in SECURITY.md. No confirmed credentials
+  or unintended personal data were found in the reviewed branch/history/assets;
+  synthetic fixture matches were classified separately from real secrets.
+- Correct the nested guide to one combined package and 64 current regressions;
+  retain 56-test completion results as a historical checkpoint.
+
 ## Jetstream receive limits — unreleased
 
 - Reject WebSocket frames larger than 1 MiB from their declared length, before

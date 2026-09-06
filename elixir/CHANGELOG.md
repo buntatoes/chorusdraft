@@ -1,8 +1,16 @@
 # Elixir changelog
 
 Changes to the ChorusDraft Elixir version on `elixir-experimental`, newest first. The current internal identifier
-is `0.52.0-testing`; the branch remains unreleased. Ruby code is a read-only
+is `0.52.0-testing`; the branch remains unreleased. Ruby 0.51.1 code is a read-only
 feature reference.
+
+## Documentation and privacy review — 2026-09-06 (unreleased)
+
+- Correct the current guide to one combined Linux package and 64 passing
+  regression tests, while preserving the earlier 56-test checkpoint below.
+- Clarify that parity uses pinned Ruby 0.51.1, not the newer Ruby 0.51.2 CLI.
+- Record a targeted source/history/package privacy review in SECURITY.md;
+  no confirmed credentials or unintended personal data were found in its scope.
 
 ## Jetstream receive limits — unreleased
 
@@ -42,7 +50,7 @@ feature reference.
   run/setup/install scripts, checksums, complete application/dependency source,
   and original license files.
   Installation uses a new directory and preserves the previous installation.
-- Passed 56 regression tests, Ruby-generated state import, both package installs,
+- Passed 56 regression tests, Ruby-generated state import, package installation and both platform modes,
   checksum checks, overwrite refusal, and offline source rebuilds in the
   [Elixir verification workflow](https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml).
 
