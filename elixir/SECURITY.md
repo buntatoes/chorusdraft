@@ -1,8 +1,10 @@
 # Security policy for the Elixir experiment
 
 This is an unreleased separate implementation on the `elixir-experimental`
-branch. The supported release is Ruby 0.51.1 from `main-ruby`; future Ruby maintenance work is isolated
-on `ruby-testing`. Report vulnerabilities using GitHub private
+branch. The latest published Ruby release remains tagged `v0.51.1`. The
+`main-ruby` source and synchronized `ruby-testing` baseline contain the tested
+0.51.2 update, awaiting tagging/publication. Elixir's parity reference remains
+pinned to Ruby 0.51.1. Report vulnerabilities using GitHub private
 vulnerability reporting when available, or contact the maintainer privately
 through the GitHub profile. Never include credentials, private posts, or exploit
 details in a public issue.
@@ -64,7 +66,8 @@ unfinished.
 
 ## Privacy review — 2026-09-06
 
-A targeted review scanned all four branch tips, branch/tag commit history,
+A targeted review scanned the four branch tips present at the time, branch/tag
+commit history,
 published Ruby 0.50, 0.51, and 0.51.1 archives, local Ruby 0.51.2 archives,
 and the successful Elixir CI package. Gitleaks 8.30.1 was combined with checks
 for personal paths, email addresses, phone/identity-number patterns, runtime

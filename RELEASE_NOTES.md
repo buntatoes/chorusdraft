@@ -3,9 +3,11 @@
 `elixir-experimental` contains one Linux Elixir implementation of ChorusDraft
 with Bluesky and Mastodon modes. Its internal version is
 `0.52.0-testing`; it remains unreleased and does not replace the Ruby builds on
-`main-ruby` or `ruby-testing`.
+`main-ruby` or `ruby-testing`. Those branches now share the tested Ruby 0.51.2
+source baseline; the latest published Ruby tag remains `v0.51.1`. The Ruby merge
+does not change this implementation's pinned 0.51.1 parity reference.
 
-The branch includes the Ruby command workflows, local AI and Gemini adapters,
+The branch includes the Ruby 0.51.1 command workflows, local AI and Gemini adapters,
 interactive AI draft review, optional Bluesky Jetstream, state safeguards,
 read-only state import, setup, and a Linux package containing both platform
 modes. The package includes launchers, a non-overwriting installer, SHA-256

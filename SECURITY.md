@@ -1,7 +1,9 @@
 # Security policy for the Elixir experiment
 
-The supported Ruby release is ChorusDraft 0.51.1 from `main-ruby`. The Linux
-Elixir version of ChorusDraft on `elixir-experimental` is unreleased. Its offline regression, state-import, and
+The latest published Ruby release is tagged `v0.51.1`; `main-ruby` and the
+synchronized `ruby-testing` baseline now contain the native-tested 0.51.2 source,
+which awaits tagging/publication. The Linux Elixir version of ChorusDraft on
+`elixir-experimental` is unreleased and retains its pinned Ruby 0.51.1 reference. Its offline regression, state-import, and
 package checks have passed; live platform verification, a sustained daemon soak,
 and an independent release security audit remain outstanding.
 
@@ -20,7 +22,8 @@ implementation checkpoint rather than a completed security guarantee.
 
 ## Privacy review — 2026-09-06
 
-A targeted review scanned all four branch tips, branch/tag commit history,
+A targeted review scanned the four branch tips present at the time, branch/tag
+commit history,
 published Ruby 0.50, 0.51, and 0.51.1 archives, local Ruby 0.51.2 archives,
 and the successful Elixir CI package. Gitleaks 8.30.1 was combined with checks
 for personal paths, email addresses, phone/identity-number patterns, runtime

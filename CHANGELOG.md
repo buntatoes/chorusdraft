@@ -5,6 +5,13 @@ This changelog covers the ChorusDraft Elixir version on
 Elixir release has been published. Ruby history stays on `main-ruby` and
 `ruby-testing`.
 
+## Documentation after Ruby 0.51.2 promotion — 2026-09-06 (unreleased)
+
+- Track the tested Ruby 0.51.2 source on `main-ruby` and the synchronized
+  `ruby-testing` baseline separately from the still-published `v0.51.1` tag.
+- Keep the Elixir runtime, commands, state import, and CI parity reference pinned
+  to the existing Ruby 0.51.1 contract. No Elixir code or release was promoted.
+
 ## Documentation and privacy review — 2026-09-06 (unreleased)
 
 - Align branch status, runtime requirements, packaging, and verification claims

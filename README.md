@@ -4,10 +4,12 @@ This branch contains the Linux Elixir version of **ChorusDraft**, with support f
 both Bluesky and Mastodon through one application and one executable. Development
 lives on `elixir-experimental`.
 
-The published Ruby release is 0.51.1 on `main-ruby`; `ruby-testing` contains
-the unreleased 0.51.2 candidate with Ruby 4.0+ and short commands. Ruby source inherited
-by this branch is kept as a read-only feature reference. The internal Elixir
-version is `0.52.0-testing`; it is not an official tagged release.
+The latest published Ruby release remains tagged `v0.51.1`. The `main-ruby`
+source now contains the tested 0.51.2 update with Ruby 4.0+ and short commands,
+and `ruby-testing` is synchronized with that merge for future work. Version
+0.51.2 awaits tagging/publication. Ruby source inherited by this Elixir branch
+remains a read-only 0.51.1 reference; it was not upgraded by the Ruby merge.
+The internal Elixir version is `0.52.0-testing`, with no official tagged release.
 
 ## What ChorusDraft supports
 

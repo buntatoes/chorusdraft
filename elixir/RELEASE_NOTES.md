@@ -1,9 +1,11 @@
 # Linux Elixir implementation checkpoint
 
 `0.52.0-testing` remains an internal, unreleased Elixir identifier. It does not
-replace or change the Ruby 0.51.1 release, `main-ruby`, or `ruby-testing`.
+replace or change the tagged Ruby 0.51.1 release. Ruby 0.51.2 source has been
+merged into `main-ruby` and synchronized to `ruby-testing`; tagging/publication
+remain pending. Elixir continues to use the pinned Ruby 0.51.1 parity reference.
 
-The separate Linux version now implements the Ruby command workflows and safety
+The separate Linux version implements the Ruby 0.51.1 workflows and safety
 controls, optional Bluesky Jetstream, read-only state import, non-overwriting
 setup, queue status/rejection, and one ChorusDraft package containing both
 platform modes, checksums, and corresponding application/dependency source.

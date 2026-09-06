@@ -4,6 +4,13 @@ Changes to the ChorusDraft Elixir version on `elixir-experimental`, newest first
 is `0.52.0-testing`; the branch remains unreleased. Ruby 0.51.1 code is a read-only
 feature reference.
 
+## Documentation after Ruby 0.51.2 promotion — 2026-09-06 (unreleased)
+
+- Track the tested Ruby 0.51.2 source on `main-ruby` and the synchronized
+  `ruby-testing` baseline separately from the still-published `v0.51.1` tag.
+- Keep the Elixir runtime, commands, state import, and CI parity reference pinned
+  to the existing Ruby 0.51.1 contract. No Elixir code or release was promoted.
+
 ## Documentation and privacy review — 2026-09-06 (unreleased)
 
 - Correct the current guide to one combined Linux package and 64 passing

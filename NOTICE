@@ -1,5 +1,5 @@
 ChorusDraft Elixir version — unreleased
-Modification notice — September 5, 2026
+Modification notice — September 6, 2026
 
 This branch contains the Linux Elixir implementation of ChorusDraft with support
 for Bluesky and Mastodon. It derives its feature set from ChorusDraft 0.51.1 and
@@ -14,3 +14,6 @@ notices.
 Bluesky and Mastodon are third-party services and projects. ChorusDraft is not
 endorsed by or affiliated with Bluesky Social PBC, Mastodon gGmbH, or operators
 of independent Mastodon servers.
+
+Ruby 0.51.2 source is now merged into main-ruby. This Elixir implementation
+continues to use the Ruby 0.51.1 feature reference and remains unreleased.

@@ -3,9 +3,11 @@
 This directory contains the Linux Elixir version of ChorusDraft. One application
 and executable support both Bluesky and Mastodon. Development lives on the `elixir-experimental` branch.
 It is a separate implementation and is not part of the official Ruby release line.
-The supported Ruby release remains 0.51.1. The unreleased 0.51.2 candidate
-on `ruby-testing` requires Ruby 4.0+ and adds short commands; those additions
-are not part of this Elixir implementation's Ruby 0.51.1 parity baseline.
+The latest published Ruby release remains tagged `v0.51.1`. The tested 0.51.2
+source is now merged into `main-ruby`, with `ruby-testing` synchronized to it.
+That source requires Ruby 4.0+ and adds short commands; these additions are outside
+this Elixir implementation's pinned Ruby 0.51.1 parity baseline. Version 0.51.2
+has not yet been tagged or published.
 
 The executable currently reports `0.52.0-testing` as a temporary internal build
 identifier. That identifier is not a release, tag, compatibility promise, or the
