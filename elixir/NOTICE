@@ -1,24 +1,30 @@
-ChorusDraft Elixir version for Linux, macOS, and Windows (unreleased)
-Modification notice — September 6, 2026
+ChorusDraft 0.51.3 for Linux, macOS, and Windows
+Copyright (C) 2026 ChorusDraft contributors
 
-This testing build is an Elixir implementation of ChorusDraft, based on the
-feature set and safeguards in ChorusDraft 0.51.1. One application supports both
-Bluesky and Mastodon through platform-specific command modes and configuration
-directories.
+This package contains the primary Elixir implementation of ChorusDraft. One
+application supports Bluesky and Mastodon through separate command modes and
+configuration directories.
 
-The implementation includes interactive review for AI drafts, privacy
-exclusions, do-not-contact controls, interaction limits, credential-safe errors,
-ambiguous-publication handling, optional Bluesky Jetstream, read-only state
-import, and native Linux, macOS, and Windows packages containing both modes plus
-corresponding source.
+ChorusDraft is free software licensed under the GNU General Public License,
+version 3. See LICENSE for the complete terms. The package contains corresponding
+application and dependency source. See THIRD_PARTY_NOTICES.md and the dependency
+license files under source/deps/ for attribution and terms.
 
-ChorusDraft is distributed under the GNU General Public License version 3. See
-LICENSE for the complete terms. Copyright in the original and modified work
-remains with its respective copyright holders.
+Safeguards include interactive review for AI drafts, privacy exclusions,
+do-not-contact controls, harassment screening, interaction budgets,
+credential-safe errors, ambiguous-publication handling, and bounded optional
+Bluesky Jetstream reception. Automatic likes, favourites, boosts, and reposts
+are disabled.
+
+Do not use ChorusDraft to harass, threaten, dox, impersonate, coordinate abuse,
+evade a request to stop contact, or publish private material. Operators remain
+responsible for credentials, configuration, reviewed output, account conduct,
+and compliance with platform rules and applicable law.
 
 Bluesky and Mastodon are third-party services and projects. ChorusDraft is not
 endorsed by or affiliated with Bluesky Social PBC, Mastodon gGmbH, or operators
 of independent Mastodon servers.
 
-Ruby 0.51.2 source is now merged into main-ruby. This Elixir implementation
-continues to use the Ruby 0.51.1 feature reference and remains unreleased.
+Modified versions must follow GPLv3 and must not be represented as endorsed by
+the original contributors. The software is provided without warranty to the
+extent permitted by GPLv3 and applicable law.

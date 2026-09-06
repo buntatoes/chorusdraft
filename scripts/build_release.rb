@@ -21,8 +21,9 @@ integrations.product(%w[linux macos windows]).each do |integration, platform|
   end
   expected_names = %w[README.md CHANGELOG.md RELEASE_NOTES.md SECURITY.md NOTICE LICENSE VERSION setup.rb chorusdraft.rb .env.example
                       lib/chorus_draft/core.rb lib/chorus_draft/clients.rb lib/chorus_draft/cli.rb
-                      test/safety_test.rb config/target_accounts.txt.example config/do_not_contact.txt.example]
-  expected_names << (platform == 'windows' ? 'run.bat' : 'run.sh')
+                      lib/chorus_draft/runtime.rb lib/chorus_draft/setup.rb
+                      test/safety_test.rb test/cli_test.rb config/target_accounts.txt.example config/do_not_contact.txt.example]
+  expected_names.concat(platform == 'windows' ? %w[run.bat bot.bat] : %w[run.sh bot])
   existing = Dir.glob(File.join(target, '**', '*'), File::FNM_DOTMATCH)
   abort "Refusing package tree containing symlinks: #{name}" if File.symlink?(target) || existing.any? { |p| File.symlink?(p) }
   unexpected = existing.select { |p| File.file?(p) }.map { |p| p.delete_prefix(target + '/') } - expected_names
@@ -31,11 +32,11 @@ integrations.product(%w[linux macos windows]).each do |integration, platform|
   FileUtils.mkdir_p(target)
   %w[README.md CHANGELOG.md RELEASE_NOTES.md SECURITY.md NOTICE LICENSE VERSION setup.rb].each { |f| FileUtils.cp(File.join(root, f), target) }
   FileUtils.mkdir_p(File.join(target, 'lib', 'chorus_draft'))
-  %w[core.rb clients.rb cli.rb].each do |file|
+  %w[core.rb clients.rb cli.rb runtime.rb setup.rb].each do |file|
     FileUtils.cp(File.join(root, 'lib', 'chorus_draft', file), File.join(target, 'lib', 'chorus_draft', file))
   end
   FileUtils.mkdir_p(File.join(target, 'test'))
-  FileUtils.cp(File.join(root, 'test', 'safety_test.rb'), File.join(target, 'test'))
+  %w[safety_test.rb cli_test.rb].each { |file| FileUtils.cp(File.join(root, 'test', file), File.join(target, 'test')) }
   entry = File.read(File.join(root, integration, 'chorusdraft.rb')).sub("require_relative '../lib/", "require_relative 'lib/")
   File.write(File.join(target, 'chorusdraft.rb'), entry)
   FileUtils.cp(File.join(root, integration, '.env.example'), target)
@@ -44,10 +45,12 @@ integrations.product(%w[linux macos windows]).each do |integration, platform|
     FileUtils.cp(File.join(root, integration, 'config', "#{kind}.txt.example"), File.join(target, 'config'))
   end
   if platform == 'windows'
-    File.binwrite(File.join(target, 'run.bat'), "@echo off\r\ncd /d \"%~dp0\"\r\nruby chorusdraft.rb %*\r\nexit /b %errorlevel%\r\n")
+    %w[bot.bat run.bat].each { |file| FileUtils.cp(File.join(root, integration, 'bot.bat'), File.join(target, file)) }
   else
-    File.write(File.join(target, 'run.sh'), "#!/bin/sh\nset -eu\ncd -- \"$(dirname -- \"$0\")\"\nexec ruby chorusdraft.rb \"$@\"\n")
-    File.chmod(0755, File.join(target, 'run.sh'))
+    %w[bot run.sh].each do |file|
+      FileUtils.cp(File.join(root, integration, 'bot'), File.join(target, file))
+      File.chmod(0755, File.join(target, file))
+    end
   end
   files = Dir.glob(File.join(target, '**', '*'), File::FNM_DOTMATCH).select { |p| File.file?(p) }.sort
   forbidden = files.any? { |p| File.basename(p) == '.env' || p.match?(%r{/(data|logs)/}) || p.end_with?('.exe', '.go', '.rs') }

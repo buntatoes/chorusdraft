@@ -119,7 +119,7 @@ defmodule ChorusDraft.CLI do
        "Choose a product first: chorusdraft bluesky [options] or chorusdraft mastodon [options]."}
 
   defp parse(argv) do
-    argv = normalize_compatibility_args(argv)
+    argv = argv |> normalize_short_command() |> normalize_compatibility_args()
 
     case OptionParser.parse(argv, strict: @switches, aliases: @aliases) do
       {[], [], []} ->
@@ -139,6 +139,56 @@ defmodule ChorusDraft.CLI do
         {:error, "Invalid option: #{inspect(invalid)}"}
     end
   end
+
+  # Human-friendly commands introduced by the Ruby 0.51.2 release. Translation
+  # happens before strict option parsing, and none of these aliases adds
+  # --publish: generated and manual drafts remain queued unless the owner uses
+  # the explicit advanced publication flag or approves them interactively.
+  def normalize_short_command([]), do: []
+  def normalize_short_command(["help"]), do: ["--help"]
+  def normalize_short_command(["version"]), do: ["--version"]
+  def normalize_short_command(["setup"]), do: ["--setup"]
+  def normalize_short_command(["draft" | rest]), do: ["--post-only" | rest]
+  def normalize_short_command(["review" | rest]), do: ["--process-queue" | rest]
+  def normalize_short_command(["start" | rest]), do: ["--daemon" | rest]
+  def normalize_short_command(["listen" | rest]), do: ["--listen" | rest]
+  def normalize_short_command(["replies" | rest]), do: ["--replies-only" | rest]
+  def normalize_short_command(["post", text | rest]), do: ["--text", text | rest]
+
+  def normalize_short_command(["reply", id, text | rest]),
+    do: ["--text", text, "--reply-to", id | rest]
+
+  def normalize_short_command(["quote", id, text | rest]),
+    do: ["--text", text, "--quote-uri", id | rest]
+
+  def normalize_short_command(["search", query | rest]), do: ["--search", query | rest]
+  def normalize_short_command(["delete", id | rest]), do: ["--delete", id | rest]
+  def normalize_short_command(["status" | rest]), do: ["--status" | rest]
+  def normalize_short_command(["reject", id | rest]), do: ["--reject", id | rest]
+
+  def normalize_short_command(["random"]), do: ["--random-post="]
+
+  def normalize_short_command(["random", "--" <> _ = option | rest]),
+    do: ["--random-post=", option | rest]
+
+  def normalize_short_command(["random", query | rest]), do: ["--random-post", query | rest]
+  def normalize_short_command(["discover"]), do: ["--discover"]
+
+  def normalize_short_command(["discover", "--" <> _ = option | rest]),
+    do: ["--discover", option | rest]
+
+  def normalize_short_command(["discover", query | rest]),
+    do: ["--discover", "--query", query | rest]
+
+  def normalize_short_command(["targets"]), do: ["--targets-only"]
+
+  def normalize_short_command(["targets", "--" <> _ = option | rest]),
+    do: ["--targets-only", option | rest]
+
+  def normalize_short_command(["targets", handle | rest]),
+    do: ["--targets-only", "--target", handle | rest]
+
+  def normalize_short_command(argv), do: argv
 
   defp normalize_compatibility_args([]), do: []
   defp normalize_compatibility_args(["--random-post"]), do: ["--random-post="]
@@ -481,6 +531,11 @@ defmodule ChorusDraft.CLI do
     #{product(platform)} #{ChorusDraft.version()} — human-reviewed social drafting
     Usage: chorusdraft #{platform} [options]
 
+    Short commands:
+      setup, draft, review, start, listen, replies, status
+      post TEXT, reply ID TEXT, quote ID TEXT, search QUERY
+      random [QUERY], discover [QUERY], targets [HANDLE], delete ID, reject ID
+
       -m, --text TEXT          Stage a manual post
           --publish            Publish --text explicitly; never applies to AI
           --reply-to ID        Reply to status ID or at:// URI
@@ -513,7 +568,7 @@ defmodule ChorusDraft.CLI do
           --ignore-active-hours Bypass the schedule for this invocation
           --queue              Stage manual text (the default)
 
-    Ruby aliases: --reply-uri, --quote-only, --staging, --poll.
+    Compatibility aliases: --reply-uri, --quote-only, --staging, --poll.
     --reply-cid/--quote-cid are accepted; records are re-fetched before posting.
       -v, --version            Show version
       -h, --help               Show this help

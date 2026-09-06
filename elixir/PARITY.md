@@ -1,11 +1,10 @@
 # Ruby → Elixir parity
 
-Read-only baseline: the historical Ruby 0.51.1 reference commit
-`68b83694ec34b1161839b5ff62a857a774415ece`. This commit remains pinned in CI.
-Ruby 0.51.2 source is now merged into `main-ruby`, and `ruby-testing` is
-synchronized with that merge. Its Ruby 4.0 requirement and short commands are
-outside this parity baseline; no reference pin changed. The Elixir rewrite now
-targets Linux, macOS, and Windows. It remains separate from the Ruby builds.
+Read-only baseline: the Ruby 0.51.2 release commit
+`17985ef1b0645015ccff5e7ae72aab9ac5c817c2`. This commit is pinned in CI.
+The Elixir 0.51.3 runtime targets Linux, macOS, and Windows and is the primary
+implementation. Ruby 0.51.2 remains available as legacy source and a state
+migration reference.
 
 | Ruby behavior | Elixir implementation | Verification |
 |---|---|---|
@@ -15,7 +14,7 @@ targets Linux, macOS, and Windows. It remains separate from the Ruby builds.
 | Manual staging and explicit manual publication | `--text`, `--publish`, reply/quote/CW options | Runner and client tests |
 | Exact interactive approval; rejection; no automatic AI posting | `--process-queue`; `--reject`; claim before publish | Approval, concurrency and failure tests |
 | Search, timeline inspection and random reply targets | `--search`, `--random-post [QUERY]`, `--random-reply QUERY` | CLI/runner implementation; parser tests |
-| CLI compatibility aliases | `--reply-uri`, `--quote-only`, `--staging`, `--poll`, CID arguments | Parity tests; supplied CIDs are deliberately re-fetched |
+| Short commands and compatibility aliases | `draft`, `review`, `start`, `post`, `reply`, `quote`, `search`, other short commands, legacy flags and CID arguments | Parity tests; translation never adds `--publish`; supplied CIDs are re-fetched |
 | Polling, daemon, local active hours and jitter | Foreground loops, monotonic scheduling and isolated job failures | Schedule and HTTP-error regression tests |
 | Privacy exclusions, opt-outs and interaction budgets | Restricted bodies discarded; persistent blocks; daily/author limits | Safety, client, runner and store tests |
 | Account-scoped atomic state and idempotency | Native kernel locks, private modes/Windows ACLs, stable IDs/record keys, uncertain outcomes | Concurrency, crash recovery, native CI and transport tests |

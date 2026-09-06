@@ -1,78 +1,78 @@
-# ChorusDraft Elixir changelog
+# Changelog
 
-This changelog covers the ChorusDraft Elixir version on
-`elixir-experimental`. Its internal version is `0.52.0-testing`; no tagged
-Elixir release has been published. Ruby history stays on `main-ruby` and
-`ruby-testing`.
+This file records user-visible changes to ChorusDraft.
 
-## Linux, macOS, and Windows packages — 2026-09-06 (unreleased)
+## 0.51.3 — 2026-09-06
 
-- Add native Elixir package builds for Linux (`.tar.gz`), macOS (`.tar.gz`), and
-  Windows (`.zip`), each containing both Bluesky and Mastodon modes.
-- Add PowerShell run, setup, install, manifest-verification, and package-test
-  scripts for Windows; make Unix checksum and permission checks work on macOS.
-- Prefer PowerShell 7 when available so ACL cmdlets load correctly from native
-  package launchers; retain Windows PowerShell as the desktop fallback.
-- Preserve crash-released state locking on Linux and add compatible Python
-  standard-library locks on macOS/Windows. Apply private Windows ACLs and use an
-  atomic Python `os.replace` state-file replacement on Windows.
-- Expand CI to run the 64 offline regressions and native package checks on
-  Ubuntu 22.04, macOS 14, and Windows Server 2022.
+### Elixir runtime
 
-## Documentation after Ruby 0.51.2 promotion — 2026-09-06 (unreleased)
+- Promoted the Elixir implementation as the primary ChorusDraft runtime while
+  retaining Ruby 0.51.2 source for history and migration reference.
+- Combined Bluesky and Mastodon in one executable with shared AI, safety, queue,
+  scheduling, and state behavior.
+- Added the Ruby 0.51.2 short commands alongside the complete advanced flag
+  interface. Command translation cannot add `--publish`.
+- Added explicit, read-only import of compatible Ruby state into an empty
+  account-scoped store.
 
-- Track the tested Ruby 0.51.2 source on `main-ruby` and the synchronized
-  `ruby-testing` baseline separately from the still-published `v0.51.1` tag.
-- Keep the Elixir runtime, commands, state import, and CI parity reference pinned
-  to the existing Ruby 0.51.1 contract. No Elixir code or release was promoted.
+### Platforms and packaging
 
-## Documentation and privacy review — 2026-09-06 (unreleased)
+- Added native `.tar.gz` packages for Linux and macOS and a `.zip` package for
+  Windows. Every package contains both social platform modes.
+- Added Unix and PowerShell setup, install, run, and verification scripts.
+- Added private Unix modes and protected Windows ACLs for configuration and
+  state, plus native cross-process locks and atomic state replacement.
+- Included complete application source, pinned dependency source and licenses,
+  file manifests, and SHA-256 sidecars while excluding credentials, state, logs,
+  and build caches.
+- Added native CI tests on Ubuntu 22.04, macOS 14, and Windows Server 2022.
 
-- Align branch status, runtime requirements, packaging, and verification claims
-  with the published Ruby 0.51.1 release, Ruby 0.51.2 candidate, and separate
-  Linux Elixir implementation. Published release behavior is unchanged.
-- Record the targeted privacy review in SECURITY.md. No confirmed credentials
-  or unintended personal data were found in the reviewed branch/history/assets;
-  synthetic fixture matches were classified separately from real secrets.
-- Correct the nested guide to one combined package and 64 current regressions;
-  retain 56-test completion results as a historical checkpoint.
+### Bluesky Jetstream
 
-## Jetstream receive limits — unreleased
+- Added optional Jetstream wake-ups for Bluesky listeners and daemons while
+  retaining periodic notification API catch-up.
+- Added bounded frames, fragmented messages, handshake headers, fragment counts,
+  receive deadlines, reconnect backoff, and heartbeat handling.
+- Kept streamed post bodies outside AI context, terminal output, and persistent
+  state. Stream events cannot generate or publish directly.
 
-- Reject WebSocket frames larger than 1 MiB from their declared length, before
-  reading the payload. Apply the same limit across fragmented messages.
-- Bound handshake headers, fragment counts, and receive deadlines. Reject
-  unrequested WebSocket compression and malformed handshake responses.
-- Keep streaming reads passive so incoming traffic cannot fill the worker's
-  mailbox. Retain heartbeat, reconnect, and notification catch-up behavior.
+### Safety and reliability
 
-## ChorusDraft naming and package consolidation — September 5, 2026
+- Preserved mandatory interactive review for AI drafts and explicit publication
+  only for owner-written text.
+- Preserved privacy filtering, opt-outs, do-not-contact enforcement, harassment
+  screening, interaction budgets, ownership checks, and disabled engagement
+  actions.
+- Added crash-released locks, strict state validation, idempotent publication
+  identifiers, and `uncertain` handling without automatic publication retries.
+- Disabled HTTP redirects and automatic retries and added request timeouts and
+  streaming response limits.
 
-- Corrected documentation, command banners, configuration examples, and notices
-  to identify the project as ChorusDraft for both supported platforms.
-- Consolidated the platform-specific archives into one ChorusDraft Linux archive
-  containing both Bluesky and Mastodon modes.
-- Removed the temporary CI branch from the workflow configuration.
+## 0.51.2 — 2026-09-06
 
-## Linux implementation completion — September 5, 2026
+- Raised the Ruby implementation requirement to Ruby 4.0.
+- Added short commands and cross-platform `bot` launchers.
+- Added credential-free setup that preserves existing configuration.
+- Preserved the complete advanced flag interface and state format.
 
-- Completed the Linux command workflows against the read-only Ruby 0.51.1
-  reference for Bluesky and Mastodon.
-- Added read-only state import, non-overwriting setup, queue status/rejection,
-  Linux packaging, checksums, and bundled application/dependency source.
-- Fixed target/discovery selection, content-warning preservation, numeric HTML
-  entity decoding, Ruby CLI aliases, local active hours, and daemon scheduling.
-- Added Mint HTTP transport without redirect following or automatic request
-  retries, bounded responses, and kernel state locking.
-- Passed 56 regression tests, Ruby-generated state import, installation checks,
-  overwrite refusal, and an offline source rebuild.
+## 0.51.1 — 2026-09-05
 
-## Jetstream integration — September 5, 2026
+- Recorded all fetched public opt-outs before reply generation or batch limits.
+- Expanded normalization for opt-out and harassment screening.
+- Extended do-not-contact checks to generated, manual, and queued mentions and
+  Mastodon content warnings.
+- Prevented new opt-outs from replacing earlier block-list entries.
+- Added complete validation of Mastodon content warnings.
 
-- Added optional Bluesky Jetstream wake-ups for `--listen` and `--daemon`.
-- Kept API notification catch-up, reconnect/backoff, privacy boundaries, and
-  mandatory draft review.
-- Added WebSockex and Telemetry with protocol and reconnect tests.
+## 0.51 — 2026-09-05
 
-Live account acceptance, a sustained daemon soak, and an independent release
-security audit remain outstanding.
+- Added the dry comic voice with sincere handling of serious subjects.
+- Added varied original posts and topic-focused reply, target, and discovery
+  prompts without personal attacks or unsupported allegations.
+- Preserved review, privacy, interaction limits, and provider safety controls.
+
+## 0.50 — 2026-09-05
+
+- Began the ChorusDraft release line with Bluesky and Mastodon drafting,
+  interactive review, local AI and Gemini support, scheduling, account-scoped
+  state, opt-outs, privacy filtering, and cross-platform Ruby packages.

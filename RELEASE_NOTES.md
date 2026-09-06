@@ -1,38 +1,71 @@
-# ChorusDraft Elixir branch notes
+# ChorusDraft 0.51.3 release notes
 
-`elixir-experimental` contains one Elixir implementation of ChorusDraft for
-Linux, macOS, and Windows, with Bluesky and Mastodon modes. Its internal version is
-`0.52.0-testing`; it remains unreleased and does not replace the Ruby builds on
-`main-ruby` or `ruby-testing`. Those branches now share the tested Ruby 0.51.2
-source baseline; the latest published Ruby tag remains `v0.51.1`. The Ruby merge
-does not change this implementation's pinned 0.51.1 parity reference.
+Version 0.51.3 promotes the Elixir implementation of ChorusDraft as the primary
+release for Linux, macOS, and Windows. One executable supports both Bluesky and
+Mastodon. The Ruby 0.51.2 source remains available as a legacy implementation and
+migration reference.
 
-The branch includes the Ruby 0.51.1 command workflows, local AI and Gemini adapters,
-interactive AI draft review, optional Bluesky Jetstream, state safeguards,
-read-only state import, setup, and native Linux, macOS, and Windows packages.
-Each package includes both platform modes, native launchers, a non-overwriting
-installer, SHA-256 checksums, and corresponding application/dependency source.
+## Highlights
 
-The latest unreleased hardening bounds Jetstream frame and fragmented-message
-sizes before payload reads, handshake headers, fragment counts, and receive
-deadlines. Reconnect and notification catch-up remain active.
+- Reimplemented the bot runtime, clients, queue, storage, AI adapters, and
+  safeguards in Elixir.
+- Added native Linux, macOS, and Windows release packages containing both social
+  platform modes.
+- Added the short command interface from Ruby 0.51.2 while retaining advanced
+  compatibility flags. Short commands never enable direct publication.
+- Added optional Bluesky Jetstream wake-ups with bounded WebSocket messages,
+  reconnect handling, and periodic API catch-up.
+- Added explicit import of compatible Ruby state into an empty, account-scoped
+  Elixir store.
 
-Running any package requires Erlang/OTP 25+. Linux also uses util-linux; macOS
-and Windows use Python 3 for compatible crash-released file locking, and Windows
-uses PowerShell for private ACLs and native scripts. Building or testing requires
-Elixir 1.15+ and Mix. The packaged application does not require Ruby or Elixir.
+## Safety and privacy
 
-The implementation checks cover 64 offline regressions, Ruby-generated state import,
-escript creation, package installation, checksum checks, overwrite refusal, and
-an offline source rebuild. Successful
-[Elixir checks](https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml)
-upload separate Linux, macOS, and Windows artifacts for 30 days.
+AI-generated text always enters the review queue. Each draft is validated before
+staging and immediately before publication. Opt-outs and do-not-contact entries
+block replies, quotes, mentions, and unsolicited commentary. Harassment, threats,
+doxxing, pile-on requests, self-harm encouragement, and common direct personal
+attacks are rejected.
 
-Live Bluesky, Mastodon, and AI acceptance, a sustained daemon soak, and an
-independent release security audit have not been completed. Offline tests do not
-establish live-service acceptance. No Elixir tag or GitHub release has been
-published.
+Mastodon private and direct message bodies are discarded before AI processing,
+logging, or state storage. Automatic likes, boosts, favourites, and reposts are
+disabled. Publication calls are not automatically retried; ambiguous outcomes
+are marked `uncertain` for manual inspection.
 
-See [the usage and migration guide](elixir/README.md),
-[implementation details](elixir/RELEASE_NOTES.md),
-[feature parity](elixir/PARITY.md), and [security limits](elixir/SECURITY.md).
+Credentials remain in local `.env` files and are excluded from packages. Network
+errors omit remote bodies, credential-bearing URLs, and provider details.
+
+## State and migration
+
+State is separated by platform, service origin, and account. Writers use native
+kernel locks, private permissions or Windows ACLs, and atomic replacement.
+Malformed state fails closed.
+
+Use `--import-state FILE` to import compatible Ruby or Elixir state into an empty
+account store. The source file is read only. Stop every old process first and do
+not operate two installations against the same account.
+
+## Packages
+
+- `ChorusDraft-elixir-0.51.3-linux.tar.gz`
+- `ChorusDraft-elixir-0.51.3-macos.tar.gz`
+- `ChorusDraft-elixir-0.51.3-windows.zip`
+
+Every archive includes the executable, native setup/install/verification scripts,
+configuration examples, documentation, GPL source, pinned dependency source and
+licenses, a complete manifest, and a SHA-256 sidecar. Runtime credentials, state,
+logs, and build caches are excluded.
+
+Runtime requirements are Erlang/OTP 25+, plus util-linux on Linux, Python 3 on
+macOS, and Python 3 with PowerShell on Windows. Building requires Elixir 1.15+.
+
+## Verification status
+
+The automated suite contains 65 offline regressions and runs natively on Ubuntu
+22.04, macOS 14, and Windows Server 2022. It verifies the escript, package
+integrity, installation, private configuration, both platform modes, overwrite
+refusal, and rebuilding from the shipped dependency source. Linux also checks
+state generated by the pinned Ruby 0.51.2 release.
+
+Automated fixtures do not establish live service acceptance. Operators should
+test login, read-only search, staging, review, publication, deletion, opt-outs,
+and reconnect behavior with disposable accounts before production use.

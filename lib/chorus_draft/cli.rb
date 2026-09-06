@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require 'optparse'
 require_relative 'clients'
+require_relative 'setup'
 
 module ChorusDraft
   class Runner
@@ -40,7 +41,7 @@ module ChorusDraft
       candidate = draft(text, action: 'ai_generated', post: post, quote: quote)
       validate_draft!(candidate)
       item = @store.stage(candidate, source: post && post['id'], unsolicited: unsolicited)
-      @out.puts(item ? "Staged draft #{item['id']}; use --process-queue to review." : 'Skipped duplicate or queue/interaction limit reached.')
+      @out.puts(item ? "Staged draft #{item['id']}; run #{CLI::LAUNCHER} review." : 'Skipped duplicate or queue/interaction limit reached.')
       item
     end
 
@@ -97,7 +98,7 @@ module ChorusDraft
       if publish
         publish_draft(saved)
       else
-        @out.puts "Staged manual draft #{saved['id']}."
+        @out.puts "Staged manual draft #{saved['id']}; run #{CLI::LAUNCHER} review."
       end
       saved
     end
@@ -165,7 +166,69 @@ module ChorusDraft
   end
 
   class CLI
+    LAUNCHER = Gem.win_platform? ? '.\\bot.bat' : './bot'
     PRODUCTS = { 'bluesky' => 'ChorusDraft for Bluesky', 'mastodon' => 'ChorusDraft for Mastodon' }.freeze
+    COMMANDS = {
+      'draft' => ['--post-only'], 'review' => ['--process-queue'],
+      'replies' => ['--replies-only'], 'start' => ['--daemon'],
+      'listen' => ['--listen'], 'version' => ['--version']
+    }.freeze
+
+    def self.help(product)
+      <<~HELP
+        #{product} #{VERSION}
+        Usage: ./bot COMMAND (Windows: .\\bot.bat COMMAND)
+
+          setup                 Create configuration files; then edit .env
+          draft                 Create an AI draft
+          review                Review queued drafts and choose what to publish
+          post "TEXT"           Queue a post you wrote
+          reply ID "TEXT"       Queue a reply
+          quote ID "TEXT"       Queue a quote/commentary
+          replies               Draft replies to mentions
+          search "QUERY"        Find public posts
+          random ["QUERY"]      Show a random public post
+          discover ["QUERY"]    Draft commentary on a public post
+          targets [HANDLE]      Draft commentary from configured accounts
+          start                 Keep drafting posts and checking mentions
+          listen                Keep checking mentions
+          delete ID             Delete your own post after confirmation
+          version               Show version
+          help                  Show this guide
+
+        Start with: #{LAUNCHER} setup, edit .env, #{LAUNCHER} draft, #{LAUNCHER} review.
+        AI drafts always need review. Stop start/listen with Ctrl+C.
+        Existing flags still work. Use #{LAUNCHER} --help for advanced options.
+      HELP
+    end
+
+    def self.command_args(argv)
+      args = argv.dup
+      return args if args.empty? || args.first.start_with?('-')
+      command = args.shift
+      return COMMANDS.fetch(command) + args if COMMANDS.key?(command)
+      take = lambda do |label|
+        value = args.shift
+        raise Error, "#{command} requires #{label}. Use #{LAUNCHER} help for examples." if value.to_s.empty? || value.start_with?('--')
+        value
+      end
+      flags = case command
+              when 'post' then ['--text', take.call('"TEXT"')]
+              when 'reply', 'quote'
+                id = take.call('ID and "TEXT"')
+                ['--text', take.call('"TEXT"'), command == 'reply' ? '--reply-to' : '--quote-uri', id]
+              when 'search', 'delete'
+                ["--#{command}", take.call(command == 'search' ? '"QUERY"' : 'ID')]
+              when 'random', 'discover', 'targets'
+                flag, argument = { 'random' => ['--random-post', nil], 'discover' => ['--discover', '--query'],
+                                   'targets' => ['--targets-only', '--target'] }.fetch(command)
+                value = args.shift if args.first && !args.first.start_with?('-')
+                [flag, (argument if value), value].compact
+              else
+                raise Error, "Unknown command. Use #{LAUNCHER} help to see available commands."
+              end
+      flags + args
+    end
 
     def self.active?(spec, now = Time.now)
       return true if spec.to_s.empty?
@@ -179,9 +242,13 @@ module ChorusDraft
 
     def self.run(platform, base, argv = ARGV)
       product = PRODUCTS.fetch(platform)
+      return (puts help(product); 0) if argv.empty? || argv == ['help']
+      return Setup.run(base) if argv == ['setup']
+      raise Error, "Use #{LAUNCHER} setup without extra arguments." if argv.first == 'setup'
+      argv = command_args(argv)
       options = { poll: 60, interval: 120, jitter: 0, limit: 5 }
       parser = OptionParser.new do |o|
-        o.banner = "#{product} #{VERSION} — human-reviewed social drafting\nUsage: ruby chorusdraft.rb [options]\nAI output always requires review. No arguments prints help."
+        o.banner = "#{help(product)}\nAdvanced options (also accepted after a command):"
         o.on('-v', '--version', 'Show version') { puts VERSION; return 0 }
         o.on('-h', '--help', 'Show help') { puts o; return 0 }
         o.on('-m', '--text TEXT', 'Stage a manual post') { |v| options[:text] = v }
@@ -291,7 +358,7 @@ module ChorusDraft
         end
       end
       0
-    rescue OptionParser::ParseError, Error => e
+    rescue OptionParser::ParseError, Error, Setup::Error => e
       warn e.message
       1
     rescue Interrupt

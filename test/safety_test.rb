@@ -548,6 +548,15 @@ class ClientTest < Minitest::Test
 end
 
 class TransportTest < Minitest::Test
+  # Keep transport fakes independent of minitest's optional mock gem.
+  def with_transport(transport)
+    original = Net::HTTP.method(:new)
+    Net::HTTP.define_singleton_method(:new) { |*| transport }
+    yield
+  ensure
+    Net::HTTP.define_singleton_method(:new, original)
+  end
+
   class Transport
     attr_accessor :use_ssl, :open_timeout, :read_timeout, :write_timeout, :max_retries
     attr_reader :request_seen
@@ -564,7 +573,7 @@ class TransportTest < Minitest::Test
     response = Net::HTTPFound.new('1.1', '302', 'Found')
     response['location'] = 'https://attacker.test/?secret=credential'
     transport = Transport.new(response)
-    Net::HTTP.stub(:new, transport) do
+    with_transport(transport) do
       error = assert_raises(ChorusDraft::HTTPError) do
         ChorusDraft::HTTP.new.request(:post, 'https://example.org/api', headers: { 'x-goog-api-key' => 'SECRET' }, body: { x: 1 })
       end
@@ -578,7 +587,7 @@ class TransportTest < Minitest::Test
   end
   def test_raw_transport_error_never_escapes
     transport = Transport.new(nil, IOError.new('https://example.org?key=SECRET and private body'))
-    Net::HTTP.stub(:new, transport) do
+    with_transport(transport) do
       error = assert_raises(ChorusDraft::Error) { ChorusDraft::HTTP.new.request(:get, 'https://example.org') }
       refute_includes error.message, 'SECRET'
       refute_includes error.message, 'private body'

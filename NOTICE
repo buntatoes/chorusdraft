@@ -1,19 +1,26 @@
-ChorusDraft Elixir version — unreleased
-Modification notice — September 6, 2026
+ChorusDraft 0.51.3
+Copyright (C) 2026 ChorusDraft contributors
 
-This branch contains the Linux, macOS, and Windows Elixir implementation of
-ChorusDraft with support for Bluesky and Mastodon. It derives its feature set
-from ChorusDraft 0.51.1 and is developed separately on the
-elixir-experimental branch. The Ruby branches are retained separately.
+ChorusDraft is free software licensed under the GNU General Public License,
+version 3. See LICENSE for the complete terms and source-code obligations.
 
-ChorusDraft was authored by Buntatoes and is distributed under the GNU General
-Public License version 3. The Elixir implementation remains under GPLv3. See
-LICENSE for the complete terms and elixir/THIRD_PARTY_NOTICES.md for dependency
-notices.
+Version 0.51.3 uses the Elixir implementation under elixir/ as its primary
+runtime. The Ruby 0.51.2 source remains in the repository as legacy source and a
+migration reference. See elixir/THIRD_PARTY_NOTICES.md for dependency attribution
+and corresponding license files included with release packages.
 
-Bluesky and Mastodon are third-party services and projects. ChorusDraft is not
-endorsed by or affiliated with Bluesky Social PBC, Mastodon gGmbH, or operators
-of independent Mastodon servers.
+Safeguards are part of the program behavior. AI-generated text requires
+interactive review. Privacy exclusions, opt-outs, do-not-contact enforcement,
+harassment screening, interaction budgets, ownership validation, and uncertain
+publication handling apply before publication. Automatic likes, favourites,
+boosts, and reposts are disabled.
 
-Ruby 0.51.2 source is now merged into main-ruby. This Elixir implementation
-continues to use the Ruby 0.51.1 feature reference and remains unreleased.
+Do not use ChorusDraft to harass, threaten, dox, impersonate, coordinate abuse,
+evade a request to stop contact, or publish private material. Operators remain
+responsible for credentials, configuration, reviewed output, account conduct,
+and compliance with platform rules and applicable law.
+
+GPLv3 permits recipients to inspect and modify the program. Modified versions
+must not be represented as endorsed by the original contributors. The software
+is provided without warranty, to the extent permitted by GPLv3 and applicable
+law. See LICENSE sections 15–17.
