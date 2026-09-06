@@ -18,6 +18,15 @@ streaming response limits. State uses crash-released kernel locks, validates
 nested history and publication transitions, and refuses symlink/corrupt files.
 An imported interrupted publication remains uncertain and cannot be replayed.
 
+Jetstream now reads sockets passively and rejects oversized declared frames
+before reading their payloads. A 1 MiB message limit also covers cumulative
+fragments. Header limits, fragment-count limits, and receive deadlines prevent
+unbounded assembly; unsolicited compression and invalid handshakes are refused.
+Socket regressions cover these limits, reconnects, and masked heartbeat replies.
+The latest hardening pass passed 64 tests, package integrity and installation
+checks, and an offline source rebuild. A credential-free connection also verified
+the public Jetstream TLS handshake; account workflows still need live acceptance.
+
 Build requirement: Elixir 1.15+ and Erlang/OTP 25+. Runtime: Linux, Erlang/OTP 25+
 and util-linux. Packaging/installing also uses `tar` and `sha256sum`.
 

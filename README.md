@@ -15,7 +15,8 @@ version is `0.52.0-testing`; it is not an official tagged release.
 - Local OpenAI-compatible/Ollama and Gemini AI providers.
 - Mandatory interactive approval for every AI-generated draft.
 - Optional Bluesky Jetstream wake-ups for listeners and daemons. Mastodon uses
-  polling.
+  polling. Streaming checks message lengths before payload reads and bounds
+  fragmented messages, handshake headers, and receive times.
 - Account-scoped state, opt-outs, do-not-contact lists, interaction limits,
   privacy filtering, and uncertain-publication handling.
 - Read-only import of Ruby 0.51.1 state into an empty Elixir account store.
@@ -75,10 +76,11 @@ file under `elixir/dist/`. The archive contains both Bluesky and Mastodon modes.
 Successful [Elixir checks](https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml)
 also upload a `chorusdraft-elixir-linux` artifact for 30 days.
 
-The earlier implementation verification passed 56 tests, state import generated
+Verification includes 64 passing offline regressions, state import generated
 by the pinned Ruby reference, package installation, checksum verification,
-overwrite refusal, and an offline source rebuild. Live account acceptance and a
-sustained daemon soak still require test credentials; no live posts were made.
+overwrite refusal, an offline source rebuild, and adversarial WebSocket fixtures.
+Live account acceptance and a sustained daemon soak still require test
+credentials; no live posts were made.
 
 ## Documentation
 

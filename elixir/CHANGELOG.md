@@ -4,6 +4,20 @@ Changes to the ChorusDraft Elixir version on `elixir-experimental`, newest first
 is `0.52.0-testing`; the branch remains unreleased. Ruby code is a read-only
 feature reference.
 
+## Jetstream receive limits — unreleased
+
+- Replace unbounded WebSocket message assembly with passive reads that inspect
+  frame lengths before accepting payloads. Both complete and fragmented messages
+  are limited to 1 MiB, with at most 1,024 fragments per message.
+- Cap handshake header lines and the aggregate header fields at 16 KiB each,
+  enforce a 10-second handshake/frame receive deadline and a 90-second fragmented
+  message deadline, and reject unsolicited compression and invalid handshakes.
+- Preserve masked ping/pong replies, heartbeat checks, reconnect backoff, and
+  coalesced notification refreshes. Stream data still cannot directly publish
+  content or supply AI context.
+- Add socket-level regressions for oversized length declarations, fragment
+  accumulation, malformed handshakes, stalled frames, and idle heartbeats.
+
 ## Documentation alignment — September 5, 2026
 
 - Aligned root and Elixir documentation with the current implemented features,

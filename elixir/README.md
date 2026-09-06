@@ -121,8 +121,13 @@ active hours, queue limits, and exact interactive approval still apply. Bursts
 coalesce into one pending wake-up, with at least five seconds between the start
 of notification cycles. Jetstream does not directly generate or publish posts.
 
-The socket reconnects with bounded exponential backoff and a heartbeat. An
-initial notification check, checks after reconnect, and periodic checks at
+The socket reconnects with bounded exponential backoff and a heartbeat.
+An oversized frame is rejected from its declared length before the payload is read.
+Complete and fragmented messages are limited to 1 MiB; handshake headers,
+fragment counts, and receive deadlines are bounded as described in
+[SECURITY.md](SECURITY.md).
+
+An initial notification check, checks after reconnect, and periodic checks at
 `--poll-interval` (60 seconds by default) cover disconnects and API indexing lag.
 This is live-tail notification acceleration, not a historical replay consumer:
 there is no persisted Jetstream cursor or guarantee of complete delivery. The

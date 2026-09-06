@@ -35,10 +35,6 @@ defmodule ChorusDraft.JetstreamTest do
     }
   end
 
-  defp socket_state(stream) do
-    %{stream: stream, attempts: 0, timer: nil, last_frame: System.monotonic_time(:millisecond)}
-  end
-
   test "subscription uses the current JSON endpoint and filters collections, not authors" do
     uri = URI.parse(Jetstream.endpoint!(%{}))
     assert uri.scheme == "wss"
@@ -129,8 +125,7 @@ defmodule ChorusDraft.JetstreamTest do
 
   test "a burst leaves only one wake-up pending and receiving it rearms the latch" do
     stream = Jetstream.subscription(@did)
-    state = socket_state(stream)
-    for _ <- 1..1_000, do: Socket.handle_frame({:text, event(mention())}, state)
+    for _ <- 1..1_000, do: Jetstream.notify(stream)
     assert Jetstream.wait(stream, 0) == :activity
     assert Jetstream.wait(stream, 0) == :timeout
     Jetstream.notify(stream)
@@ -138,17 +133,9 @@ defmodule ChorusDraft.JetstreamTest do
     assert Jetstream.wait(Jetstream.subscription(@did), 0) == :timeout
   end
 
-  test "retry delays are bounded and heartbeat handles idle and active connections" do
+  test "retry delays are bounded" do
     assert Socket.reconnect_delay(0) in 1_001..1_250
     assert Socket.reconnect_delay(100) in 30_001..30_250
-    state = socket_state(Jetstream.subscription(@did))
-    assert {:reply, {:pong, "probe"}, _} = Socket.handle_ping({:ping, "probe"}, state)
-
-    assert {:close, {1001, _}, _} =
-             Socket.handle_info(:heartbeat, %{state | last_frame: state.last_frame - 90_001})
-
-    assert {:reply, :ping, armed} = Socket.handle_info(:heartbeat, state)
-    Socket.terminate(:normal, armed)
   end
 
   test "Jetstream CLI combinations are rejected before logging in" do
@@ -189,7 +176,8 @@ defmodule ChorusDraft.JetstreamTest do
     client = %TestClient{identity: @did, posts: [post, stop], published: published}
     runner = Runner.new(client, dir, "bluesky", %{}, ai: ChorusDraft.TestAI, interactive: false)
     stream = Jetstream.subscription(@did)
-    Socket.handle_frame({:text, event(mention())}, socket_state(stream))
+    assert Jetstream.decode(event(mention()), @did) == :activity
+    Jetstream.notify(stream)
     assert Jetstream.wait(stream, 0) == :activity
     capture_io(fn -> Runner.mentions(runner) end)
     assert_receive {:ai_context, context}
@@ -211,10 +199,8 @@ defmodule ChorusDraft.JetstreamTest do
     {:ok, server} = Task.start(fn -> serve(listener, owner) end)
     stream = Jetstream.subscription(@did)
 
-    {:ok, socket} =
-      WebSockex.start("ws://127.0.0.1:#{port}", Socket, socket_state(stream),
-        extra_headers: [{"Sec-WebSocket-Protocol", "xrpc.v1.json"}]
-      )
+    {:ok, socket} = Socket.start_link(url: "ws://127.0.0.1:#{port}", stream: stream)
+    Process.unlink(socket)
 
     on_exit(fn ->
       Process.exit(socket, :kill)

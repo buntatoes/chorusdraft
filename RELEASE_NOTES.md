@@ -11,11 +11,15 @@ read-only state import, setup, and a Linux package containing both platform
 modes. The package includes launchers, a non-overwriting installer, SHA-256
 checksums, and corresponding application/dependency source with notices.
 
+The latest unreleased hardening bounds Jetstream frame and fragmented-message
+sizes before payload reads, handshake headers, fragment counts, and receive
+deadlines. Reconnect and notification catch-up remain active.
+
 Running the package requires Linux, Erlang/OTP 25+, and util-linux. Building or
 testing also requires Elixir 1.15+ and Mix. Packaging/installing uses `tar` and
 `sha256sum`. The packaged application does not require Ruby or Elixir.
 
-The implementation checks cover 56 regression tests, Ruby-generated state import,
+The implementation checks cover 64 offline regressions, Ruby-generated state import,
 escript creation, package installation, checksum checks, overwrite refusal, and
 an offline source rebuild. Successful
 [Elixir checks](https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml)

@@ -19,7 +19,7 @@ The rewrite targets Linux. It does not replace the Windows/macOS Ruby builds.
 | Account-scoped atomic state and idempotency | Kernel flock, private files, stable IDs/record keys, uncertain outcomes | Concurrency, crash recovery and transport tests |
 | Existing state and configuration | Read-only import into an empty account store; non-overwriting setup | Migration tests, including Ruby-generated state in CI |
 | Linux packaging and install/upgrade | One ChorusDraft archive with both platform modes, source/dependency source, manifest, and new-directory installer | CI extraction, installation, overwrite refusal and offline rebuild |
-| Jetstream | Optional Bluesky notification wake-up with periodic API catch-up | Protocol, reconnect and coalescing tests |
+| Jetstream | Optional Bluesky notification wake-up with periodic API catch-up and bounded passive reception | Protocol, reconnect, coalescing, oversized/fragmented message, handshake, heartbeat, and timeout tests |
 
 Intentional differences: Elixir uses no Ruby runtime. Packaging requires Erlang
 rather than bundling an operating-system runtime. Upgrade installation always

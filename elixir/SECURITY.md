@@ -46,8 +46,13 @@ accuracy, platform rules, and applicable law.
 The optional Bluesky Jetstream client connects with TLS certificate and hostname
 verification. It sends no Bluesky app password, session token, or AI credentials.
 The current JSON subprotocol is required. Post bodies are decoded only to
-identify relevant activity; complete messages over 1 MiB are ignored. This is an
-application decoding limit, not a transport-level bound on fragmented frames.
+identify relevant activity. Passive reads check declared frame lengths before
+reading payloads: complete and fragmented messages are limited to 1 MiB, with
+at most 1,024 fragments. Each handshake header line and the aggregate header
+fields are limited to 16 KiB. Handshakes and individual frame reads have a
+10-second deadline; assembling a fragmented message has a 90-second deadline.
+Unrequested compression and malformed handshakes are refused. These limits bound
+application message assembly; they are not an operating-system memory quota.
 
 Stream content is an untrusted signal to fetch the account's notifications, never
 a direct source of AI context or publication. A single coalesced wake-up prevents

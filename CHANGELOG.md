@@ -5,6 +5,15 @@ This changelog covers the ChorusDraft Elixir version on
 Elixir release has been published. Ruby history stays on `main-ruby` and
 `ruby-testing`.
 
+## Jetstream receive limits — unreleased
+
+- Reject WebSocket frames larger than 1 MiB from their declared length, before
+  reading the payload. Apply the same limit across fragmented messages.
+- Bound handshake headers, fragment counts, and receive deadlines. Reject
+  unrequested WebSocket compression and malformed handshake responses.
+- Keep streaming reads passive so incoming traffic cannot fill the worker's
+  mailbox. Retain heartbeat, reconnect, and notification catch-up behavior.
+
 ## ChorusDraft naming and package consolidation — September 5, 2026
 
 - Corrected documentation, command banners, configuration examples, and notices
