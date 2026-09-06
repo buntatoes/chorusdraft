@@ -34,24 +34,27 @@ defmodule ChorusDraft.Platform do
     if os() == "windows", do: secure_windows!(path, "file"), else: File.chmod!(path, 0o600)
   end
 
+  # New files inside a protected Windows directory inherit its private ACL.
+  def private_created_file!(path) do
+    if os() == "windows", do: :ok, else: File.chmod!(path, 0o600)
+  end
+
   def replace_file!(source, destination) do
     if os() == "windows" do
-      run_powershell!(
-        ~S"""
-        $source = [IO.Path]::GetFullPath($env:CHORUSDRAFT_SOURCE_PATH)
-        $destination = [IO.Path]::GetFullPath($env:CHORUSDRAFT_DESTINATION_PATH)
-        if ([IO.File]::Exists($destination)) {
-          [IO.File]::Replace($source, $destination, $null, $true)
-        } else {
-          [IO.File]::Move($source, $destination)
-        }
-        """,
-        [
-          {"CHORUSDRAFT_SOURCE_PATH", Path.expand(source)},
-          {"CHORUSDRAFT_DESTINATION_PATH", Path.expand(destination)}
-        ],
-        "Could not atomically replace the Windows state file."
-      )
+      case System.cmd(
+             python(),
+             [
+               "-I",
+               "-c",
+               "import os,sys; os.replace(sys.argv[1], sys.argv[2])",
+               Path.expand(source),
+               Path.expand(destination)
+             ],
+             stderr_to_stdout: true
+           ) do
+        {_, 0} -> :ok
+        _ -> raise Error, "Could not atomically replace the Windows state file."
+      end
     else
       File.rename!(source, destination)
     end

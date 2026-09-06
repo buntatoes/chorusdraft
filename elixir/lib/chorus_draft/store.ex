@@ -10,6 +10,22 @@ defmodule ChorusDraft.Store do
       do: raise(Error, "State directory must not be a symlink.")
 
     Platform.private_directory!(dir)
+
+    for file <- ~w(state.json state.lock) do
+      path = Path.join(dir, file)
+
+      case File.lstat(path) do
+        {:ok, %{type: :regular}} ->
+          Platform.private_file!(path)
+
+        {:error, :enoent} ->
+          :ok
+
+        {:ok, _} ->
+          raise Error, "Storage path must be a regular file, not a symlink or directory."
+      end
+    end
+
     dir
   end
 
@@ -313,7 +329,7 @@ defmodule ChorusDraft.Store do
       IO.binwrite(io, Jason.encode!(state, pretty: true))
       :ok = :file.sync(io)
       File.close(io)
-      Platform.private_file!(temporary)
+      Platform.private_created_file!(temporary)
       Platform.replace_file!(temporary, path)
     after
       File.rm(temporary)
@@ -325,7 +341,7 @@ defmodule ChorusDraft.Store do
     regular_file!(path, true)
     {:ok, io} = File.open(path, [:append, :binary])
     File.close(io)
-    Platform.private_file!(path)
+    Platform.private_created_file!(path)
 
     Lock.acquire(path)
   end

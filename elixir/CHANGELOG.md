@@ -14,7 +14,7 @@ feature reference.
   between GNU/Linux and macOS tools.
 - Retain util-linux `flock` on Linux; use Python standard-library `fcntl` on
   macOS and `msvcrt` on Windows. Add private Windows ACLs and atomic state-file
-  replacement through PowerShell/.NET.
+  replacement through Python `os.replace`.
 - Expand CI into Ubuntu 22.04, macOS 14, and Windows Server 2022 jobs, each
   running the 64 regressions and its native package checks.
 

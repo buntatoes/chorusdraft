@@ -31,8 +31,8 @@ The Elixir port enforces these boundaries:
   service. Streaming response size/header limits and generic errors reduce accidental disclosure.
 - State is isolated by platform and account, stored with private permissions,
   and replaced atomically. Linux uses a kernel `flock`; macOS uses `fcntl`, and
-  Windows uses `msvcrt` plus an atomic .NET file replacement. The helper locks
-  release when their owning VM exits. Windows configuration and state use ACLs
+  Windows uses `msvcrt` plus atomic Python `os.replace`. The helper locks release
+  when their owning VM exits. Windows configuration and state use ACLs
   limited to the current user and SYSTEM. Corrupt state fails closed. Publishing
   requests are not automatically retried; uncertain results require manual
   account inspection.
