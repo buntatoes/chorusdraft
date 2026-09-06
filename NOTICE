@@ -1,9 +1,8 @@
 ChorusDraft 0.51.2 Ruby testing branch — unreleased
 Modification notice — September 5, 2026
 
-This branch currently contains the 0.51.1 Ruby release baseline. It has no
-0.51.2 tag, packaged downloads, or user-visible 0.51.2 changes. The current
-supported release is 0.51.1 from the `main-ruby` branch.
+Version 0.51.2 updates the runtime to Ruby 4.0+ and adds simpler bot commands
+and launchers. This release candidate has not been published to GitHub.
 
 This distribution is a modified work based on the feature sets of Bluesky Bot
 1.0.3 and Mastodon Bot 1.0.2, authored by Buntatoes and distributed under the

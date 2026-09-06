@@ -4,9 +4,16 @@ This file records user-visible changes to ChorusDraft.
 
 ## 0.51.2 — Unreleased (Ruby testing)
 
-- Created a Ruby maintenance branch from the 0.51.1 release baseline.
-- No user-visible 0.51.2 changes have been committed yet. The source version
-  remains 0.51.1 until verified release work begins.
+- Target Ruby 4.0+, with Ruby 4.0.6 selected for source development.
+- Add short `bot` commands for setup, drafting, review, posting, replies, quotes,
+  search, discovery, targets, monitoring, and deletion. Existing flags remain valid.
+- Add Linux/macOS launchers that find rbenv without shell initialization and
+  Windows `bot.bat` launchers; preserve the package `run.sh`/`run.bat` entrypoints.
+- Allow setup from the bot command without credentials or network access.
+- Make transport tests independent of the optional Minitest mock gem.
+- Preserve per-draft AI review, configuration/state formats, and 0.51.1 safeguards.
+- Add native release CI for Linux, Windows, and both Apple Silicon and Intel
+  macOS, testing the actual archives and launchers with Ruby 4.0.6.
 
 ## 0.51.1 — 2026-09-05
 

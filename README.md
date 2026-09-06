@@ -1,12 +1,9 @@
 # ChorusDraft
 
-> **Branch status: 0.51.2 Ruby testing (unreleased).**
-> This branch currently matches the 0.51.1 Ruby baseline. It has no 0.51.2
-> release tag, packaged downloads, or user-visible changes yet.
-
-> **Current release: [0.51.1](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.1).**
-> This security update retains the 0.51 comic voice and strengthens opt-outs,
-> do-not-contact checks, and draft validation.
+> **0.51.2 release candidate — Ruby 4.0 and simpler commands.**
+> Tested with Ruby 4.0.6. Release archives can be built locally; this work has
+> not published a GitHub release. The published baseline is
+> [0.51.1](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.1).
 
 ChorusDraft is an AI-assisted comedy drafting and publishing tool for Bluesky and
 Mastodon. It drafts dry observations about software, playful replies, and satirical
@@ -15,33 +12,25 @@ and prepare commentary from configured accounts. AI-generated content is
 always placed in a review queue so the account owner can inspect the exact text
 before it is published.
 
-Version 0.51.1 is available for the shared Ruby codebase on Linux, macOS, and
-Windows. The comic voice introduced in 0.51 is retained.
+Version 0.51.2 uses the shared Ruby codebase on Linux, macOS, and Windows. The comic voice introduced in 0.51 is retained.
 
 ## Release and development branches
 
 - `main-ruby` is the default branch and contains the supported Ruby release line.
 - `ruby-testing` is this branch. It is reserved for unreleased Ruby
-  maintenance work based on 0.51.1.
+  maintenance work for 0.51.2.
 - `elixir-experimental` contains a separate unfinished Elixir rewrite and is not
   part of the supported Ruby releases.
 
-The version files remain at 0.51.1 until this branch contains an actual 0.51.2
-change. Use tagged assets from the
-[GitHub releases page](https://github.com/buntatoes/chorusdraft/releases) for a
-published build.
+## What's new in 0.51.2
 
-## What's new in 0.51.1
-
-- Opt-out requests are recorded before reply limits or AI failures can interrupt
-  notification processing.
-- Do-not-contact checks now cover explicit mentions in generated, manual, and
-  queued posts, including Mastodon content warnings and local-handle aliases.
-- Older opt-outs remain in local state when new accounts are blocked.
-- Unicode-aware matching catches common curly-apostrophe, full-width, and
-  invisible-formatting variations without changing the text shown for review.
-- Mastodon content warnings receive length, control-character, harassment, and
-  do-not-contact validation before staging, review, and publication.
+- Ruby 4.0 or newer is required; source development selects Ruby 4.0.6 using
+  `.ruby-version`.
+- Short commands: `./bot setup`, `./bot draft`, `./bot review`, and `./bot start`.
+- Plain commands for manual posts, replies, quotes, search, and discovery.
+- Linux/macOS launchers find rbenv even if shell initialization has not run.
+- Windows packages include `bot.bat`. Existing flags and `run.sh`/`run.bat`
+  remain available.
 
 See [CHANGELOG.md](CHANGELOG.md) for the complete version history and
 [RELEASE_NOTES.md](RELEASE_NOTES.md) for installation and compatibility details.
@@ -91,8 +80,7 @@ Mastodon posts are excluded from AI input.
 
 ## Requirements
 
-- Ruby 3.2 or later for syntax compatibility. Use a currently supported,
-  security-patched Ruby release in production.
+- Ruby 4.0 or later. This release is tested with Ruby 4.0.6.
 - A Bluesky app password or a Mastodon access token.
 - A local Ollama/OpenAI-compatible endpoint or a Google Gemini API key and model.
 
@@ -101,22 +89,25 @@ toolchain. Setup does not download software, install services, or start a bot.
 
 ## Download and install
 
-The following archives are included with the published **0.51.1** release.
-
-Download the archive for the bot and operating system from the
-[0.51.1 GitHub release](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.1):
+Build the 0.51.2 release candidate with `rbenv exec ruby scripts/build_release.rb`
+(or `ruby scripts/build_release.rb` when Ruby 4.0+ is already on your PATH).
+The six archives and `SHA256SUMS` are written to `dist/`:
 
 | Product | Linux | macOS | Windows |
 | --- | --- | --- | --- |
-| ChorusDraft for Bluesky | [Linux](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-bluesky-v0.51.1-linux.tar.gz) | [macOS](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-bluesky-v0.51.1-macos.tar.gz) | [Windows](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-bluesky-v0.51.1-windows.zip) |
-| ChorusDraft for Mastodon | [Linux](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-mastodon-v0.51.1-linux.tar.gz) | [macOS](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-mastodon-v0.51.1-macos.tar.gz) | [Windows](https://github.com/buntatoes/chorusdraft/releases/download/v0.51.1/chorusdraft-mastodon-v0.51.1-windows.zip) |
+| Bluesky | `chorusdraft-bluesky-v0.51.2-linux.tar.gz` | `chorusdraft-bluesky-v0.51.2-macos.tar.gz` | `chorusdraft-bluesky-v0.51.2-windows.zip` |
+| Mastodon | `chorusdraft-mastodon-v0.51.2-linux.tar.gz` | `chorusdraft-mastodon-v0.51.2-macos.tar.gz` | `chorusdraft-mastodon-v0.51.2-windows.zip` |
+
+Published downloads are listed on the
+[GitHub releases page](https://github.com/buntatoes/chorusdraft/releases).
+The instructions below apply to the 0.51.2 archives.
 
 On Linux or macOS:
 
 ```sh
-tar -xzf chorusdraft-bluesky-v0.51.1-linux.tar.gz
-cd chorusdraft-bluesky-v0.51.1-linux
-ruby setup.rb
+tar -xzf chorusdraft-bluesky-v0.51.2-linux.tar.gz
+cd chorusdraft-bluesky-v0.51.2-linux
+./bot setup
 ```
 
 Substitute the Mastodon or macOS archive name as needed.
@@ -136,7 +127,7 @@ shasum -a 256 -c SHA256SUMS
 On Windows, extract the ZIP, open a terminal in the extracted folder, and run:
 
 ```powershell
-ruby setup.rb
+.\bot.bat setup
 ```
 
 Setup creates `.env`, `config/target_accounts.txt`, and
@@ -218,22 +209,36 @@ Blank lines and lines beginning with `#` are ignored.
 
 ## Usage
 
-Run `ruby chorusdraft.rb` inside an extracted package. The platform launchers forward the
-same arguments:
+Inside an extracted package, use `./bot` on Linux/macOS or `.\bot.bat` in
+Windows PowerShell. Run it without arguments for a short command guide.
+
+From this source checkout, choose your bot once:
 
 ```sh
-./run.sh --help
+cd bluesky             # or: cd mastodon
+./bot setup            # first time only; then edit .env
+./bot draft            # create an AI draft
+./bot review           # choose which drafts to publish
+./bot start            # keep preparing drafts; stop with Ctrl+C
 ```
 
-```powershell
-run.bat --help
-```
+You can also stay in the repository root and run `./bot bluesky draft` or
+`./bot mastodon review`. On Windows, enter the integration folder and use
+`.\bot.bat setup`, `.\bot.bat draft`, and `.\bot.bat review`.
+
+The Linux/macOS launcher uses rbenv when available, including an installation
+under `~/.rbenv` or `RBENV_ROOT`, and otherwise uses `ruby` from PATH. In the
+source checkout, `.ruby-version` selects 4.0.6; extracted packages use your
+selected Ruby and require 4.0+. No system Ruby or global settings are changed.
+
+Existing `ruby chorusdraft.rb --...`, `./run.sh`, and `.\run.bat` commands still
+work with Ruby 4.0+. Use `./bot --help` for all advanced options.
 
 ### Draft and publish
 
 ```sh
-ruby chorusdraft.rb --post-only
-ruby chorusdraft.rb --process-queue
+./bot draft
+./bot review
 ```
 
 Each draft displays its exact text, visibility, reply or quote target, and content
@@ -243,19 +248,19 @@ Review requires an interactive terminal.
 Stage a post you wrote, or publish that supplied text explicitly:
 
 ```sh
-ruby chorusdraft.rb --text "Hello from ChorusDraft"
-ruby chorusdraft.rb --text "Hello from ChorusDraft" --publish
+./bot post "Hello from ChorusDraft"
+./bot post "Hello from ChorusDraft" --publish
 ```
 
-`--publish` applies only to text supplied with `--text`. AI-generated content has
+`--publish` applies only to text supplied with `post` (or `--text`). AI-generated content has
 no direct-publish option.
 
 ### Replies and quotes
 
 ```sh
-ruby chorusdraft.rb --replies-only
-ruby chorusdraft.rb --text "Thanks for the details" --reply-to POST_ID
-ruby chorusdraft.rb --text "Useful context" --quote-uri POST_ID
+./bot replies
+./bot reply POST_ID "Thanks for the details"
+./bot quote POST_ID "Useful context"
 ```
 
 For Bluesky, `POST_ID` is an `at://.../app.bsky.feed.post/...` URI and
@@ -267,18 +272,18 @@ and `--quote-cid` are accepted for compatibility, but supplied CIDs are not trus
 Add a Mastodon content warning:
 
 ```sh
-ruby chorusdraft.rb --text "Post body" --cw "Topic warning"
+./bot post "Post body" --cw "Topic warning"
 ```
 
 ### Search, discovery, and targets
 
 ```sh
-ruby chorusdraft.rb --search "ruby programming" --limit 5
-ruby chorusdraft.rb --random-post "open source"
-ruby chorusdraft.rb --text "Manual response" --random-reply "open source"
-ruby chorusdraft.rb --discover --query "ruby"
-ruby chorusdraft.rb --targets-only
-ruby chorusdraft.rb --targets-only --target account.example
+./bot search "ruby programming" --limit 5
+./bot random "open source"
+./bot post "Manual response" --random-reply "open source"
+./bot discover "ruby"
+./bot targets
+./bot targets account.example
 ```
 
 Search and random-post commands only display public content. Discovery and
@@ -289,12 +294,12 @@ refuses to draft or publish interactions with accounts in do-not-contact state.
 ### Foreground monitoring
 
 ```sh
-ruby chorusdraft.rb --listen --poll-interval 60
-ruby chorusdraft.rb --daemon --interval 120
-ruby chorusdraft.rb --daemon --active-hours 08:30-22:00 --jitter 10
+./bot listen --poll-interval 60
+./bot start --interval 120
+./bot start --active-hours 08:30-22:00 --jitter 10
 ```
 
-`--listen` checks mentions. `--daemon` checks mentions and periodically prepares
+`listen` checks mentions. `start` checks mentions and periodically prepares
 original and target drafts. Both run in the foreground and stop with Ctrl+C. They
 do not install or detach a background service.
 
@@ -306,7 +311,7 @@ do not install or detach a background service.
 ### Delete a post
 
 ```sh
-ruby chorusdraft.rb --delete POST_ID
+./bot delete POST_ID
 ```
 
 Deletion is limited to the authenticated account and requires typing `delete` in
@@ -362,13 +367,14 @@ Human review remains responsible for factual accuracy, tone, and suitability.
 See [SECURITY.md](SECURITY.md) for supported versions, vulnerability reporting,
 and enforced safety boundaries.
 
-## Upgrading to 0.51.1
+## Upgrading to 0.51.2
 
-Version 0.51.1 uses the same configuration and state formats as 0.51. Keep a
+Version 0.51.2 requires Ruby 4.0+ and uses the same configuration and state
+formats as 0.51 and 0.51.1. Keep a
 backup of your `data` directory before upgrading.
 
-From ChorusDraft 0.50 or 0.51, stop the existing listener or daemon, extract
-0.51.1 into a new directory, and securely copy your `.env`, configured target and
+From ChorusDraft 0.50, 0.51, or 0.51.1, stop the existing listener or daemon, extract
+0.51.2 into a new directory, and securely copy your `.env`, configured target and
 do-not-contact files, and the entire `data` directory into it. State and
 configuration formats are unchanged. Keeping `data` preserves queued drafts,
 opt-outs, and duplicate and interaction history. Start only one installation for
@@ -387,14 +393,35 @@ scheduled tasks, launch agents, or services before starting ChorusDraft.
 From the source repository:
 
 ```sh
-ruby bluesky/chorusdraft.rb --help
-ruby mastodon/chorusdraft.rb --help
-ruby test/safety_test.rb
-ruby scripts/build_release.rb
+./bot bluesky help
+./bot mastodon help
+rbenv exec ruby test/safety_test.rb
+rbenv exec ruby test/cli_test.rb
+rbenv exec ruby scripts/build_release.rb
 ```
+
+Tests require the development gem `minitest` (`gem install minitest` if absent);
+the bot itself has no third-party gem dependencies. If Ruby 4.0+ is already
+on PATH without rbenv, omit `rbenv exec` in the commands above.
 
 The release builder produces six platform archives and `SHA256SUMS` under `dist/`.
 Tests use local fakes and do not log in, call an AI provider, or publish posts.
+
+The `Ruby release checks` GitHub Actions workflow builds the six archives once,
+then tests those same artifacts on Ubuntu, Windows, macOS Apple Silicon, and
+macOS Intel with Ruby 4.0.6. It runs the source and packaged test suites, checks
+SHA-256 hashes, and exercises native launchers, setup preservation, argument
+forwarding, and the review queue from extracted paths containing spaces.
+
+To repeat archive checks locally after building (with Ruby 4.0+ on PATH):
+
+```sh
+python scripts/verify_release.py
+```
+
+The verifier runs only the current operating system's archives; full release
+validation requires all four native CI jobs to pass. Workflow artifacts retain
+the exact tested archives and checksums for 14 days.
 
 ## License and acknowledgements
 

@@ -3,7 +3,8 @@
 ## Supported version
 
 The latest supported release is 0.51.1 from `main-ruby`. This branch is an
-unreleased Ruby maintenance baseline and currently contains the same safeguards.
+unreleased 0.51.2 Ruby maintenance candidate and retains those safeguards.
+Version 0.51.2 requires Ruby 4.0 or newer.
 Use a currently supported, security-patched Ruby runtime.
 
 ## Reporting a vulnerability

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require_relative 'runtime'
 
 require 'json'
 require 'net/http'
@@ -9,7 +10,7 @@ require 'fileutils'
 require 'cgi'
 
 module ChorusDraft
-  VERSION = '0.51.1'
+  VERSION = '0.51.2'
   class Error < StandardError; end
   class HTTPError < Error
     attr_reader :status
