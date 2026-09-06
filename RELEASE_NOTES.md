@@ -57,3 +57,8 @@ runs both bots' extracted packages on their native operating systems, including
 and command suites, checksums, paths with spaces, setup preservation, argument
 forwarding, and draft queue behavior without live API calls. All native jobs
 must pass before treating a candidate as validated for release.
+
+[The candidate validation run](https://github.com/buntatoes/chorusdraft/actions/runs/34013245965) passed all four
+native jobs, with 55 source tests and both packaged test suites per OS. It used
+fixtures rather than live account credentials. Passing candidate checks does not
+create a tag or publish a release.

@@ -1,8 +1,9 @@
 # ChorusDraft
 
 > **0.51.2 release candidate — Ruby 4.0 and simpler commands.**
-> Tested with Ruby 4.0.6. Release archives can be built locally; this work has
-> not published a GitHub release. The published baseline is
+> Ruby 4.0.6 passed native Linux, Windows, and Apple Silicon/Intel macOS checks.
+> The archives remain an untagged release candidate; no 0.51.2 release is published.
+> The published baseline is
 > [0.51.1](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.1).
 
 ChorusDraft is an AI-assisted comedy drafting and publishing tool for Bluesky and
@@ -19,8 +20,8 @@ Version 0.51.2 uses the shared Ruby codebase on Linux, macOS, and Windows. The c
 - `main-ruby` is the default branch and contains the supported Ruby release line.
 - `ruby-testing` is this branch. It is reserved for unreleased Ruby
   maintenance work for 0.51.2.
-- `elixir-experimental` contains a separate unfinished Elixir rewrite and is not
-  part of the supported Ruby releases.
+- `elixir-experimental` contains the Linux Elixir implementation under testing
+  (`0.52.0-testing`), with one package for both platforms; it has no tagged release.
 
 ## What's new in 0.51.2
 
@@ -409,9 +410,11 @@ Tests use local fakes and do not log in, call an AI provider, or publish posts.
 
 The `Ruby release checks` GitHub Actions workflow builds the six archives once,
 then tests those same artifacts on Ubuntu, Windows, macOS Apple Silicon, and
-macOS Intel with Ruby 4.0.6. It runs the source and packaged test suites, checks
-SHA-256 hashes, and exercises native launchers, setup preservation, argument
-forwarding, and the review queue from extracted paths containing spaces.
+macOS Intel with Ruby 4.0.6. [The candidate verification run](https://github.com/buntatoes/chorusdraft/actions/runs/34013245965)
+passed all four native jobs: 55 source tests plus both packaged suites and
+launcher/setup/queue checks on each OS. These checks used fakes, without live
+account login, AI-provider calls, or social publication. Archive checks also
+verify SHA-256 hashes and launchers from extracted paths containing spaces.
 
 To repeat archive checks locally after building (with Ruby 4.0+ on PATH):
 
@@ -433,3 +436,10 @@ modification date, scope of the version 0.50 rewrite, the 0.51 comic update, the
 Version 0.50 is based on the feature sets of Bluesky Bot 1.0.3 and Mastodon Bot
 1.0.2 by Buntatoes. It begins a new shared Ruby release line under the
 ChorusDraft name.
+
+## Privacy review
+
+The 2026-09-06 branch, history, and release-artifact review found no confirmed
+credentials or unintended personal data. Synthetic test fixtures and public
+attribution were reviewed separately. See [SECURITY.md](SECURITY.md) for the
+scope and limits; this is not a guarantee or a full independent security audit.
