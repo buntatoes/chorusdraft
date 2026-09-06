@@ -33,8 +33,8 @@ This file records user-visible changes to ChorusDraft.
 - Added native locks, atomic state replacement, strict state validation,
   idempotent publication identifiers, and `uncertain` outcomes without
   automatic publication retries.
-- Pinned GitHub Actions dependencies by commit and moved artifact actions to
-  their Node 24 releases.
+- Added checksum verification and allowlisted package construction for both
+  release families.
 
 ### Safety
 

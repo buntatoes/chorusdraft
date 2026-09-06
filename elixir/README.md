@@ -196,11 +196,9 @@ the Elixir application itself does not require Ruby.
 
 ## Packages and installation
 
-To download a CI build, open a successful `main-ruby` or `elixir-experimental` run under
-[Elixir checks](https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml)
-and download `chorusdraft-elixir-linux`, `chorusdraft-elixir-macos`, or
-`chorusdraft-elixir-windows`. GitHub retains these artifacts for 30 days; they
-are separate from tagged releases.
+Download the signed-off archives and SHA-256 sidecars from the
+[0.51.3 GitHub release](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.3).
+The release provides separate Linux, macOS, and Windows packages.
 
 Build and check a package for the current operating system:
 
