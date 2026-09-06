@@ -55,7 +55,7 @@ defmodule ChorusDraft.MigrationTest do
   end
 
   @tag :ruby_reference
-  test "imports state produced by the pinned read-only Ruby implementation", %{
+  test "imports state produced by the companion Ruby implementation", %{
     root: root,
     destination: destination
   } do

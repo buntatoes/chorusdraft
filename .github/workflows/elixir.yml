@@ -52,17 +52,10 @@ jobs:
           mix local.rebar --force
           mix deps.get
           git diff --exit-code -- mix.lock
-      - name: Check out pinned Ruby reference for read-only parity testing
-        if: matrix.package_os == 'linux'
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
-        with:
-          ref: 17985ef1b0645015ccff5e7ae72aab9ac5c817c2
-          path: ruby-reference
-          persist-credentials: false
-      - name: Offline regression tests with Ruby state fixture
+      - name: Offline regression tests with current Ruby state fixture
         if: matrix.package_os == 'linux'
         shell: bash
-        run: RUBY_REFERENCE_ROOT="$GITHUB_WORKSPACE/ruby-reference" mix test --warnings-as-errors
+        run: RUBY_REFERENCE_ROOT="$GITHUB_WORKSPACE" mix test --warnings-as-errors
       - name: Offline regression tests
         if: matrix.package_os != 'linux'
         shell: bash

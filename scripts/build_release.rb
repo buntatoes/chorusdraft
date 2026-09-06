@@ -8,6 +8,8 @@ require_relative '../lib/chorus_draft/core'
 
 root = File.expand_path('..', __dir__)
 dist = File.join(root, 'dist')
+declared_version = File.read(File.join(root, 'VERSION')).strip
+abort "Ruby version #{ChorusDraft::VERSION} does not match VERSION #{declared_version}" unless ChorusDraft::VERSION == declared_version
 FileUtils.mkdir_p(dist)
 archives = []
 integrations = %w[bluesky mastodon]

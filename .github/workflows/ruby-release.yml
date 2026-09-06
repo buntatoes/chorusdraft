@@ -1,6 +1,26 @@
-name: Legacy Ruby checks
+name: Ruby release checks
 
 on:
+  push:
+    branches: [main-ruby]
+    paths:
+      - '.ruby-version'
+      - 'bot'
+      - 'bluesky/**'
+      - 'lib/**/*.rb'
+      - 'mastodon/**'
+      - 'scripts/build_release.rb'
+      - 'scripts/verify_release.py'
+      - 'setup.rb'
+      - 'test/**/*_test.rb'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - 'RELEASE_NOTES.md'
+      - 'SECURITY.md'
+      - 'NOTICE'
+      - 'LICENSE'
+      - 'VERSION'
+      - '.github/workflows/ruby-release.yml'
   pull_request:
     branches: [main-ruby]
     paths:
@@ -13,6 +33,13 @@ on:
       - 'scripts/verify_release.py'
       - 'setup.rb'
       - 'test/**/*_test.rb'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - 'RELEASE_NOTES.md'
+      - 'SECURITY.md'
+      - 'NOTICE'
+      - 'LICENSE'
+      - 'VERSION'
       - '.github/workflows/ruby-release.yml'
   workflow_dispatch:
 

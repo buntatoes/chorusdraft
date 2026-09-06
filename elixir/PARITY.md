@@ -1,10 +1,9 @@
 # Ruby → Elixir parity
 
-Read-only baseline: the Ruby 0.51.2 release commit
-`17985ef1b0645015ccff5e7ae72aab9ac5c817c2`. This commit is pinned in CI.
-The Elixir 0.51.3 runtime targets Linux, macOS, and Windows and is the primary
-implementation. Ruby 0.51.2 remains available as legacy source and a state
-migration reference.
+The Elixir and Ruby 0.51.3 implementations are both supported releases. CI uses
+the Ruby source from the same commit as the Elixir build when verifying state
+compatibility. Elixir packages combine both social platforms; Ruby packages
+ship Bluesky and Mastodon separately.
 
 | Ruby behavior | Elixir implementation | Verification |
 |---|---|---|
@@ -22,8 +21,8 @@ migration reference.
 | Linux, macOS, and Windows packaging and install/upgrade | One native archive per OS with both platform modes, source/dependency source, manifest, and new-directory installer | Native CI extraction, installation, overwrite refusal and offline rebuild |
 | Jetstream | Optional Bluesky notification wake-up with periodic API catch-up and bounded passive reception | Protocol, reconnect, coalescing, oversized/fragmented message, handshake, heartbeat, and timeout tests |
 
-Intentional differences: Elixir uses no Ruby runtime. Packaging requires Erlang
-rather than bundling an operating-system runtime. Upgrade installation always
+Intentional differences: Elixir uses Erlang/OTP while the Ruby packages require
+Ruby 4.0 or newer. Upgrade installation always
 uses a new directory; state is copied explicitly after stopping the old process.
 HTTP redirects and automatic retries are disabled, including 503 Retry-After.
 The existing disabled likes/reposts/favourites remain disabled.

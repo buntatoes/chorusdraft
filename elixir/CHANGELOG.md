@@ -4,49 +4,45 @@ This file records user-visible changes to ChorusDraft.
 
 ## 0.51.3 — 2026-09-06
 
+### Supported implementations
+
+- Released Ruby and Elixir as coequal supported implementations on the default
+  branch.
+- Versioned both implementations and all release packages as 0.51.3.
+- Kept separate Ruby packages for Bluesky and Mastodon while providing combined
+  Bluesky and Mastodon modes in each Elixir package.
+- Added native release verification for both implementations on Linux, macOS,
+  and Windows.
+
 ### Elixir runtime
 
-- Promoted the Elixir implementation as the primary ChorusDraft runtime while
-  retaining Ruby 0.51.2 source for history and migration reference.
-- Combined Bluesky and Mastodon in one executable with shared AI, safety, queue,
-  scheduling, and state behavior.
-- Added the Ruby 0.51.2 short commands alongside the complete advanced flag
-  interface. Command translation cannot add `--publish`.
-- Added explicit, read-only import of compatible Ruby state into an empty
-  account-scoped store.
+- Reimplemented the platform clients, AI adapters, review queue, scheduling,
+  safeguards, and account-scoped state in Elixir.
+- Added the Ruby short commands alongside the complete advanced flag interface;
+  command translation cannot add `--publish`.
+- Added explicit, read-only import of compatible Ruby state into an empty store.
+- Added optional Bluesky Jetstream wake-ups with periodic API catch-up, bounded
+  frames, receive deadlines, reconnect backoff, and heartbeat handling.
 
-### Platforms and packaging
+### Packaging and reliability
 
-- Added native `.tar.gz` packages for Linux and macOS and a `.zip` package for
-  Windows. Every package contains both social platform modes.
-- Added Unix and PowerShell setup, install, run, and verification scripts.
-- Added private Unix modes and protected Windows ACLs for configuration and
-  state, plus native cross-process locks and atomic state replacement.
-- Included complete application source, pinned dependency source and licenses,
-  file manifests, and SHA-256 sidecars while excluding credentials, state, logs,
-  and build caches.
-- Added native CI tests on Ubuntu 22.04, macOS 14, and Windows Server 2022.
+- Added Elixir `.tar.gz` packages for Linux and macOS and a `.zip` package for
+  Windows, each containing both platform modes.
+- Continued the six Ruby platform-specific archives with shell or batch
+  launchers and credential-free setup.
+- Added native locks, atomic state replacement, strict state validation,
+  idempotent publication identifiers, and `uncertain` outcomes without
+  automatic publication retries.
+- Pinned GitHub Actions dependencies by commit and moved artifact actions to
+  their Node 24 releases.
 
-### Bluesky Jetstream
-
-- Added optional Jetstream wake-ups for Bluesky listeners and daemons while
-  retaining periodic notification API catch-up.
-- Added bounded frames, fragmented messages, handshake headers, fragment counts,
-  receive deadlines, reconnect backoff, and heartbeat handling.
-- Kept streamed post bodies outside AI context, terminal output, and persistent
-  state. Stream events cannot generate or publish directly.
-
-### Safety and reliability
+### Safety
 
 - Preserved mandatory interactive review for AI drafts and explicit publication
   only for owner-written text.
 - Preserved privacy filtering, opt-outs, do-not-contact enforcement, harassment
   screening, interaction budgets, ownership checks, and disabled engagement
-  actions.
-- Added crash-released locks, strict state validation, idempotent publication
-  identifiers, and `uncertain` handling without automatic publication retries.
-- Disabled HTTP redirects and automatic retries and added request timeouts and
-  streaming response limits.
+  actions in both release implementations.
 
 ## 0.51.2 — 2026-09-06
 

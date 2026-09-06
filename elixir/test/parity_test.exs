@@ -61,7 +61,7 @@ defmodule ChorusDraft.ParityTest do
     assert_raise Error, fn -> CLI.active?("9:99-17") end
   end
 
-  test "Ruby flags and 0.51.2 short commands translate without publishing" do
+  test "Ruby flags and short commands translate without publishing" do
     assert CLI.normalize_short_command(["draft"]) == ["--post-only"]
     assert CLI.normalize_short_command(["review"]) == ["--process-queue"]
     assert CLI.normalize_short_command(["start", "--poll", "30"]) == ["--daemon", "--poll", "30"]

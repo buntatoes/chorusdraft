@@ -1,30 +1,37 @@
 # ChorusDraft 0.51.3 release notes
 
-Version 0.51.3 promotes the Elixir implementation of ChorusDraft as the primary
-release for Linux, macOS, and Windows. One executable supports both Bluesky and
-Mastodon. The Ruby 0.51.2 source remains available as a legacy implementation and
-migration reference.
+Version 0.51.3 ships Ruby and Elixir as supported ChorusDraft implementations
+for Linux, macOS, and Windows. Both support Bluesky and Mastodon, use the same
+human-review safety model, and are maintained on the default branch.
 
-## Highlights
+## Ruby 0.51.3
 
-- Reimplemented the bot runtime, clients, queue, storage, AI adapters, and
+- Ships separate Bluesky and Mastodon packages for Linux, macOS, and Windows.
+- Retains the complete short-command and advanced-flag interfaces, local or
+  Gemini AI providers, account-scoped queues, polling daemons, and interactive
+  deletion.
+- Requires Ruby 4.0 or newer and includes native shell or batch launchers.
+- Preserves configuration during repeated setup and excludes credentials,
+  state, logs, and stale binaries from release archives.
+
+## Elixir 0.51.3
+
+- Ships one package per operating system containing both Bluesky and Mastodon
+  modes.
+- Reimplements the clients, queue, storage, AI adapters, scheduling, and
   safeguards in Elixir.
-- Added native Linux, macOS, and Windows release packages containing both social
-  platform modes.
-- Added the short command interface from Ruby 0.51.2 while retaining advanced
-  compatibility flags. Short commands never enable direct publication.
-- Added optional Bluesky Jetstream wake-ups with bounded WebSocket messages,
+- Adds optional Bluesky Jetstream wake-ups with bounded WebSocket messages,
   reconnect handling, and periodic API catch-up.
-- Added explicit import of compatible Ruby state into an empty, account-scoped
-  Elixir store.
+- Supports explicit, read-only import of compatible Ruby state into an empty,
+  account-scoped Elixir store.
 
 ## Safety and privacy
 
-AI-generated text always enters the review queue. Each draft is validated before
-staging and immediately before publication. Opt-outs and do-not-contact entries
-block replies, quotes, mentions, and unsolicited commentary. Harassment, threats,
-doxxing, pile-on requests, self-harm encouragement, and common direct personal
-attacks are rejected.
+Both implementations keep AI-generated text in the review queue and validate it
+before staging and immediately before publication. Opt-outs and do-not-contact
+entries block replies, quotes, mentions, and unsolicited commentary. Harassment,
+threats, doxxing, coordinated pile-ons, self-harm encouragement, and common
+direct personal attacks are rejected.
 
 Mastodon private and direct message bodies are discarded before AI processing,
 logging, or state storage. Automatic likes, boosts, favourites, and reposts are
@@ -32,40 +39,36 @@ disabled. Publication calls are not automatically retried; ambiguous outcomes
 are marked `uncertain` for manual inspection.
 
 Credentials remain in local `.env` files and are excluded from packages. Network
-errors omit remote bodies, credential-bearing URLs, and provider details.
+errors omit remote bodies and credential-bearing details.
 
-## State and migration
+## Release files
 
-State is separated by platform, service origin, and account. Writers use native
-kernel locks, private permissions or Windows ACLs, and atomic replacement.
-Malformed state fails closed.
+Ruby:
 
-Use `--import-state FILE` to import compatible Ruby or Elixir state into an empty
-account store. The source file is read only. Stop every old process first and do
-not operate two installations against the same account.
+- `chorusdraft-bluesky-v0.51.3-linux.tar.gz`
+- `chorusdraft-bluesky-v0.51.3-macos.tar.gz`
+- `chorusdraft-bluesky-v0.51.3-windows.zip`
+- `chorusdraft-mastodon-v0.51.3-linux.tar.gz`
+- `chorusdraft-mastodon-v0.51.3-macos.tar.gz`
+- `chorusdraft-mastodon-v0.51.3-windows.zip`
+- `SHA256SUMS`
 
-## Packages
+Elixir:
 
 - `ChorusDraft-elixir-0.51.3-linux.tar.gz`
 - `ChorusDraft-elixir-0.51.3-macos.tar.gz`
 - `ChorusDraft-elixir-0.51.3-windows.zip`
+- an adjacent `.sha256` file for each archive
 
-Every archive includes the executable, native setup/install/verification scripts,
-configuration examples, documentation, GPL source, pinned dependency source and
-licenses, a complete manifest, and a SHA-256 sidecar. Runtime credentials, state,
-logs, and build caches are excluded.
-
-Runtime requirements are Erlang/OTP 25+, plus util-linux on Linux, Python 3 on
-macOS, and Python 3 with PowerShell on Windows. Building requires Elixir 1.15+.
+Release packages exclude runtime credentials, state, logs, and build caches.
 
 ## Verification status
 
-The automated suite contains 65 offline regressions and runs natively on Ubuntu
-22.04, macOS 14, and Windows Server 2022. It verifies the escript, package
-integrity, installation, private configuration, both platform modes, overwrite
-refusal, and rebuilding from the shipped dependency source. Linux also checks
-state generated by the pinned Ruby 0.51.2 release.
+Ruby CI builds all six archives and tests their native launchers on Ubuntu,
+Windows, Intel macOS, and ARM macOS. Elixir CI runs 65 offline regressions and
+checks its three native packages on Ubuntu, macOS, and Windows, including state
+generated by the Ruby 0.51.3 implementation in the same commit.
 
-Automated fixtures do not establish live service acceptance. Operators should
+Automated fixtures do not establish live-service acceptance. Operators should
 test login, read-only search, staging, review, publication, deletion, opt-outs,
 and reconnect behavior with disposable accounts before production use.
