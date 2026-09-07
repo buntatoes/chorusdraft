@@ -61,6 +61,7 @@ defmodule ChorusDraft.MigrationTest do
     fixture = Path.join(root, "legacy-fixture")
     File.mkdir_p!(fixture)
     path = Path.join(fixture, "state.json")
+    now = System.system_time(:second)
 
     state = %{
       "drafts" => [
@@ -79,8 +80,8 @@ defmodule ChorusDraft.MigrationTest do
         }
       ],
       "seen" => ["legacy-seen"],
-      "authors" => %{"alice" => 1_700_000_000},
-      "daily" => [1_700_000_000],
+      "authors" => %{"alice" => now},
+      "daily" => [now],
       "blocked" => ["no-contact"]
     }
 
