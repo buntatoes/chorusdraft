@@ -46,6 +46,8 @@ with tempfile.TemporaryDirectory(prefix='chorusdraft-bundle-') as temporary:
     shutil.move(str(work / elixir_name), package / 'elixir')
     for doc in ('README.md', 'RELEASE_NOTES.md', 'CHANGELOG.md', 'SECURITY.md', 'LICENSE', 'NOTICE', 'VERSION'):
         shutil.copy2(ROOT / doc, package / doc)
+    (package / 'docs').mkdir()
+    shutil.copy2(ROOT / 'docs' / 'DESKTOP.md', package / 'docs' / 'DESKTOP.md')
     launchers = ('bot.bat', 'bot.ps1') if OS == 'windows' else ('bot', 'bot.command')
     for launcher in launchers:
         shutil.copy2(ROOT / launcher, package / launcher)

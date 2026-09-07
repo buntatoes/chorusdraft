@@ -69,7 +69,7 @@ Pending drafts, uncertain publications, do-not-contact entries, duplicate
 identifiers, and interaction safety records remain retained separately. These
 records prevent lost work, duplicate publication, and renewed unwanted contact.
 Local expiry does not delete posts from social services. Storage locations are
-listed in the [README](README.md#local-history).
+listed in the [README](docs/DESKTOP.md#local-history).
 
 ## Enforced safety boundaries
 

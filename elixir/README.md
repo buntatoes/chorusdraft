@@ -59,7 +59,7 @@ session-only use. Secure saving removes only the fields managed by the form from
 that platform's plaintext `.env`; other settings remain there. GUI credentials
 apply only to GUI launches, so a separate CLI process needs its own environment
 configuration. Session-only use leaves existing `.env` files unchanged. See the
-[root credential guide](https://github.com/buntatoes/chorusdraft/blob/bot-testing/README.md#account-credentials).
+[desktop credential guide](https://github.com/buntatoes/chorusdraft/blob/bot-testing/docs/DESKTOP.md#account-credentials).
 
 ## Common workflows
 
@@ -172,15 +172,15 @@ and at its next launch. Pending drafts, uncertain publications, opt-outs,
 duplicate identifiers, and interaction safety records remain separately retained.
 Do not delete account state to clear activity logs.
 
-The desktop keeps activity locally in hourly files, expiring them 10 days from the
-start of their hour; a 50 MB limit can remove older files sooner. It also removes
+The desktop keeps activity locally in hourly files. Each event expires after
+10 days; a 50 MB limit can remove older files sooner. It also removes
 expired files from the installation's bot `logs/` directories. The CLI does not
 create a separate activity archive. Logs captured by your shell, service manager,
 backups, or sync software are outside these controls.
 
 ChorusDraft does not upload local history. Account state remains in each platform's
 `data/` directory; the desktop's credential and activity locations are listed in
-the [root history guide](https://github.com/buntatoes/chorusdraft/blob/bot-testing/README.md#local-history). Expiry does not remove remote
+the [desktop history guide](https://github.com/buntatoes/chorusdraft/blob/bot-testing/docs/DESKTOP.md#local-history). Expiry does not remove remote
 posts. Files cannot be removed while the application is closed or the computer is
 off; cleanup resumes at the next launch and requires writable storage and a
 working bot runtime.

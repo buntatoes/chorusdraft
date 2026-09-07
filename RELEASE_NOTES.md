@@ -2,7 +2,8 @@
 
 Version 0.51.3 uses Elixir for Bluesky and Mastodon, with a React desktop launcher
 for Linux, macOS, and Windows. Ruby is no longer included in new preview packages.
-The build identifier is `0.51.3-testing`; this version is not yet a stable release.
+The build identifier is `0.51.3-testing`. This development build is separate from
+the published stable releases.
 
 ## Desktop workflow
 
@@ -20,8 +21,8 @@ settings intact. Separate CLI launches continue to use environment variables or
 `.env`.
 
 **History** provides searchable published posts and GUI activity, with **Copy post**
-for recalling text. Post records expire after 10 days; hourly activity files expire
-10 days from their hour's start and may rotate sooner at 50 MB. Cleanup runs while
+for recalling text. Post records and individual activity events expire after 10 days. Activity is
+grouped in hourly files and may rotate sooner at 50 MB. Cleanup runs while
 the app is open and at its next launch. Pending drafts, uncertain publications,
 and safety state remain intact. History is stored locally and is not uploaded by
 ChorusDraft. Local expiry does not delete social posts or copies made by backups,
@@ -48,6 +49,6 @@ Compatible Ruby state requires explicit import; changing the launcher does not
 migrate it automatically. Run only one bot per social account. Protect any backup
 and manage its retention separately from the app.
 
-See [README.md](README.md) for launch instructions, local storage locations, and
+See the [desktop guide](docs/DESKTOP.md) for launch instructions, local storage locations, and
 source builds. Linux systems with restricted user namespaces may require the
 included `launcher-source/linux_sandbox.py` setup before opening the desktop GUI.

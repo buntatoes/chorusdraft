@@ -35,9 +35,10 @@ test(
       if (process.platform === "win32")
         execFileSync(
           "cmd.exe",
-          ["/d", "/s", "/c", "mix " + args.map((x) => '"' + x + '"').join(" ")],
+          ["/d", "/s", "/c", '"mix ' + args.map((x) => '"' + x + '"').join(" ") + '"'],
           {
             cwd: path.join(source, "elixir"),
+            windowsVerbatimArguments: true,
             env: { ...process.env, MIX_ENV: "prod" },
             stdio: "pipe",
           },
