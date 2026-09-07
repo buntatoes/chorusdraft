@@ -1,6 +1,7 @@
 # Changelog
 
-This file records user-visible changes to ChorusDraft.
+This file preserves the existing project history. Future updates and release
+notes are published in [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
 ## 0.51.3 — 2026-09-06
 

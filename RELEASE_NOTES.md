@@ -1,5 +1,8 @@
 # ChorusDraft 0.51.3 release notes
 
+These notes are retained for reference. Future release notes, downloads, and
+upgrade instructions are published in [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
+
 Version 0.51.3 establishes the Elixir implementation as the supported
 ChorusDraft release for Linux, macOS, and Windows. One application supports both
 Bluesky and Mastodon.

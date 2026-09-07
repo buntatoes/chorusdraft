@@ -78,18 +78,3 @@ Live Bluesky, Mastodon, and AI-provider acceptance and a sustained daemon soak
 remain operator checks. Use disposable accounts first and exercise login,
 read-only search, staging, exact review, publication, deletion, opt-outs, and
 network reconnection before production use.
-
-## Privacy and secret review — 2026-09-06
-
-A read-only pattern scan covered current branches and tags, reachable history,
-local Git objects, the working tree, published release assets, retained CI
-artifacts, and release descriptions. No live credential, private key, personal
-email, phone number, personal path, or public IP address was found in published
-GitHub content. Test values are synthetic, commit emails use GitHub noreply, and
-dependency contacts are public upstream attribution.
-
-Ignored local compiler outputs and unreachable local BEAM objects can retain a
-developer workstation path. They are not part of current branches, tags, release
-packages, or retained CI artifacts. Build only from a clean checkout. Pattern
-scanning cannot prove the absence of every possible secret or form of personal
-data. GitHub native secret scanning was disabled when this review ran.

@@ -3,25 +3,10 @@
 This directory contains ChorusDraft 0.51.3 for Linux, macOS, and Windows. One
 Elixir application and executable support both Bluesky and Mastodon.
 
-Both products write comic social drafts using a local OpenAI-compatible/Ollama
-model or Gemini. The style favors dry wit, light sarcasm, playful exaggeration,
-and absurd comparisons. Serious or sensitive posts receive a sincere response.
+ChorusDraft writes comic social drafts for both platforms using a local
+OpenAI-compatible/Ollama model or Gemini. The style favors dry wit, light sarcasm,
+playful exaggeration, and absurd comparisons. Serious or sensitive posts receive a sincere response.
 Every AI draft must be reviewed interactively before publication.
-
-## Current status
-
-The implementation includes both clients, AI adapters, the shared command
-workflows, optional Jetstream, state import, setup, and one
-native package for each supported operating system. Every package contains both
-Bluesky and Mastodon modes. The
-[verification workflow](https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml)
-runs 65 tests using fixtures and loopback servers on Ubuntu 22.04, macOS 14, and
-Windows Server 2022 with OTP 25.3 and Elixir 1.15.8. CI installs and checks each
-native package, verifies compatibility-state import, and rebuilds its shipped
-sources offline. No live credentials or publication are used.
-
-Live account acceptance and a sustained production soak still require test
-credentials.
 
 ## Requirements
 
@@ -152,7 +137,7 @@ Protocol reference: [Bluesky Jetstream documentation](https://bsky.network/docs/
 
 ## State and safeguards
 
-State is stored under each product's `data/` directory and separated again by
+State is stored under each platform's `data/` directory and separated again by
 platform, service origin, and account. Credentials are not written to state.
 Compatible older state can be imported explicitly as described below. Kernel locks
 serialize writers, and malformed state fails closed. Run one daemon per account.
@@ -191,9 +176,9 @@ imports preserve identity, history, opt-outs, and unresolved publications.
 
 ## Packages and installation
 
-Download the signed-off archives and SHA-256 sidecars from the
-[0.51.3 GitHub release](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.3).
-The release provides separate Linux, macOS, and Windows packages.
+Download archives and their SHA-256 sidecars from
+[GitHub Releases](https://github.com/buntatoes/chorusdraft/releases). Choose the package
+for your operating system and follow the instructions for that release.
 
 Build and check a package for the current operating system:
 
@@ -299,12 +284,4 @@ The daemon isolates job failures and uses monotonic intervals. It runs in the
 foreground so a service manager can supervise it; no service is started by setup.
 
 Read [SECURITY.md](SECURITY.md) for safeguards and known limits, and
-[RELEASE_NOTES.md](RELEASE_NOTES.md) for the 0.51.3 release.
-
-## Privacy review
-
-The 2026-09-06 branch, history, release, and retained-CI-artifact review found no
-live credentials or unintended personal data in published GitHub content.
-Synthetic fixtures, public attribution, ignored local build paths, and
-unreachable local objects were reviewed separately. See
-[SECURITY.md](SECURITY.md) for scope and limits.
+[GitHub Releases](https://github.com/buntatoes/chorusdraft/releases) for release notes.
