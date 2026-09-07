@@ -55,4 +55,92 @@ defmodule ChorusDraft.AITest do
       assert_raise Error, fn -> AI.generate(env, "Draft", %{}, 300, http: TestHTTP) end
     end
   end
+
+  test "OpenAI Responses API keeps credentials out of the URL and does not store responses" do
+    env = %{
+      "AI_PROVIDER" => "openai",
+      "OPENAI_API_KEY" => "fixture-secret",
+      "OPENAI_MODEL" => "fixture-model"
+    }
+
+    TestHTTP.set_responses([
+      %{
+        "status" => "completed",
+        "output" => [
+          %{"type" => "reasoning", "summary" => []},
+          %{
+            "type" => "message",
+            "content" => [
+              %{"type" => "output_text", "text" => "A careful"},
+              %{"type" => "output_text", "text" => " draft."}
+            ]
+          }
+        ]
+      }
+    ])
+
+    assert AI.generate(env, "Draft", %{"post" => "source"}, 300, http: TestHTTP) ==
+             "A careful draft."
+
+    [{:post, url, options}] = TestHTTP.calls()
+    assert url == "https://api.openai.com/v1/responses"
+    refute url =~ "fixture-secret"
+    assert options[:headers]["Authorization"] == "Bearer fixture-secret"
+    assert options[:body]["model"] == "fixture-model"
+    assert options[:body]["instructions"] == AI.system_prompt()
+    assert options[:body]["max_output_tokens"] == 256
+    assert options[:body]["store"] == false
+    assert Jason.decode!(options[:body]["input"])["untrusted_context"] == %{"post" => "source"}
+  end
+
+  test "ChatGPT provider alias accepts top-level output text" do
+    env = %{
+      "AI_PROVIDER" => "chatgpt",
+      "OPENAI_API_KEY" => "fixture-secret",
+      "OPENAI_MODEL" => "fixture-model"
+    }
+
+    TestHTTP.set_responses([%{"status" => "completed", "output_text" => "A careful draft."}])
+
+    assert AI.generate(env, "Draft", %{}, 300, http: TestHTTP) == "A careful draft."
+  end
+
+  test "OpenAI rejects API errors and missing or malformed output" do
+    env = %{
+      "AI_PROVIDER" => "openai",
+      "OPENAI_API_KEY" => "fixture-secret",
+      "OPENAI_MODEL" => "fixture-model"
+    }
+
+    for response <- [
+          %{"status" => "failed", "error" => %{"message" => "sensitive remote detail"}},
+          %{"status" => "completed", "error" => %{"message" => "sensitive remote detail"}},
+          %{"status" => "incomplete", "output_text" => "partial output"},
+          %{"status" => "completed", "output" => []},
+          %{"status" => "completed", "output" => %{}},
+          %{"status" => "completed", "output_text" => "   "},
+          %{"status" => "completed", "output_text" => %{}},
+          %{"status" => "unexpected", "output_text" => "untrusted output"},
+          "not a response"
+        ] do
+      TestHTTP.set_responses([response])
+      error = assert_raise Error, fn -> AI.generate(env, "Draft", %{}, 300, http: TestHTTP) end
+      refute Exception.message(error) =~ "sensitive remote detail"
+    end
+  end
+
+  test "OpenAI requires credentials and a safe model identifier" do
+    base = %{"AI_PROVIDER" => "openai"}
+
+    for env <- [
+          base,
+          Map.put(base, "OPENAI_API_KEY", "fixture-secret"),
+          Map.merge(base, %{
+            "OPENAI_API_KEY" => "fixture-secret",
+            "OPENAI_MODEL" => "bad model\nname"
+          })
+        ] do
+      assert_raise Error, fn -> AI.generate(env, "Draft", %{}, 300, http: TestHTTP) end
+    end
+  end
 end

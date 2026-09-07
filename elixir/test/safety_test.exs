@@ -36,6 +36,24 @@ defmodule ChorusDraft.SafetyTest do
     assert_raise Error, fn -> Safety.validate_text!(String.duplicate("x", 301), 300) end
   end
 
+  test "automatic publication applies stricter harassment, link, mention, and PII gates" do
+    assert Safety.validate_automatic_text!("A calm, original observation.", 500)
+
+    for text <- [
+          "You are a clown.",
+          "Everyone dogpile @alice",
+          "Alice is a worthless idiot.",
+          "Ask @alice@example.org about it",
+          "Details at https://example.org/private",
+          "Details at example.com/private",
+          "Email alice@example.org",
+          "Call +1 (312) 555-0199",
+          "Meet at 123 Example Street"
+        ] do
+      assert_raise Error, fn -> Safety.validate_automatic_text!(text, 500) end
+    end
+  end
+
   test "remote HTTP credentials require HTTPS while local AI permits loopback HTTP" do
     assert HTTP.validate_url!("https://example.org").host == "example.org"
     assert HTTP.validate_url!("http://127.0.0.1:11434/v1/chat/completions", local: true)

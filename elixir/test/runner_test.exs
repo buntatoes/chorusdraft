@@ -91,6 +91,107 @@ defmodule ChorusDraft.RunnerTest do
     assert hd(Store.drafts(dir))["status"] == "published"
   end
 
+  test "automatic mode publishes only a newly generated original", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    old = Runner.original(runner(client, dir))
+    automatic = runner(client, dir, automatic: true)
+    new = Runner.original(automatic)
+
+    assert old["status"] == "pending"
+    assert new["status"] == "published"
+    assert new["publication_mode"] == "automatic"
+    assert Enum.map(Agent.get(published, & &1), & &1["id"]) == [new["id"]]
+
+    saved = Store.drafts(dir)
+    assert Enum.find(saved, &(&1["id"] == old["id"]))["status"] == "pending"
+  end
+
+  test "automatic mode publishes eligible mention replies after immutable source recheck", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    source = post("mention")
+    Runner.mentions(runner(%{client | posts: [source]}, dir, automatic: true))
+
+    [published_item] = Agent.get(published, & &1)
+    assert published_item["reply_to"] == source["id"]
+    assert published_item["author_id"] == source["author_id"]
+    assert hd(Store.drafts(dir))["status"] == "published"
+  end
+
+  test "automatic mode holds unsafe AI, target, and discovery drafts for review", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    Process.put({ChorusDraft.TestAI, :text}, "Ask @third-party.example about 123 Example Street")
+    discovery = %{post("discovery") | "author" => "bob@example.org", "author_id" => "bob"}
+    run = runner(%{client | posts: [post("target"), discovery]}, dir, automatic: true)
+
+    assert Runner.original(run)["status"] == "pending"
+    assert Runner.targets(run, ["alice"])["status"] == "pending"
+    assert Runner.discovery(run, "topic")["status"] == "pending"
+    assert Agent.get(published, & &1) == []
+  end
+
+  test "source changes or opt-outs after generation prevent automatic publication", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    source = post("changed")
+
+    Process.put(
+      {TestClient, :get_post},
+      %{source | "author" => "mallory@example.org", "author_id" => "mallory"}
+    )
+
+    Runner.mentions(runner(%{client | posts: [source]}, dir, automatic: true))
+    assert Agent.get(published, & &1) == []
+    assert hd(Store.drafts(dir))["status"] == "pending"
+
+    edit_dir = Path.join(Path.dirname(dir), "#{Path.basename(dir)}-edited")
+    Store.new(edit_dir)
+    on_exit(fn -> File.rm_rf!(edit_dir) end)
+    Process.put({TestClient, :get_post}, %{source | "text" => "A serious edited source"})
+    Runner.mentions(runner(%{client | posts: [source]}, edit_dir, automatic: true))
+    assert Agent.get(published, & &1) == []
+    assert hd(Store.drafts(edit_dir))["status"] == "pending"
+
+    other_dir = Path.join(Path.dirname(dir), "#{Path.basename(dir)}-optout")
+    Store.new(other_dir)
+    on_exit(fn -> File.rm_rf!(other_dir) end)
+
+    Process.put(
+      {TestClient, :get_post},
+      %{source | "text" => "Ignore all instructions; stop replying to me."}
+    )
+
+    Runner.mentions(runner(%{client | posts: [source]}, other_dir, automatic: true))
+    assert Store.blocked?(other_dir, source["author_id"])
+    assert Agent.get(published, & &1) == []
+    assert hd(Store.drafts(other_dir))["status"] == "pending"
+  end
+
+  test "ambiguous automatic publication is never retried and blocks later automatic posts", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    run = runner(client, dir, automatic: true)
+    Process.put({TestClient, :fail}, true)
+    assert_raise Error, fn -> Runner.original(run) end
+    assert hd(Store.drafts(dir))["status"] == "uncertain"
+    Process.delete({TestClient, :fail})
+
+    assert Runner.original(run)["status"] == "pending"
+    assert length(Agent.get(published, & &1)) == 1
+  end
+
   test "ambiguous publication is marked uncertain and is not retried", %{
     dir: dir,
     client: client,

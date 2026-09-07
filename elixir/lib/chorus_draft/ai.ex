@@ -3,7 +3,8 @@ defmodule ChorusDraft.AI do
 
   @system """
   You are ChorusDraft, a witty observer of software and everyday internet absurdity.
-  Write a concise social post for human review. Use dry wit, light sarcasm,
+  Write a concise social post that may be reviewed or published automatically
+  after deterministic safeguards. Use dry wit, light sarcasm,
   playful exaggeration, absurd comparisons, or self-deprecation. Build on one
   concrete detail and give it an unexpected turn. Prefer a natural punchline
   over generic praise, a lecture, or explaining the joke. Vary the setup and
@@ -45,7 +46,8 @@ defmodule ChorusDraft.AI do
       case env |> Map.get("AI_PROVIDER", "local") |> String.downcase() do
         provider when provider in ["local", "ollama"] -> local(http, env, prompt)
         "gemini" -> gemini(http, env, prompt)
-        _ -> raise Error, "AI_PROVIDER must be local, ollama, or gemini."
+        provider when provider in ["openai", "chatgpt"] -> openai(http, env, prompt)
+        _ -> raise Error, "AI_PROVIDER must be local, ollama, gemini, openai, or chatgpt."
       end
 
     text = text |> to_string() |> String.trim()
@@ -107,4 +109,67 @@ defmodule ChorusDraft.AI do
 
     get_in(response, ["candidates", Access.at(0), "content", "parts", Access.at(0), "text"])
   end
+
+  defp openai(http, env, prompt) do
+    key = Config.required(env, "OPENAI_API_KEY")
+    model = Config.required(env, "OPENAI_MODEL")
+
+    if not Regex.match?(~r/^[a-zA-Z0-9._:-]+$/, model), do: raise(Error, "Invalid OPENAI_MODEL.")
+
+    response =
+      http.request(
+        :post,
+        "https://api.openai.com/v1/responses",
+        headers: %{"Authorization" => "Bearer #{key}"},
+        body: %{
+          "model" => model,
+          "instructions" => @system,
+          "input" => prompt,
+          "max_output_tokens" => 256,
+          "store" => false
+        }
+      )
+
+    openai_output_text!(response)
+  end
+
+  defp openai_output_text!(response) when is_map(response) do
+    if not is_nil(response["error"]), do: raise(Error, "OpenAI response failed.")
+
+    case response["status"] do
+      status when status in [nil, "completed"] ->
+        :ok
+
+      status when status in ["failed", "cancelled", "incomplete", "queued", "in_progress"] ->
+        raise Error, "OpenAI response did not complete."
+
+      _ ->
+        raise Error, "OpenAI response was malformed."
+    end
+
+    text =
+      case response["output_text"] do
+        nil -> openai_nested_output_text!(response["output"] || [])
+        value when is_binary(value) -> value
+        _ -> raise Error, "OpenAI response was malformed."
+      end
+
+    if present?(text), do: text, else: raise(Error, "OpenAI response did not include text.")
+  end
+
+  defp openai_output_text!(_response), do: raise(Error, "OpenAI response was malformed.")
+
+  defp openai_nested_output_text!(output) when is_list(output) do
+    output
+    |> Enum.flat_map(fn
+      %{"type" => "message", "content" => content} when is_list(content) -> content
+      _ -> []
+    end)
+    |> Enum.filter(&match?(%{"type" => "output_text", "text" => text} when is_binary(text), &1))
+    |> Enum.map_join("", & &1["text"])
+  end
+
+  defp openai_nested_output_text!(_output), do: raise(Error, "OpenAI response was malformed.")
+
+  defp present?(value), do: is_binary(value) and String.trim(value) != ""
 end

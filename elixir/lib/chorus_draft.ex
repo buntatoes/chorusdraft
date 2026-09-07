@@ -1,6 +1,6 @@
 defmodule ChorusDraft do
   @moduledoc "Shared runtime for ChorusDraft on Linux, macOS, and Windows."
-  @version "0.51.3"
+  @version "0.51.4"
   def version, do: @version
 end
 

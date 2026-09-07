@@ -1,12 +1,14 @@
 # ChorusDraft
 
-ChorusDraft is a social drafting assistant for Bluesky and Mastodon. It helps
-account owners write original posts, replies, and commentary while keeping
-AI-generated content in a local review queue until they approve it.
+ChorusDraft is a social drafting and publishing assistant for Bluesky and
+Mastodon. It helps account owners write original posts, replies, and commentary.
+Review-first operation remains the default; an explicit `automatic` mode may
+publish only newly generated originals and eligible public-mention replies after
+additional deterministic safeguards pass.
 
 Its writing style favors dry wit and playful observations, with a sincere tone
-for serious topics. You can use a local AI model or Google Gemini and choose
-what reaches your account.
+for serious topics. You can use a local model, Ollama, Google Gemini, or
+ChatGPT through the OpenAI API and choose the operating mode for each account.
 
 ## What it does
 
@@ -21,11 +23,14 @@ what reaches your account.
   origin, and account.
 - Applies opt-outs, do-not-contact lists, interaction limits, and content
   safeguards before a draft is staged and again before it is published.
-- Offers optional Bluesky Jetstream wake-ups for listener and daemon workflows;
+- Starts Bluesky Jetstream automatically for listener and daemon workflows,
+  while keeping canonical API fetches and periodic notification catch-up;
   Mastodon continues to use polling.
+- Offers an explicit automatic daemon with a persistent publication-attempt
+  budget, source rechecks, strict output screening, and unresolved-result lockout.
 
-ChorusDraft does **not** automatically like, favourite, boost, or repost. It is
-a drafting and approval workflow, not an unattended engagement tool.
+ChorusDraft does **not** automatically like, favourite, boost, repost, publish
+manual text, or publish unsolicited target/discovery commentary.
 
 ## How it works
 
@@ -34,11 +39,12 @@ a drafting and approval workflow, not an unattended engagement tool.
 | Configure | You choose a Bluesky or Mastodon account and an AI provider in a local configuration file. |
 | Discover or draft | The application can search public posts, collect eligible public mentions, or create a draft. |
 | Safety checks | Opt-outs, do-not-contact entries, interaction budgets, visibility rules, and content safeguards are applied. |
-| Review | Drafts enter a local queue for interactive review, rejection, or approval. |
-| Publish | Only an explicit approval can publish an AI draft. Owner-written text needs an explicit `--publish` flag to bypass the queue. |
+| Review | By default, drafts enter a local queue for interactive review, rejection, or approval. Safeguard-held automatic drafts also remain there. |
+| Publish | Approval publishes the exact queued draft. In explicit automatic mode, only a newly generated original or eligible mention reply may publish after stricter checks. Owner-written text still needs `--publish`. |
 
-AI-generated drafts require individual approval. You remain responsible for the
-content you publish and how your account interacts with others.
+Automatic mode is an operator choice, not a guarantee that generated content is
+appropriate. You remain responsible for what the account publishes and how it
+interacts with others.
 
 ## Get started
 
@@ -90,11 +96,11 @@ versions or machines.
 | Run a release package on Linux | Erlang/OTP 25+ and util-linux (`flock`) |
 | Run a release package on macOS | Erlang/OTP 25+ and Python 3 |
 | Run a release package on Windows | Erlang/OTP 25+, Python 3, and PowerShell |
-| Build or test from source | Elixir 1.15+, Mix, and Erlang/OTP 25+ |
+| Build or test from source | Elixir 1.15+, Mix, and Erlang/OTP 25+ with development headers (for example, `erlang-dev` on Debian-family systems) |
 
 To connect an account, you also need a Bluesky app password or a Mastodon
-access token. AI drafting needs either a local OpenAI-compatible endpoint or
-Google Gemini credentials and a model name. These are local operator settings,
+access token. AI drafting needs a local OpenAI-compatible endpoint, Google
+Gemini credentials, or OpenAI API credentials. These are operator settings,
 not values to commit to the repository.
 
 ## Configure an account and AI provider
@@ -109,8 +115,15 @@ containing credentials.
 | Bluesky | `BLUESKY_HANDLE` and `BLUESKY_APP_PASSWORD` |
 | Mastodon | `MASTODON_API_BASE_URL` and `MASTODON_ACCESS_TOKEN` |
 
-For a local OpenAI-compatible or Ollama endpoint, configure the AI section in
-the same file:
+Choose one provider in the same file:
+
+| `AI_PROVIDER` | Configuration | Where drafting context goes |
+|---|---|---|
+| `local` or `ollama` | `LOCAL_LLM_URL`, `LOCAL_LLM_MODEL` | The configured loopback endpoint |
+| `gemini` | `GEMINI_API_KEY`, `GEMINI_MODEL` | Google Gemini |
+| `chatgpt` or `openai` | `OPENAI_API_KEY`, `OPENAI_MODEL` | OpenAI Responses API with response storage disabled by the request |
+
+For a local OpenAI-compatible or Ollama endpoint:
 
 ```dotenv
 AI_PROVIDER=local
@@ -119,8 +132,10 @@ LOCAL_LLM_MODEL=llama3.2:3b
 ```
 
 To use Gemini, set `AI_PROVIDER=gemini` and provide `GEMINI_API_KEY` and
-`GEMINI_MODEL`. Optional settings include `ACTIVE_HOURS`, the status language,
-and discovery keywords.
+`GEMINI_MODEL`. To use ChatGPT, set `AI_PROVIDER=chatgpt` (the `openai` alias is
+also accepted) and provide `OPENAI_API_KEY` and `OPENAI_MODEL`. Remote providers
+receive the task plus selected, cleaned public drafting context. Optional
+settings include `ACTIVE_HOURS`, the status language, and discovery keywords.
 
 Setup is safe to run again: it creates only missing configuration files and
 does not log in, execute `.env` contents, or start a daemon.
@@ -161,12 +176,24 @@ An owner-written post is queued by default:
 ```
 
 Direct publication is deliberately narrow. It is available only for
-owner-written text with an explicit `--publish` flag; it never applies to an
-AI-generated draft:
+owner-written text with an explicit `--publish` flag:
 
 ```sh
 ./run.sh mastodon post "Maintenance is complete." --publish
 ```
+
+To opt into unattended AI publication, use `automatic` instead of `start`:
+
+```sh
+./run.sh bluesky automatic --active-hours 08:30-22:00
+./run.sh mastodon automatic --poll-interval 60
+```
+
+This mode may publish only the newly generated original or an eligible incoming
+public-mention reply. It never sweeps old pending drafts, and it leaves manual
+text, target commentary, discovery commentary, quotes, or anything that fails a
+safeguard in the review queue. Five automatic attempts are allowed per rolling
+24 hours per account; failed or uncertain attempts still consume the budget.
 
 ## Keep account state predictable
 
@@ -184,8 +211,8 @@ move without reconciling its publication history.
 ## Command reference
 
 Run `./run.sh bluesky --help` or `./run.sh mastodon --help` for the complete,
-validated interface. Short commands translate to the equivalent options but
-never add direct-publication permission.
+validated interface. `start` remains review-first; only `automatic` adds the
+automatic-publication permission.
 
 | Command | Purpose |
 |---|---|
@@ -193,6 +220,7 @@ never add direct-publication permission.
 | `draft` | Stage one original AI draft |
 | `review` | Interactively review queued drafts |
 | `start` | Run the foreground daemon; stop it with Ctrl+C |
+| `automatic` | Run the daemon and allow safeguarded new originals/mention replies to publish |
 | `listen` | Poll public mentions |
 | `replies` | Process eligible public mentions once |
 | `post TEXT` | Stage owner-written text |
@@ -212,8 +240,8 @@ Examples of advanced options:
 # Fetch eligible public mentions and stage reply drafts.
 ./run.sh mastodon --replies-only --limit 5
 
-# Run the Bluesky daemon with Jetstream wake-ups.
-./run.sh bluesky start --jetstream
+# Run the Bluesky daemon; Jetstream starts automatically.
+./run.sh bluesky start
 
 # Limit a foreground run to a local time range.
 ./run.sh bluesky start --active-hours 08:30-22:00
@@ -222,17 +250,27 @@ Examples of advanced options:
 ./run.sh bluesky status
 ```
 
-`--jetstream` is available only with Bluesky `listen` or `start`. It wakes the
-ordinary notification workflow; it does not put streamed post bodies into AI
-context, terminal output, or local state, and it cannot publish directly.
+Bluesky `listen` and `start` always use Jetstream. The old `--jetstream` flag is
+accepted as a compatibility no-op, while `--no-jetstream` is rejected. Stream
+events only wake the ordinary notification workflow: streamed post bodies never
+enter AI context, terminal output, or local state. Canonical API-fetched posts
+still pass through opt-out, deduplication, safety, and publication-policy checks.
 
 ## Safety, privacy, and reliability
 
 ChorusDraft enforces safety controls in the application rather than relying
 only on documentation:
 
-- AI output always enters a local review queue and is validated again before
-  publication.
+- Review is the default. Explicit automatic mode is limited to a just-created
+  original or eligible incoming mention reply; every other AI draft stays queued.
+- Automatic output receives an additional deterministic screen for harassment,
+  pile-ons, model-added mentions, links, and common contact-information patterns.
+  A source reply is re-fetched, checked for public visibility, immutable author
+  identity, injection, opt-out, and do-not-contact status before the atomic claim.
+- Automatic attempts are persisted and capped at five per rolling 24 hours.
+  Only one may be in flight, and any `publishing` or `uncertain` draft blocks
+  later automatic claims. Crash-stranded claims age into `uncertain` and are not
+  retried.
 - Clear public opt-out requests and configured do-not-contact entries block
   supplied interaction paths. Checks cover source authors and mentioned
   accounts.
@@ -247,10 +285,11 @@ only on documentation:
   Native locks serialize writers, and malformed state fails closed.
 - Packages exclude `.env` files, runtime state, logs, and build caches.
 
-These controls reduce risk; they do not replace a review of the full context,
-target, visibility, and exact text before approval. Run only one daemon per
-account. Use disposable accounts to test login, search, staging, review,
-publication, deletion, opt-outs, and reconnect behavior before production use.
+These controls reduce risk; automatic screening can still miss harmful context
+or hold benign text. Review mode provides the strongest operator control. Run
+only one daemon per account, and use disposable accounts to test login, search,
+staging, review, automatic publication, deletion, opt-outs, and reconnect
+behavior before production use.
 
 ### Handling a failed or uncertain publication
 

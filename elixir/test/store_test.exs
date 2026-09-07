@@ -66,4 +66,90 @@ defmodule ChorusDraft.StoreTest do
     Store.transition(dir, item["id"], "pending", "publishing")
     assert_raise Error, fn -> Store.transition(dir, item["id"], "pending", "publishing") end
   end
+
+  test "automatic claims enforce one in flight, blocked actors, and a persistent daily budget", %{
+    dir: dir
+  } do
+    blocked = Store.stage(dir, %{"text" => "blocked"})
+    Store.block(dir, "alice")
+    assert Store.claim_automatic(dir, blocked, actors: ["Alice"]) == {:error, :blocked}
+
+    first = Store.stage(dir, %{"text" => "first"})
+    assert {:ok, claimed} = Store.claim_automatic(dir, first)
+    assert claimed["status"] == "publishing"
+    assert claimed["publication_mode"] == "automatic"
+
+    second = Store.stage(dir, %{"text" => "second"})
+    assert Store.claim_automatic(dir, second) == {:error, :unresolved}
+    Store.transition(dir, first["id"], "publishing", "published")
+
+    for n <- 2..5 do
+      item = Store.stage(dir, %{"text" => "attempt #{n}"})
+      assert {:ok, _claimed} = Store.claim_automatic(dir, item)
+      Store.transition(dir, item["id"], "publishing", "published")
+    end
+
+    limited = Store.stage(dir, %{"text" => "held"})
+    assert Store.claim_automatic(dir, limited) == {:error, :limit}
+
+    assert Jason.decode!(File.read!(Path.join(dir, "state.json")))["automatic"]
+           |> length() == 5
+  end
+
+  test "ambiguous and crash-stranded publications block automatic claims", %{dir: dir} do
+    uncertain = Store.stage(dir, %{"text" => "uncertain"})
+    Store.transition(dir, uncertain["id"], "pending", "publishing")
+    Store.transition(dir, uncertain["id"], "publishing", "uncertain")
+
+    held = Store.stage(dir, %{"text" => "held"})
+    assert Store.claim_automatic(dir, held) == {:error, :unresolved}
+
+    Store.transaction(dir, fn state ->
+      drafts =
+        Enum.map(state["drafts"], fn draft ->
+          cond do
+            draft["id"] == uncertain["id"] ->
+              Map.put(draft, "status", "published")
+
+            draft["id"] == held["id"] ->
+              draft
+              |> Map.put("status", "publishing")
+              |> Map.put("claimed_at", System.system_time(:second) - 301)
+          end
+        end)
+
+      {nil, Map.put(state, "drafts", drafts)}
+    end)
+
+    assert Enum.find(Store.drafts(dir), &(&1["id"] == held["id"]))["status"] == "uncertain"
+
+    next = Store.stage(dir, %{"text" => "next"})
+    assert Store.claim_automatic(dir, next) == {:error, :unresolved}
+  end
+
+  test "legacy live state loads without an automatic-attempt field", %{dir: dir} do
+    item = Store.stage(dir, %{"text" => "legacy"})
+    path = Path.join(dir, "state.json")
+    state = path |> File.read!() |> Jason.decode!() |> Map.delete("automatic")
+    File.write!(path, Jason.encode!(state))
+
+    assert hd(Store.drafts(dir))["id"] == item["id"]
+    assert {:ok, _claimed} = Store.claim_automatic(dir, item)
+  end
+
+  test "automatic claim is atomic and a fresh publication lease is preserved", %{dir: dir} do
+    item = Store.stage(dir, %{"text" => "once"})
+
+    results =
+      1..12
+      |> Task.async_stream(
+        fn _ -> Store.claim_automatic(dir, item) end,
+        max_concurrency: 12
+      )
+      |> Enum.to_list()
+
+    assert Enum.count(results, &match?({:ok, {:ok, _}}, &1)) == 1
+    assert Enum.count(results, &(&1 == {:ok, {:error, :unavailable}})) == 11
+    assert hd(Store.drafts(dir))["status"] == "publishing"
+  end
 end

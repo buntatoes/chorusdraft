@@ -1,23 +1,25 @@
-ChorusDraft 0.51.3
+ChorusDraft 0.51.4
 Copyright (C) 2026 ChorusDraft contributors
 
 ChorusDraft is free software licensed under the GNU General Public License,
 version 3. See LICENSE for the complete terms and source-code obligations.
 
-Version 0.51.3 uses the Elixir implementation under `elixir/`. One application
+Version 0.51.4 uses the Elixir implementation under `elixir/`. One application
 supports Bluesky and Mastodon through separate modes and configuration
 directories. Dependency attribution and corresponding source are documented in
 `elixir/THIRD_PARTY_NOTICES.md` and included with release packages.
 
-Safeguards are part of the program behavior. AI-generated text requires
-interactive review. Privacy exclusions, opt-outs, do-not-contact enforcement,
-harassment screening, interaction budgets, ownership validation, and uncertain
+Safeguards are part of the program behavior. Review is the default; explicit
+automatic mode is limited to newly generated originals and eligible public
+mention replies, with stricter screening, source revalidation, a persistent
+attempt budget, and unresolved-publication lockout. Privacy exclusions,
+opt-outs, do-not-contact enforcement, ownership validation, and uncertain
 publication handling apply before publication. Automatic likes, favourites,
 boosts, and reposts are disabled.
 
 Do not use ChorusDraft to harass, threaten, dox, impersonate, coordinate abuse,
 evade a request to stop contact, or publish private material. Operators remain
-responsible for credentials, configuration, reviewed output, account conduct,
+responsible for credentials, configuration, published output, account conduct,
 and compliance with platform rules and applicable law.
 
 GPLv3 permits recipients to inspect and modify the program. Modified versions

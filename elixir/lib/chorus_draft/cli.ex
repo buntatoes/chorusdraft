@@ -22,6 +22,7 @@ defmodule ChorusDraft.CLI do
     discover: :boolean,
     listen: :boolean,
     daemon: :boolean,
+    automatic: :boolean,
     jetstream: :boolean,
     process_queue: :boolean,
     targets_only: :boolean,
@@ -126,11 +127,15 @@ defmodule ChorusDraft.CLI do
         {:ok, %{help: true, poll_interval: 60, interval: 120, jitter: 0, limit: 5}}
 
       {options, [], []} ->
-        validate_options(
-          options
-          |> Enum.reject(fn {_key, value} -> value == false end)
-          |> Map.new()
-        )
+        if Keyword.get(options, :jetstream, :unspecified) == false do
+          {:error, "Jetstream cannot be disabled; Bluesky listen and start use it automatically."}
+        else
+          validate_options(
+            options
+            |> Enum.reject(fn {_key, value} -> value == false end)
+            |> Map.new()
+          )
+        end
 
       {_options, positional, []} ->
         {:error, "Unexpected positional arguments: #{Enum.join(positional, " ")}"}
@@ -151,6 +156,7 @@ defmodule ChorusDraft.CLI do
   def normalize_short_command(["draft" | rest]), do: ["--post-only" | rest]
   def normalize_short_command(["review" | rest]), do: ["--process-queue" | rest]
   def normalize_short_command(["start" | rest]), do: ["--daemon" | rest]
+  def normalize_short_command(["automatic" | rest]), do: ["--daemon", "--automatic" | rest]
   def normalize_short_command(["listen" | rest]), do: ["--listen" | rest]
   def normalize_short_command(["replies" | rest]), do: ["--replies-only" | rest]
   def normalize_short_command(["post", text | rest]), do: ["--text", text | rest]
@@ -251,6 +257,9 @@ defmodule ChorusDraft.CLI do
       options[:help] || options[:version] ->
         {:ok, options}
 
+      options[:automatic] && !options[:daemon] ->
+        {:error, "--automatic requires --daemon; use the automatic command."}
+
       mode_count != 1 ->
         {:error, "Choose one command at a time."}
 
@@ -305,6 +314,11 @@ defmodule ChorusDraft.CLI do
     end
   end
 
+  @doc false
+  def jetstream_enabled?(platform, options) do
+    platform == "bluesky" and (options[:listen] || options[:daemon])
+  end
+
   defp execute(platform, %{setup: true} = options, _io_opts) do
     base = Path.expand(Map.get(options, :base, default_base(platform)))
     Setup.run(base)
@@ -315,7 +329,7 @@ defmodule ChorusDraft.CLI do
     base = Path.expand(Map.get(options, :base, default_base(platform)))
     env = Config.load(Path.join(base, ".env"), System.get_env())
     env = Config.load(Path.join([base, "config", ".env"]), env)
-    if options[:jetstream], do: Jetstream.endpoint!(env)
+    if jetstream_enabled?(platform, options), do: Jetstream.endpoint!(env)
     hours = options[:active_hours] || env["ACTIVE_HOURS"]
     active?(hours)
     client = if platform == "bluesky", do: Bluesky.new(env), else: Mastodon.new(env)
@@ -335,10 +349,18 @@ defmodule ChorusDraft.CLI do
     end
 
     load_do_not_contact(store, Path.join([base, "config", "do_not_contact.txt"]))
-    runner = Runner.new(client, store, platform, env, io_opts)
+
+    runner =
+      Runner.new(
+        client,
+        store,
+        platform,
+        env,
+        Keyword.put(io_opts, :automatic, Map.get(options, :automatic, false))
+      )
 
     IO.puts(
-      "#{platform_title(platform)} #{ChorusDraft.version()} | AI drafts require review | automatic likes disabled"
+      "#{platform_title(platform)} #{ChorusDraft.version()} | #{publication_banner(options)} | automatic likes disabled"
     )
 
     dispatch(runner, options, hours, base)
@@ -381,7 +403,7 @@ defmodule ChorusDraft.CLI do
         Runner.inspect_posts(runner, options.random_post, limit: options.limit, random: true)
 
       options[:listen] || options[:daemon] ->
-        if options[:jetstream] do
+        if jetstream_enabled?(runner.platform, options) do
           Jetstream.with_stream(
             runner.client.__struct__.identity(runner.client),
             runner.env,
@@ -528,11 +550,11 @@ defmodule ChorusDraft.CLI do
 
   defp help(platform) do
     """
-    #{platform_title(platform)} #{ChorusDraft.version()} — human-reviewed social drafting
+    #{platform_title(platform)} #{ChorusDraft.version()} — safeguarded social drafting
     Usage: chorusdraft #{platform} [options]
 
     Short commands:
-      setup, draft, review, start, listen, replies, status
+      setup, draft, review, start, automatic, listen, replies, status
       post TEXT, reply ID TEXT, quote ID TEXT, search QUERY
       random [QUERY], discover [QUERY], targets [HANDLE], delete ID, reject ID
 
@@ -547,7 +569,8 @@ defmodule ChorusDraft.CLI do
           --discover           Stage discovery commentary
           --listen             Poll public mentions
           --daemon             Poll mentions and periodically draft originals
-          --jetstream          Wake Bluesky --listen/--daemon on stream activity
+          --automatic          With --daemon, publish new originals/replies after safety checks
+          --jetstream          Compatibility no-op; Bluesky listen/start always streams
           --process-queue      Interactively review AI and manual drafts
           --search QUERY       Display public posts
           --random-post [QUERY] Display a random public search/timeline result
@@ -573,7 +596,11 @@ defmodule ChorusDraft.CLI do
       -v, --version            Show version
       -h, --help               Show this help
 
-    AI output always requires review. No arguments prints this help.
+    Review is the default. Automatic mode never publishes old queued, manual,
+    discovery, target-commentary, or safeguard-held drafts. No arguments prints this help.
     """
   end
+
+  defp publication_banner(%{automatic: true}), do: "safeguarded automatic AI publication"
+  defp publication_banner(_options), do: "AI drafts require review"
 end
