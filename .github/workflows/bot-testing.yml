@@ -1,4 +1,4 @@
-name: Combined bot checks
+name: Elixir desktop checks
 
 on:
   push:
@@ -15,22 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ruby-packages:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v6
-      - uses: ruby/setup-ruby@v1
-      - run: ruby scripts/build_release.rb
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ruby-testing-packages
-          path: |
-            dist/*.tar.gz
-            dist/*.zip
-            dist/SHA256SUMS
-          retention-days: 14
   native:
-    needs: ruby-packages
     strategy:
       fail-fast: false
       matrix:
@@ -45,21 +30,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - uses: ruby/setup-ruby@v1
       - uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124
         with:
           otp-version: '25.3'
           elixir-version: '1.15.8'
-      - name: Ruby source tests
-        run: |
-          gem install minitest --version 6.0.0 --no-document
-          ruby -Itest -e 'Dir["test/*_test.rb"].sort.each { |file| require_relative file }'
-      - uses: actions/download-artifact@v4
-        with:
-          name: ruby-testing-packages
-          path: dist
-      - name: Ruby native packages
-        run: python scripts/verify_release.py
       - name: Elixir dependencies and tests
         working-directory: elixir
         shell: bash
@@ -91,9 +65,22 @@ jobs:
         run: python launcher/test_gui.py
       - name: Desktop tests (Linux)
         if: runner.os == 'Linux'
-        run: xvfb-run -a npm test --prefix desktop
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gnome-keyring dbus-x11
+          export XDG_DATA_HOME="$(mktemp -d)"
+          export XDG_CURRENT_DESKTOP=GNOME
+          export CHORUSDRAFT_TEST_KEYRING=1
+          dbus-run-session -- bash -c 'printf "%s" "fixture-keyring-password" | gnome-keyring-daemon --unlock --components=secrets; xvfb-run -a npm test --prefix desktop'
+      - name: Isolated macOS test keychain
+        if: runner.os == 'macOS'
+        run: |
+          security create-keychain -p fixture-keyring-password "$RUNNER_TEMP/chorusdraft.keychain-db"
+          security default-keychain -s "$RUNNER_TEMP/chorusdraft.keychain-db"
+          security unlock-keychain -p fixture-keyring-password "$RUNNER_TEMP/chorusdraft.keychain-db"
+          security set-keychain-settings -lut 21600 "$RUNNER_TEMP/chorusdraft.keychain-db"
       - name: Desktop tests (macOS and Windows)
-        timeout-minutes: 3
+        timeout-minutes: 5
         if: runner.os != 'Linux'
         run: npm test --prefix desktop
       - name: Build desktop launcher

@@ -6,17 +6,33 @@ This file records user-visible changes to ChorusDraft.
 
 ### Added
 
-- A React desktop GUI launcher for Ruby and Elixir, with Bluesky and Mastodon choices.
-- Buttons for setup, configuration, drafting, review, monitoring, search, and manual posts.
-- Grouped action cards, an activity panel, per-draft review buttons, and a Stop control.
-- Double-click launchers for macOS and Windows.
-- Combined platform packages containing both implementations and their source.
-- Elixir support for the short commands introduced in Ruby 0.51.2.
+- A React desktop launcher for Bluesky and Mastodon on Linux, macOS, and Windows.
+- Account and AI settings with masked credential fields, encrypted local storage,
+  and session-only use when protected storage is unavailable.
+- A searchable History section for published posts and GUI activity, with a
+  copy action for recalling post text.
+- Automatic local history expiry after 10 days, with earlier activity rotation
+  when the 50 MB storage limit is reached.
+- Buttons for setup, drafting, individual draft approval, monitoring, search,
+  manual posts, and stopping a session.
+- Double-click launchers for macOS and Windows and desktop packages containing
+  the Elixir bot, GUI, and corresponding source.
+- Short Elixir commands, including local `history`, alongside existing flags.
+
+### Changed
+
+- Standardized the active application on Elixir and removed the Ruby runtime,
+  launcher choices, and source from new preview packages.
+- Root commands now use `./bot bluesky COMMAND` or `./bot mastodon COMMAND`.
+- Securely saved GUI settings replace only the managed fields in the selected
+  platform's plaintext `.env`; advanced command-line settings remain supported.
 
 ### Compatibility
 
-- Existing Ruby commands and both implementations' flags remain supported.
-- Configuration and state remain separate for each implementation and platform.
+- Compatible legacy account state can be imported explicitly into an empty store.
+- History expiry preserves pending drafts, uncertain publications, and account
+  safety records. Cleanup runs while the app is open and at its next launch.
+- Local history expiry does not remove published posts from social services.
 - AI-generated content continues to require individual approval before publication.
 
 ## 0.51.2 — 2026-09-06

@@ -1,9 +1,10 @@
 ChorusDraft 0.51.3 preview
 Modification notice — September 6, 2026
 
-Version 0.51.3 adds a shared launcher and combined Ruby/Elixir packages.
-Elixir receives matching short commands. See elixir/NOTICE for that
-implementation's modification and dependency notices.
+Version 0.51.3 standardizes the application on Elixir and adds a React desktop
+launcher, protected credential storage, short commands, and local history with
+a 10-day retention limit. See elixir/NOTICE for the implementation notice and
+launcher/NOTICE for desktop component licenses.
 
 This distribution is a modified work based on the feature sets of Bluesky Bot
 1.0.3 and Mastodon Bot 1.0.2, authored by Buntatoes and distributed under the

@@ -1,4 +1,4 @@
-ChorusDraft Elixir version for Linux, macOS, and Windows (unreleased)
+ChorusDraft 0.51.3 preview for Linux, macOS, and Windows
 Modification notice — September 6, 2026
 
 This testing build is an Elixir implementation of ChorusDraft, based on the
@@ -20,4 +20,6 @@ Bluesky and Mastodon are third-party services and projects. ChorusDraft is not
 endorsed by or affiliated with Bluesky Social PBC, Mastodon gGmbH, or operators
 of independent Mastodon servers.
 
-Version 0.51.3 adds short commands and integration with the shared desktop launcher.
+Version 0.51.3 uses Elixir as the active bot implementation and adds short commands,
+a React desktop launcher, protected credential entry, and local history with
+a 10-day retention limit.

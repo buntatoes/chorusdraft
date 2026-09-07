@@ -4,7 +4,14 @@ contextBridge.exposeInMainWorld("chorus", {
   run: (request) => ipcRenderer.invoke("bot:run", request),
   respond: (text) => ipcRenderer.invoke("bot:input", text),
   stop: () => ipcRenderer.invoke("bot:stop"),
-  configure: (selection) => ipcRenderer.invoke("bot:configure", selection),
+  settings: (selection) => ipcRenderer.invoke("bot:settings", selection),
+  saveSettings: (selection, input, persist) =>
+    ipcRenderer.invoke("bot:save-settings", selection, input, persist),
+  forgetSettings: (selection) =>
+    ipcRenderer.invoke("bot:forget-settings", selection),
+  history: (selection, filter) =>
+    ipcRenderer.invoke("bot:history", selection, filter),
+  copy: (text) => ipcRenderer.invoke("bot:copy", text),
   onEvent: (callback) => {
     const listener = (_event, message) => callback(message);
     ipcRenderer.on("bot:event", listener);

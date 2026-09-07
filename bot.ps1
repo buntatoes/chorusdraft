@@ -1,29 +1,25 @@
 $ErrorActionPreference = 'Stop'
+$env:ERL_CRASH_DUMP = 'NUL'
+$env:ERL_CRASH_DUMP_SECONDS = '0'
 $BotRoot = $PSScriptRoot
 function Show-Help {
     Write-Output @'
 ChorusDraft
 Run .\bot.bat to open the desktop launcher. Use menu for the terminal menu.
-Usage: .\bot.bat ruby|elixir bluesky|mastodon COMMAND [options]
+Usage: .\bot.bat bluesky|mastodon COMMAND [options]
 Examples:
-  .\bot.bat ruby bluesky setup
-  .\bot.bat elixir mastodon review
-The older .\bot.bat bluesky COMMAND form selects Ruby.
+  .\bot.bat bluesky setup
+  .\bot.bat mastodon review
+
 '@
 }
 function Invoke-Bot([string]$Runtime, [string]$Platform, [string[]]$CommandArgs) {
     if ($Platform -notin @('bluesky', 'mastodon')) { throw 'Choose bluesky or mastodon.' }
-    if ($Runtime -eq 'ruby') {
-        if (-not (Get-Command ruby -ErrorAction SilentlyContinue)) { throw 'Ruby bots require Ruby 4.0+ on PATH.' }
-        & ruby (Join-Path $BotRoot "$Platform/chorusdraft.rb") @CommandArgs | Out-Host
-    } elseif ($Runtime -eq 'elixir') {
-        if (-not (Get-Command escript -ErrorAction SilentlyContinue)) { throw 'Elixir bots require Erlang/OTP 25+ (escript on PATH).' }
-        $executable = Join-Path $BotRoot 'elixir/chorusdraft'
-        if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) {
-            throw 'Build the Elixir bot first: cd elixir; mix deps.get; $env:MIX_ENV="prod"; mix escript.build'
-        }
-        & escript $executable $Platform @CommandArgs --base (Join-Path $BotRoot "elixir/$Platform") | Out-Host
-    } else { throw 'Choose ruby or elixir.' }
+    if ($Runtime -ne 'elixir') { throw 'This launcher uses Elixir.' }
+    if (-not (Get-Command escript -ErrorAction SilentlyContinue)) { throw 'Install Erlang/OTP 25+ and add escript to PATH.' }
+    $executable = Join-Path $BotRoot 'elixir/chorusdraft'
+    if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) { throw 'Build the Elixir executable or use a desktop download.' }
+    & escript $executable $Platform @CommandArgs --base (Join-Path $BotRoot "elixir/$Platform") | Out-Host
     return $LASTEXITCODE
 }
 function Read-Choice([string]$Prompt) {
@@ -34,11 +30,7 @@ function Read-Choice([string]$Prompt) {
 function Show-Menu {
     if ([Console]::IsInputRedirected) { throw 'The menu needs an interactive terminal. Use .\bot.bat help for direct commands.' }
     while ($true) {
-        Write-Host "`nChorusDraft`n1) Ruby`n2) Elixir`nq) Quit"
-        $runtimeChoice = Read-Choice 'Implementation'
-        if ($runtimeChoice -eq '1') { $runtime = 'ruby' }
-        elseif ($runtimeChoice -eq '2') { $runtime = 'elixir' }
-        else { Write-Host 'Choose 1, 2, or q.'; continue }
+        $runtime = 'elixir'
         Write-Host "`n1) Bluesky`n2) Mastodon`nb) Back`nq) Quit"
         $platformChoice = Read-Choice 'Platform'
         if ($platformChoice -eq '1') { $platform = 'bluesky' }
@@ -74,7 +66,7 @@ q) Quit
                 $code = Invoke-Bot $runtime $platform $commandArgs
                 if ($code -ne 0) { Write-Host 'The command did not complete. You can choose another action.' }
                 elseif ($commandArgs[0] -eq 'setup') {
-                    $folder = if ($runtime -eq 'ruby') { $platform } else { "elixir/$platform" }
+                    $folder = "elixir/$platform"
                     Write-Host "Edit $(Join-Path $BotRoot "$folder/.env") with your account and AI settings before drafting."
                 }
             } catch { Write-Host $_.Exception.Message }
@@ -90,7 +82,7 @@ try {
     }
     if ($arguments[0] -in @('help', '-h', '--help')) { Show-Help; exit 0 }
     if ($arguments[0] -eq 'menu') { Show-Menu; exit 0 }
-    if ($arguments[0] -in @('bluesky', 'mastodon')) { $arguments = @('ruby') + $arguments }
+    if ($arguments[0] -in @('bluesky', 'mastodon')) { $arguments = @('elixir') + $arguments }
     if ($arguments.Count -lt 2) { Show-Help; exit 1 }
     $commandArgs = if ($arguments.Count -gt 2) { @($arguments[2..($arguments.Count - 1)]) } else { @('help') }
     $code = Invoke-Bot $arguments[0] $arguments[1] $commandArgs

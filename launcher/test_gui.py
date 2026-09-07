@@ -15,7 +15,7 @@ class DesktopTests(unittest.TestCase):
     def test_terminal_input_remains_interactive_and_literal(self):
         with tempfile.TemporaryDirectory(prefix='ChorusDraft GUI test ') as folder:
             program = Path(folder) / 'prompt.py'
-            program.write_text("import sys\nprint('TTY=' + str(sys.stdin.isatty()), flush=True)\nprint('Approve this exact draft? ', end='', flush=True)\nprint('REPLY=' + input(), flush=True)\n")
+            program.write_text("import sys,os\nassert os.environ['ERL_CRASH_DUMP'] == os.devnull\nassert os.environ['ERL_CRASH_DUMP_SECONDS'] == '0'\nprint('TTY=' + str(sys.stdin.isatty()), flush=True)\nprint('Approve this exact draft? ', end='', flush=True)\nprint('REPLY=' + input(), flush=True)\n")
             session = Session([sys.executable, str(program)], folder)
             output = ''
             sent = False
@@ -55,15 +55,15 @@ class DesktopTests(unittest.TestCase):
 
     def test_desktop_commands_cannot_inject_flags_or_skip_approval(self):
         text = 'quotes "hello" & pipes | $HOME; café'
-        self.assertEqual(arguments({'runtime': 'ruby', 'platform': 'bluesky', 'action': 'post', 'text': text}),
-                         ('ruby', 'bluesky', ['post', text]))
-        for request in ({'runtime': 'ruby', 'platform': 'bluesky', 'action': '--publish'},
+        self.assertEqual(arguments({'runtime': 'elixir', 'platform': 'bluesky', 'action': 'post', 'text': text}),
+                         ('elixir', 'bluesky', ['post', text]))
+        for request in ({'runtime': 'elixir', 'platform': 'bluesky', 'action': '--publish'},
                         {'runtime': 'python', 'platform': 'mastodon', 'action': 'review'},
                         {'runtime': 'elixir', 'platform': '../bluesky', 'action': 'review'}):
             with self.assertRaises(ValueError):
                 arguments(request)
 
-    def test_missing_elixir_never_falls_back_to_ruby(self):
+    def test_missing_executable_has_a_clear_error(self):
         with tempfile.TemporaryDirectory() as folder, patch('process.shutil.which', return_value='/fake/escript'):
             with self.assertRaisesRegex(ValueError, 'Elixir executable is missing'):
                 bot_command(folder, 'elixir', 'bluesky', ['review'])

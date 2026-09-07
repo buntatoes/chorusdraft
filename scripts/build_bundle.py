@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Combine native Ruby and Elixir packages behind one launcher."""
+"""Package the Elixir bot with the desktop launcher."""
 import hashlib
 from pathlib import Path
 import platform
@@ -30,8 +30,6 @@ def checked(archive, digest):
 
 
 suffix = '.zip' if OS == 'windows' else '.tar.gz'
-checksums = {name: digest for digest, name in
-             (line.split() for line in (DIST / 'SHA256SUMS').read_text().splitlines())}
 elixir_name = f'ChorusDraft-elixir-{VERSION}-{OS}'
 elixir_archive = ROOT / 'elixir' / 'dist' / (elixir_name + suffix)
 elixir_digest, recorded_name = Path(str(elixir_archive) + '.sha256').read_text().split()
@@ -44,14 +42,9 @@ with tempfile.TemporaryDirectory(prefix='chorusdraft-bundle-') as temporary:
     name = f'chorusdraft-v{VERSION}-{OS}-{architecture}'
     package = work / name
     package.mkdir()
-    for bot in ('bluesky', 'mastodon'):
-        ruby_name = f'chorusdraft-{bot}-v{VERSION}-{OS}'
-        archive = DIST / (ruby_name + suffix)
-        unpack(checked(archive, checksums[archive.name]), work)
-        shutil.move(str(work / ruby_name), package / bot)
     unpack(elixir_archive, work)
     shutil.move(str(work / elixir_name), package / 'elixir')
-    for doc in ('README.md', 'RUBY.md', 'RELEASE_NOTES.md', 'CHANGELOG.md', 'SECURITY.md', 'LICENSE', 'NOTICE', 'VERSION'):
+    for doc in ('README.md', 'RELEASE_NOTES.md', 'CHANGELOG.md', 'SECURITY.md', 'LICENSE', 'NOTICE', 'VERSION'):
         shutil.copy2(ROOT / doc, package / doc)
     launchers = ('bot.bat', 'bot.ps1') if OS == 'windows' else ('bot', 'bot.command')
     for launcher in launchers:
@@ -73,7 +66,7 @@ with tempfile.TemporaryDirectory(prefix='chorusdraft-bundle-') as temporary:
         shutil.copy2(ROOT / 'scripts' / script, package / 'build-scripts' / script)
     files = sorted(p for p in package.rglob('*') if p.is_file())
     assert all(p.resolve().is_relative_to(package.resolve()) for p in package.rglob('*') if p.is_symlink())
-    assert not any(set(p.relative_to(package).parts) & {'.env', 'data', 'logs', '.git', '_build'} for p in files)
+    assert not any(set(p.relative_to(package).parts) & {'.env', 'data', 'logs', 'credentials', 'activity', 'erl_crash.dump', '.git', '_build'} for p in files)
     manifest = package / 'MANIFEST.sha256'
     manifest.write_text(''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(package).as_posix()}\n' for p in files))
     files.append(manifest)

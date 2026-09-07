@@ -6,3 +6,7 @@ dist/
 __pycache__/
 *.pyc
 node_modules/
+
+erl_crash.dump
+**/credentials/
+**/activity/

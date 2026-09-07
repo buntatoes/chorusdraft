@@ -1,12 +1,15 @@
 # Ruby → Elixir parity
 
-Read-only baseline: the historical Ruby 0.51.1 reference commit
-`68b83694ec34b1161839b5ff62a857a774415ece`. This commit remains pinned in CI.
-Version 0.51.3 adds matching short commands and a shared desktop launcher.
-Ruby and Elixir retain separate configuration and state. The table below covers
-the original behavioral baseline; short commands are covered by command tests.
+The Elixir implementation inherits the command workflows and safety controls of
+ChorusDraft's historical Ruby 0.51.1 reference commit
+`68b83694ec34b1161839b5ff62a857a774415ece`. Ruby is no longer part of the active
+0.51.3 application. Compatible legacy JSON state remains importable.
 
-| Ruby behavior | Elixir implementation | Verification |
+Version 0.51.3 adds short commands, the React desktop interface, protected GUI
+credential entry, and local history retention. The table below describes the
+inherited behavioral baseline.
+
+| Inherited behavior | Elixir implementation | Verification |
 |---|---|---|
 | Bluesky and Mastodon login, feed, search, replies, quotes and deletion | Platform clients in one ChorusDraft escript | Client fixtures; live credentials still needed |
 | Original comic drafts, contextual replies, target and discovery commentary | Shared runner; continues past seen/ineligible candidates | Runner and parity tests |
@@ -18,18 +21,18 @@ the original behavioral baseline; short commands are covered by command tests.
 | Polling, daemon, local active hours and jitter | Foreground loops, monotonic scheduling and isolated job failures | Schedule and HTTP-error regression tests |
 | Privacy exclusions, opt-outs and interaction budgets | Restricted bodies discarded; persistent blocks; daily/author limits | Safety, client, runner and store tests |
 | Account-scoped atomic state and idempotency | Native kernel locks, private modes/Windows ACLs, stable IDs/record keys, uncertain outcomes | Concurrency, crash recovery, native CI and transport tests |
-| Existing state and configuration | Read-only import into an empty account store; non-overwriting setup | Migration tests, including Ruby-generated state in CI |
+| Existing state and configuration | Read-only import into an empty account store; non-overwriting setup | Legacy migration fixtures |
 | Linux, macOS, and Windows packaging and install/upgrade | One native archive per OS with both platform modes, source/dependency source, manifest, and new-directory installer | Native CI extraction, installation, overwrite refusal and offline rebuild |
 | Jetstream | Optional Bluesky notification wake-up with periodic API catch-up and bounded passive reception | Protocol, reconnect, coalescing, oversized/fragmented message, handshake, heartbeat, and timeout tests |
 
-Intentional differences: Elixir uses no Ruby runtime. Packaging requires Erlang
-rather than bundling an operating-system runtime. Upgrade installation always
+The bot requires Erlang/OTP; desktop downloads include the GUI runtime. Upgrade installation always
 uses a new directory; state is copied explicitly after stopping the old process.
 HTTP redirects and automatic retries are disabled, including 503 Retry-After.
 The existing disabled likes/reposts/favourites remain disabled.
 
-Implementation and offline parity do not establish live service acceptance.
-Before operating an account, verify login, public/private filtering, AI generation,
-interactive posting/reply/quote and deletion using a disposable test account;
-then run the listener/daemon through a network outage and reconnect. Jetstream is
-live-tail acceleration, with the same finite notification window as polling.
+Jetstream provides live notification acceleration with the same finite
+notification window as polling; it does not provide historical replay.
+Completed post records now expire after 10 days, while pending drafts, uncertain
+publications, and account safety state remain separately retained. Desktop
+credential storage applies to GUI launches; advanced CLI configuration remains
+available through the environment and `.env`.

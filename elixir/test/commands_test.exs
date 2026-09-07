@@ -49,7 +49,7 @@ defmodule ChorusDraft.CommandsTest do
       assert capture_io(fn -> assert CLI.run([platform, "version"]) == 0 end) =~
                ChorusDraft.version()
 
-      assert capture_io(fn -> assert CLI.run([platform, "help"]) == 0 end) =~ "Commands:"
+      assert capture_io(fn -> assert CLI.run([platform, "help"]) == 0 end) =~ "Short commands:"
     end
   end
 

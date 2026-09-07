@@ -1,41 +1,53 @@
 # ChorusDraft 0.51.3 preview
 
-Version 0.51.3 brings Ruby and Elixir together in one download with a React desktop GUI
-launcher for Linux, macOS, and Windows. This version is not yet a stable release.
+Version 0.51.3 uses Elixir for Bluesky and Mastodon, with a React desktop launcher
+for Linux, macOS, and Windows. Ruby is no longer included in new preview packages.
+The build identifier is `0.51.3-testing`; this version is not yet a stable release.
 
-## Launch a bot
+## Desktop workflow
 
 Run `./bot` on Linux, double-click `bot.command` on macOS, or double-click
-`bot.bat` on Windows. Choose Ruby or Elixir and Bluesky or Mastodon. Use the action buttons to set up,
-draft, review, search, or monitor. Open configuration edits the selected bot’s
-settings.
+`bot.bat` on Windows. Choose Bluesky or Mastodon and use the action buttons to
+set up, draft, review, search, or monitor. Every AI-generated post still requires
+individual approval. Use **Stop session** to end monitoring.
 
-The desktop window displays activity and interactive review prompts. Send review
-responses through its input field. Drafts remain queued until you approve them.
-Use **Stop session** to end monitoring. Packaged builds include the GUI runtime.
+**Settings** accepts social account and AI credentials directly. **Save securely**
+uses operating-system protected storage; when it is unavailable, **Use for this
+session** keeps newly entered settings in memory. Saved secrets are masked and
+are not shown again. GUI credentials apply to GUI launches. Secure saving removes
+only the form's managed fields from that platform's `.env`, leaving advanced
+settings intact. Separate CLI launches continue to use environment variables or
+`.env`.
 
-## Commands and compatibility
+**History** provides searchable published posts and GUI activity, with **Copy post**
+for recalling text. Post records expire after 10 days; hourly activity files expire
+10 days from their hour's start and may rotate sooner at 50 MB. Cleanup runs while
+the app is open and at its next launch. Pending drafts, uncertain publications,
+and safety state remain intact. History is stored locally and is not uploaded by
+ChorusDraft. Local expiry does not delete social posts or copies made by backups,
+sync tools, or external log capture.
 
-Both implementations support `setup`, `draft`, `review`, `post`, `reply`, `quote`,
-`replies`, `search`, `random`, `discover`, `targets`, `start`, `listen`, `delete`,
-`help`, and `version`. Direct commands use
-`./bot ruby|elixir bluesky|mastodon COMMAND`; Windows uses `.\bot.bat`.
-Existing Ruby shorthand and both implementations' flags remain supported.
+## Requirements and commands
 
-Ruby requires 4.0+. Packaged Elixir requires Erlang/OTP 25+, plus `flock` on Linux
-or Python 3 on macOS/Windows. Build Elixir sources with Elixir 1.15+ and Mix.
+Desktop packages include the GUI and bridge runtimes. The bot requires
+Erlang/OTP 25+, plus `flock` on Linux or Python 3 on macOS and Windows.
+Build the bot from source with Elixir 1.15+ and Mix.
+
+Direct commands use `./bot bluesky|mastodon COMMAND`; Windows uses `.\bot.bat`.
+Existing Elixir flags and the explicit `./bot elixir PLATFORM COMMAND` form remain
+supported. The former Ruby shorthand now launches Elixir. `history` reads local
+published-post records; `status`, `import FILE`, and `reject ID` manage account
+state. Optional Bluesky Jetstream monitoring remains available.
 
 ## Upgrading
 
-Stop the previous bot and back up its configuration and complete `data`
-directory. Extract the new package into a new directory. Preserve each
-implementation's configuration and state in its corresponding platform folder.
-Run only one bot per social account. Choosing another implementation in the launcher
-does not migrate state; use the documented Elixir import command when needed.
+Stop the previous bot and install into a new directory. Preserve the complete
+account state and configuration as described in the
+[Elixir upgrade guide](elixir/README.md#upgrade-or-import-legacy-state).
+Compatible Ruby state requires explicit import; changing the launcher does not
+migrate it automatically. Run only one bot per social account. Protect any backup
+and manage its retention separately from the app.
 
-The build identifier is `0.51.3-testing` during preview testing.
-See [README.md](README.md) for launch instructions and configuration locations.
-
-On Ubuntu systems with restricted user namespaces, the combined Linux download
-includes `launcher-source/linux_sandbox.py` for one-time, path-specific sandbox
-setup. See the README before launching.
+See [README.md](README.md) for launch instructions, local storage locations, and
+source builds. Linux systems with restricted user namespaces may require the
+included `launcher-source/linux_sandbox.py` setup before opening the desktop GUI.

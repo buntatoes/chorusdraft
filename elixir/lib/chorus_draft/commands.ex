@@ -11,7 +11,8 @@ defmodule ChorusDraft.Commands do
     "listen" => "--listen",
     "help" => "--help",
     "version" => "--version",
-    "status" => "--status"
+    "status" => "--status",
+    "history" => "--history"
   }
   def normalize([]), do: []
   def normalize(["-" <> _ | _] = args), do: args

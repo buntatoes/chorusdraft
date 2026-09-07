@@ -21,15 +21,11 @@ def application_root():
 
 def bot_command(root, runtime, platform, arguments):
     root = Path(root)
-    if runtime not in ('ruby', 'elixir') or platform not in ('bluesky', 'mastodon'):
-        raise ValueError('Choose an implementation and a platform.')
-    if runtime == 'ruby':
-        if os.name != 'nt':
-            return [str(root / platform / 'bot'), *arguments]
-        ruby = shutil.which('ruby')
-        if not ruby:
-            raise ValueError('Install Ruby 4.0 or later and add it to PATH, then reopen ChorusDraft.')
-        return [ruby, str(root / platform / 'chorusdraft.rb'), *arguments]
+    if runtime != 'elixir' or platform not in ('bluesky', 'mastodon'):
+        raise ValueError('Choose Bluesky or Mastodon.')
+    for component in (root / 'elixir', root / 'elixir' / platform):
+        if component.is_symlink():
+            raise ValueError('Bot folders must not be symbolic links.')
     escript = shutil.which('escript')
     if not escript:
         raise ValueError('Install Erlang/OTP 25 or later and add escript to PATH, then reopen ChorusDraft.')
@@ -40,13 +36,16 @@ def bot_command(root, runtime, platform, arguments):
 
 
 class Session:
-    def __init__(self, command, cwd):
+    def __init__(self, command, cwd, settings=None):
         self.events = queue.Queue(maxsize=1000)
         self.finished = False
         self.process = None
         self.master = None
         self._stopping = False
         environment = os.environ.copy()
+        environment.update(ERL_CRASH_DUMP=os.devnull, ERL_CRASH_DUMP_SECONDS='0')
+        if settings:
+            environment.update(settings)
         if 'LD_LIBRARY_PATH_ORIG' in environment:
             environment['LD_LIBRARY_PATH'] = environment.pop('LD_LIBRARY_PATH_ORIG')
         elif getattr(sys, 'frozen', False):

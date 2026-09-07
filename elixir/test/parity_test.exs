@@ -61,7 +61,47 @@ defmodule ChorusDraft.ParityTest do
     assert_raise Error, fn -> CLI.active?("9:99-17") end
   end
 
-  test "Ruby aliases and optional random-post query parse before login" do
+  test "Ruby flags and short commands translate without publishing" do
+    assert CLI.normalize_short_command(["draft"]) == ["--post-only"]
+    assert CLI.normalize_short_command(["review"]) == ["--process-queue"]
+    assert CLI.normalize_short_command(["start", "--poll", "30"]) == ["--daemon", "--poll", "30"]
+    assert CLI.normalize_short_command(["post", "hello"]) == ["--text", "hello"]
+
+    assert CLI.normalize_short_command(["reply", "123", "hello"]) == [
+             "--text",
+             "hello",
+             "--reply-to",
+             "123"
+           ]
+
+    assert CLI.normalize_short_command(["quote", "123", "hello"]) == [
+             "--text",
+             "hello",
+             "--quote-uri",
+             "123"
+           ]
+
+    assert CLI.normalize_short_command(["search", "open source", "--limit", "2"]) == [
+             "--search",
+             "open source",
+             "--limit",
+             "2"
+           ]
+
+    assert CLI.normalize_short_command(["random"]) == ["--random-post="]
+
+    assert CLI.normalize_short_command(["discover", "elixir"]) == [
+             "--discover",
+             "--query",
+             "elixir"
+           ]
+
+    assert CLI.normalize_short_command(["targets", "alice.example"]) == [
+             "--targets-only",
+             "--target",
+             "alice.example"
+           ]
+
     for arguments <- [
           ["--random-post"],
           ["--reply-uri=at://example", "--reply-cid=ignored"],
@@ -78,6 +118,24 @@ defmodule ChorusDraft.ParityTest do
 
     assert capture_io(:stderr, fn -> assert CLI.run(["bluesky", "--no-post-only"]) == 1 end) =~
              "Choose one"
+
+    assert capture_io(:stderr, fn -> assert CLI.run(["bluesky", "draft", "--publish"]) == 1 end) =~
+             "--publish requires --text"
+  end
+
+  test "short commands never inject direct publication" do
+    commands = [
+      ["draft"],
+      ["post", "hello"],
+      ["reply", "123", "hello"],
+      ["quote", "123", "hello"],
+      ["replies"],
+      ["start"]
+    ]
+
+    Enum.each(commands, fn command ->
+      refute "--publish" in CLI.normalize_short_command(command)
+    end)
   end
 
   test "daemon schedules originals once per interval even after target failure", %{dir: dir} do

@@ -1,15 +1,16 @@
 #!/bin/sh
 set -eu
+export ERL_CRASH_DUMP=/dev/null ERL_CRASH_DUMP_SECONDS=0
 base=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 help() {
   cat <<'HELP'
 ChorusDraft
 Run ./bot to open the desktop launcher. Use ./bot menu for the terminal menu.
-Usage: ./bot ruby|elixir bluesky|mastodon COMMAND [options]
+Usage: ./bot bluesky|mastodon COMMAND [options]
 Examples:
-  ./bot ruby bluesky setup
-  ./bot elixir mastodon review
-The older ./bot bluesky COMMAND form continues to select Ruby.
+  ./bot bluesky setup
+  ./bot mastodon review
+
 HELP
 }
 run_bot() (
@@ -17,21 +18,11 @@ run_bot() (
   platform=$2
   shift 2
   case "$platform" in bluesky|mastodon) ;; *) echo 'Choose bluesky or mastodon.' >&2; exit 1 ;; esac
-  case "$runtime" in
-    ruby) exec "$base/$platform/bot" "$@" ;;
-    elixir)
-      if ! command -v escript >/dev/null 2>&1; then
-        echo 'Elixir bots require Erlang/OTP 25+ (escript on PATH).' >&2
-        exit 1
-      fi
-      if [ ! -f "$base/elixir/chorusdraft" ]; then
-        echo 'Build the Elixir bot first: cd elixir && mix deps.get && MIX_ENV=prod mix escript.build' >&2
-        exit 1
-      fi
-      exec escript "$base/elixir/chorusdraft" "$platform" "$@" --base "$base/elixir/$platform"
-      ;;
-    *) echo 'Choose ruby or elixir.' >&2; exit 1 ;;
-  esac
+  [ "$runtime" = elixir ] || { echo 'This launcher uses Elixir.' >&2; exit 1; }
+  command -v escript >/dev/null 2>&1 || { echo 'Install Erlang/OTP 25+ and add escript to PATH.' >&2; exit 1; }
+  [ -f "$base/elixir/chorusdraft" ] || { echo 'Build the bot: cd elixir && mix deps.get && MIX_ENV=prod mix escript.build' >&2; exit 1; }
+  exec escript "$base/elixir/chorusdraft" "$platform" "$@" --base "$base/elixir/$platform"
+
 )
 read_choice() {
   printf '%s' "$1"
@@ -41,9 +32,7 @@ read_choice() {
 menu() {
   if [ ! -t 0 ]; then echo 'The menu needs an interactive terminal. Use ./bot help for direct commands.' >&2; exit 1; fi
   while :; do
-    printf '\nChorusDraft\n1) Ruby\n2) Elixir\nq) Quit\n'
-    read_choice 'Implementation: '
-    case "$choice" in 1) runtime=ruby ;; 2) runtime=elixir ;; *) echo 'Choose 1, 2, or q.'; continue ;; esac
+    runtime=elixir
     printf '\n1) Bluesky\n2) Mastodon\nb) Back\nq) Quit\n'
     read_choice 'Platform: '
     case "$choice" in 1) platform=bluesky ;; 2) platform=mastodon ;; b|B) continue ;; *) echo 'Choose 1, 2, b, or q.'; continue ;; esac
@@ -66,7 +55,7 @@ menu() {
       esac
       if run_bot "$runtime" "$platform" "$@"; then
         if [ "$1" = setup ]; then
-          if [ "$runtime" = ruby ]; then config="$base/$platform/.env"; else config="$base/elixir/$platform/.env"; fi
+          config="$base/elixir/$platform/.env"
           printf '\nEdit %s with your account and AI settings before drafting.\n' "$config"
         fi
       else
@@ -90,7 +79,7 @@ case "$1" in
   help|-h|--help) help ;;
   menu) menu ;;
   gui) gui ;;
-  ruby|elixir)
+  elixir)
     runtime=$1
     shift
     if [ "$#" -eq 0 ]; then help >&2; exit 1; fi
@@ -102,7 +91,7 @@ case "$1" in
   bluesky|mastodon)
     platform=$1
     shift
-    run_bot ruby "$platform" "$@"
+    run_bot elixir "$platform" "$@"
     ;;
   *) help >&2; exit 1 ;;
 esac

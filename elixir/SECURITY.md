@@ -1,4 +1,4 @@
-# Security policy for the Elixir experiment
+# Security policy for the Elixir bot
 
 This policy covers the Elixir implementation in the ChorusDraft 0.51.3 preview.
 Report vulnerabilities using GitHub private
@@ -6,7 +6,7 @@ vulnerability reporting when available, or contact the maintainer privately
 through the GitHub profile. Never include credentials, private posts, or exploit
 details in a public issue.
 
-The Elixir port enforces these boundaries:
+The Elixir implementation enforces these boundaries:
 
 - AI output enters a review queue and requires explicit approval for the exact
   queued text. The `--publish` option applies only to manually supplied text.
@@ -43,6 +43,35 @@ be checked for new opt-outs. Keyword and pattern matching cannot understand ever
 form of harassment or prompt injection. Human review remains required for context,
 accuracy, platform rules, and applicable law.
 
+## Credentials and local retention
+
+GUI launches receive account settings through the desktop's restricted bridge.
+Persistent settings use operating-system protected storage; session-only use is
+available when secure storage cannot be used. Secure saving removes only the
+form's managed fields from that platform's `.env`. Separate CLI launches still
+read the environment and `.env`; plaintext files must be kept private.
+See the [desktop security policy](https://github.com/buntatoes/chorusdraft/blob/bot-testing/SECURITY.md#desktop-credentials).
+
+The account store keeps successful post text for up to 10 days. Completed
+published and rejected records are pruned during state access and desktop
+maintenance; legacy records without a completion time use their creation time.
+Pending drafts, uncertain publications, opt-outs, duplicate identifiers, and
+interaction safety records remain separately retained. History expiry never
+resets an uncertain draft for publication.
+
+The desktop records local GUI activity for up to 10 days, with a 50 MB limit that
+can remove older activity sooner. Hourly files expire from the beginning of their
+hour. Desktop maintenance also removes expired bot log files in the installation.
+The bot does not create a separate persistent terminal-output archive; logs captured
+by external launchers or service managers require their own retention policy.
+
+History and activity are not uploaded by ChorusDraft. Normal posting and AI calls
+still send necessary content to the selected provider. Cleanup runs while the app
+is open and at its next launch; it cannot run on a powered-off computer and depends
+on writable storage and an available runtime. Backups, sync software, exports, and
+external log capture are outside these controls. Local expiry does not delete
+remote posts or provide forensic secure erasure.
+
 ## Jetstream boundary
 
 The optional Bluesky Jetstream client connects with TLS certificate and hostname
@@ -61,5 +90,4 @@ a direct source of AI context or publication. A single coalesced wake-up prevent
 network bursts from filling the consumer's mailbox. Startup, reconnect and
 periodic notification checks remain active, subject to the existing fetch window.
 Jetstream cursors and historical replay are not implemented, so outages or heavy
-notification traffic can still cause missed events. A complete live audit remains
-unfinished.
+notification traffic can still cause missed events.

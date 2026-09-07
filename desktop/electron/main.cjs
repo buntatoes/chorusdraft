@@ -1,8 +1,59 @@
-const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
+const {
+  app,
+  BrowserWindow,
+  ipcMain,
+  dialog,
+  safeStorage,
+  clipboard,
+  powerMonitor,
+} = require("electron");
 const { spawn } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 const readline = require("node:readline");
+const os = require("node:os");
+const { Vault, History, Redactor, SECRET } = require("./privacy.cjs");
+const localData =
+  !app.isPackaged && process.env.CHORUSDRAFT_USER_DATA
+    ? process.env.CHORUSDRAFT_USER_DATA
+    : process.platform === "win32"
+      ? path.join(
+          process.env.LOCALAPPDATA ||
+            path.join(os.homedir(), "AppData", "Local"),
+          "ChorusDraft",
+        )
+      : process.platform === "darwin"
+        ? path.join(
+            os.homedir(),
+            "Library",
+            "Application Support",
+            "ChorusDraft",
+          )
+        : path.join(
+            process.env.XDG_STATE_HOME ||
+              path.join(os.homedir(), ".local", "state"),
+            "chorusdraft",
+          );
+app.setPath("userData", localData);
+app.commandLine.appendSwitch("disable-logging");
+let vault,
+  history,
+  currentSite,
+  redactor = new Redactor(),
+  maintenanceFailures = [];
+function output(text) {
+  if (!text) return;
+  if (currentSite)
+    try {
+      history.append(currentSite, text);
+    } catch {
+      emit({
+        type: "notice",
+        value: "Local activity could not be saved. Check storage permissions.",
+      });
+    }
+  emit({ type: "output", value: text });
+}
 
 let window,
   bridge,
@@ -13,7 +64,7 @@ const smoke = process.argv.includes("--smoke-test");
 function selection(request) {
   if (
     !request ||
-    !["ruby", "elixir"].includes(request.runtime) ||
+    request.runtime !== "elixir" ||
     !["bluesky", "mastodon"].includes(request.platform)
   ) {
     throw new Error("Choose a valid bot.");
@@ -60,6 +111,9 @@ function startBridge() {
   bridge = spawn(command, args, {
     cwd: root,
     windowsHide: true,
+    env: Object.fromEntries(
+      Object.entries(process.env).filter(([key]) => !SECRET.includes(key)),
+    ),
     stdio: ["pipe", "pipe", "pipe"],
   });
   readline.createInterface({ input: bridge.stdout }).on("line", (line) => {
@@ -68,7 +122,16 @@ function startBridge() {
       if (message.type === "started") running = true;
       if (message.type === "exit") running = false;
       if (message.type === "error") running = Boolean(message.active);
-      emit(message);
+      if (message.type === "output") output(redactor.push(message.value));
+      else if (["exit", "error"].includes(message.type)) {
+        output(redactor.push("", true));
+        if (message.type === "error")
+          message.value = redactor.push(message.value, true);
+        emit(message);
+      } else if (message.type === "maintenance") {
+        maintenanceFailures = message.failures;
+        emit({ type: "history-updated" });
+      } else emit(message);
     } catch {
       emit({
         type: "error",
@@ -103,6 +166,23 @@ app
       : path.resolve(
           process.env.CHORUSDRAFT_ROOT || path.resolve(__dirname, "../.."),
         );
+    vault = new Vault(root, path.join(localData, "credentials"), safeStorage);
+    history = new History(root, path.join(localData, "activity"));
+    const cleanup = () => {
+      try {
+        history.prune();
+      } catch {
+        emit({
+          type: "notice",
+          value:
+            "Local log cleanup needs attention. Check storage permissions.",
+        });
+      }
+      emit({ type: "history-updated" });
+    };
+    cleanup();
+    setInterval(cleanup, 60000).unref();
+    powerMonitor.on("resume", cleanup);
     window = new BrowserWindow({
       width: 1220,
       height: 900,
@@ -116,6 +196,8 @@ app
         contextIsolation: true,
         nodeIntegration: false,
         sandbox: true,
+        partition: "chorusdraft-ui",
+        spellcheck: false,
       },
     });
     window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
@@ -139,13 +221,25 @@ app
       ];
       if (!actions.includes(request.action) || running)
         throw new Error("Choose an action after the current session ends.");
-      send({
-        type: "run",
-        runtime: request.runtime,
-        platform: request.platform,
-        action: request.action,
-        text: request.text,
-      });
+      const environment = ["setup", "help", "version"].includes(request.action)
+        ? {}
+        : vault.values(request.platform);
+      currentSite = request.platform;
+      redactor = new Redactor(SECRET.map((key) => environment[key]));
+      running = true;
+      try {
+        send({
+          environment,
+          type: "run",
+          runtime: request.runtime,
+          platform: request.platform,
+          action: request.action,
+          text: request.text,
+        });
+      } catch (error) {
+        running = false;
+        throw error;
+      }
     });
     handle("bot:input", (text) => {
       if (
@@ -157,43 +251,25 @@ app
       send({ type: "input", text });
     });
     handle("bot:stop", () => send({ type: "stop" }));
-    handle("bot:configure", async (request) => {
-      selection(request);
-      if (running)
-        throw new Error(
-          "Stop the active session before editing configuration.",
-        );
-      const file = path.join(
-        root,
-        ...(request.runtime === "elixir" ? ["elixir"] : []),
-        request.platform,
-        ".env",
-      );
-      if (!fs.existsSync(file))
-        throw new Error(
-          "Choose Set up first to create this bot’s configuration.",
-        );
-      if (process.platform === "win32") {
-        spawn("notepad.exe", [file], { windowsHide: false }).on("error", () =>
-          emit({
-            type: "error",
-            value: "Could not open the configuration editor.",
-          }),
-        );
-      } else if (process.platform === "darwin") {
-        spawn("open", ["-t", file]).on("error", () =>
-          emit({
-            type: "error",
-            value: "Could not open the configuration editor.",
-          }),
-        );
-      } else {
-        const error = await shell.openPath(file);
-        if (error)
-          throw new Error(
-            "Could not open the configuration editor. Open the bot’s .env in a text editor.",
-          );
-      }
+    handle("bot:settings", (request) =>
+      vault.view(selection(request).platform),
+    );
+    handle("bot:save-settings", (request, input, persist) => {
+      if (running) throw Error("Stop the bot before changing credentials.");
+      return vault.save(selection(request).platform, input, persist);
+    });
+    handle("bot:forget-settings", (request) => {
+      if (running) throw Error("Stop the bot before removing credentials.");
+      return vault.forget(selection(request).platform);
+    });
+    handle("bot:history", (request, filter) => ({
+      ...history.list(selection(request).platform, filter),
+      failures: maintenanceFailures,
+    }));
+    handle("bot:copy", (text) => {
+      if (typeof text !== "string" || text.length > 10000)
+        throw Error("Invalid post text.");
+      clipboard.writeText(text);
     });
     startBridge();
     window.on("close", async (event) => {
@@ -224,7 +300,7 @@ app
       else {
         await window.webContents.executeJavaScript(`(async () => {
           const info = await window.chorus.info();
-          for (const runtime of ['ruby', 'elixir']) {
+          for (const runtime of ['elixir']) {
             for (const platform of ['bluesky', 'mastodon']) {
               await new Promise((resolve, reject) => {
                 let output = '';

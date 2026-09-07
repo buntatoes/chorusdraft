@@ -44,6 +44,7 @@ with tempfile.TemporaryDirectory(prefix='ChorusDraft combined test ') as tempora
     gui = root / ('ChorusDraft.app/Contents/MacOS/ChorusDraft' if OS == 'macos' else
                   'launcher/ChorusDraft.exe' if OS == 'windows' else 'launcher/ChorusDraft')
     assert gui.is_file(), 'Desktop executable is missing'
+    assert not list(root.rglob('*.rb')), 'Desktop package contains obsolete Ruby source'
     configure_sandbox = OS == 'linux' and os.environ.get('CHORUSDRAFT_TEST_SANDBOX') == '1'
     sandbox = ["sudo", __import__('sys').executable, str(root / 'launcher-source/linux_sandbox.py')]
     try:
@@ -57,9 +58,9 @@ with tempfile.TemporaryDirectory(prefix='ChorusDraft combined test ') as tempora
     assert 'desktop launcher' in run(command + ['help'], work)
     assert 'interactive terminal' in run(command + ['menu'], work, code=1)
     run(command + ['invalid'], work, code=1)
-    for runtime in ('ruby', 'elixir'):
+    for runtime in ('elixir',):
         for bot in ('bluesky', 'mastodon'):
-            base = root / bot if runtime == 'ruby' else root / 'elixir' / bot
+            base = root / 'elixir' / bot
             assert VERSION in run(command + [runtime, bot, 'version'], work)
             assert 'review' in run(command + [runtime, bot, 'help'], work)
             run(command + [runtime, bot, 'setup'], work)
@@ -71,18 +72,6 @@ with tempfile.TemporaryDirectory(prefix='ChorusDraft combined test ') as tempora
             assert 'requires' in run(command + [runtime, bot, 'post'], work, code=1)
             assert '--publish requires' in run(command + [runtime, bot, 'draft', '--publish'], work, code=1)
     assert VERSION in run(command + ['bluesky', 'version'], work)
-    # Verify shell metacharacters survive the Windows batch/PowerShell/Ruby chain.
-    probe = work / 'argument_probe.rb'
-    probe.write_text("require 'json'; File.write(ENV.fetch('ARGUMENT_REPORT'), JSON.generate(ARGV)); exit 0\n")
-    report = work / 'arguments.json'
-    environment = os.environ.copy()
-    environment['RUBYOPT'] = '-rargument_probe'
-    environment['RUBYLIB'] = str(work)
-    environment['ARGUMENT_REPORT'] = str(report)
-    text = 'spaces & pipes | dollars $HOME; (parentheses) café'
-    run(command + ['ruby', 'bluesky', 'post', text], work, env=environment)
-    import json
-    assert json.loads(report.read_text(encoding='utf-8')) == ['post', text]
     if OS != 'windows':
         # A pseudo-terminal exercises the actual menu, back navigation and actions.
         import pty
@@ -93,9 +82,9 @@ with tempfile.TemporaryDirectory(prefix='ChorusDraft combined test ') as tempora
         os.close(slave)
         output = b''
         deadline = time.monotonic() + 60
-        steps = [(b'Implementation: ', b'1\n'), (b'Platform: ', b'1\n'),
+        steps = [(b'Platform: ', b'1\n'),
                  (b'Action: ', b'10\n'), (b'Action: ', b'b\n'),
-                 (b'Implementation: ', b'2\n'), (b'Platform: ', b'2\n'),
+                 (b'Platform: ', b'2\n'),
                  (b'Action: ', b'10\n'), (b'Action: ', b'q\n')]
         pending = b''
         try:
@@ -118,4 +107,4 @@ with tempfile.TemporaryDirectory(prefix='ChorusDraft combined test ') as tempora
             if process.poll() is None:
                 process.kill()
             os.close(master)
-print('Combined archive, four bot choices, setup isolation, argument forwarding, and launcher checks passed.')
+print('Combined archive, both platforms, setup isolation, argument forwarding, and launcher checks passed.')

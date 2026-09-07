@@ -2,11 +2,11 @@
 
 This directory contains the Elixir version of ChorusDraft for Linux, macOS, and
 Windows. One application and executable support both Bluesky and Mastodon.
-The 0.51.3 preview includes this implementation alongside Ruby in a combined
-package. Use the root launcher to select Elixir and a social platform.
+The 0.51.3 preview uses Elixir for all bot workflows. Use the root desktop
+launcher to choose Bluesky or Mastodon, enter credentials, and open local History.
 The build identifier is `0.51.3-testing`.
 
-Both products write comic social drafts using a local OpenAI-compatible/Ollama
+Both platforms produce comic social drafts using a local OpenAI-compatible/Ollama
 model or Gemini. The style favors dry wit, light sarcasm, playful exaggeration,
 and absurd comparisons. Serious or sensitive posts receive a sincere response.
 Every AI draft must be reviewed interactively before publication.
@@ -40,7 +40,7 @@ Check the command interface before adding credentials:
 On Windows, use `escript .\chorusdraft ...` from a source checkout. Extracted
 Windows packages provide `run.ps1` and `setup.ps1` launchers.
 
-To create local configuration files for hands-on testing:
+For command-line use, create local configuration files:
 
 ```sh
 ./chorusdraft bluesky --setup
@@ -51,8 +51,15 @@ Edit `bluesky/.env` and/or `mastodon/.env`. The setup script creates private fil
 only when they do not already exist. It never starts a service or overwrites an
 existing configuration.
 
-Do not run the Ruby
-and Elixir programs against the same account at the same time.
+Run only one bot process per social account.
+
+For desktop use, open **Settings** in the root launcher instead. Masked credential
+fields support encrypted saving through operating-system protected storage or
+session-only use. Secure saving removes only the fields managed by the form from
+that platform's plaintext `.env`; other settings remain there. GUI credentials
+apply only to GUI launches, so a separate CLI process needs its own environment
+configuration. Session-only use leaves existing `.env` files unchanged. See the
+[root credential guide](https://github.com/buntatoes/chorusdraft/blob/bot-testing/README.md#account-credentials).
 
 ## Common workflows
 
@@ -82,7 +89,7 @@ Jetstream workflows.
 
 ## Bluesky Jetstream
 
-Jetstream is optional in this separate Elixir version:
+Jetstream is optional for Bluesky:
 
 ```sh
 ./chorusdraft bluesky --listen --jetstream
@@ -129,7 +136,7 @@ Protocol reference: [Bluesky Jetstream documentation](https://bsky.network/docs/
 
 State is stored under each product's `data/` directory and separated again by
 platform, service origin, and account. Credentials are not written to state.
-Ruby 0.51.1 state can be imported explicitly as described below. Kernel locks
+Compatible legacy state can be imported explicitly as described below. Kernel locks
 serialize writers, and malformed state fails closed. Run one daemon per account.
 
 Add handles to `config/do_not_contact.txt` to refuse all supplied interaction
@@ -146,6 +153,38 @@ If a publication request has an ambiguous result, the draft is marked `uncertain
 Inspect the account manually before doing anything else with it. The program will
 not retry that draft automatically.
 
+## Local history and retention
+
+The desktop **History** section lists successful publications recorded by
+ChorusDraft and activity from GUI sessions. Search by text or account, and use
+**Copy post** to recall published text. It does not download a complete posting
+history from your social account. For local command-line history:
+
+```sh
+./chorusdraft bluesky history
+./chorusdraft mastodon history
+```
+
+Completed published and rejected draft records expire after 10 days, measured from
+the completion time or the creation time for legacy records without one. Cleanup
+runs when state is accessed and through desktop maintenance while the app is open
+and at its next launch. Pending drafts, uncertain publications, opt-outs,
+duplicate identifiers, and interaction safety records remain separately retained.
+Do not delete account state to clear activity logs.
+
+The desktop keeps activity locally in hourly files, expiring them 10 days from the
+start of their hour; a 50 MB limit can remove older files sooner. It also removes
+expired files from the installation's bot `logs/` directories. The CLI does not
+create a separate activity archive. Logs captured by your shell, service manager,
+backups, or sync software are outside these controls.
+
+ChorusDraft does not upload local history. Account state remains in each platform's
+`data/` directory; the desktop's credential and activity locations are listed in
+the [root history guide](https://github.com/buntatoes/chorusdraft/blob/bot-testing/README.md#local-history). Expiry does not remove remote
+posts. Files cannot be removed while the application is closed or the computer is
+off; cleanup resumes at the next launch and requires writable storage and a
+working bot runtime.
+
 ## HTTP and dependencies
 
 Mint 1.10.0 handles Bluesky, Mastodon, and AI-provider HTTP requests with explicit
@@ -161,15 +200,17 @@ mix format --check-formatted
 mix test --warnings-as-errors
 ```
 
-The Ruby-generated state test runs when `RUBY_REFERENCE_ROOT` points to the
-pinned Ruby checkout and Ruby is installed. CI supplies this automatically;
-the Elixir application itself does not require Ruby.
+Migration fixtures cover compatible legacy state, including unresolved
+publications and account identity. See [PARITY.md](PARITY.md) for the inherited
+behavioral baseline.
 
 ## Packages and installation
 
 Preview downloads are available from successful
-[Combined bot checks](https://github.com/buntatoes/chorusdraft/actions/workflows/bot-testing.yml)
-runs. Each combined package includes Ruby, Elixir, and the shared launcher.
+[desktop checks](https://github.com/buntatoes/chorusdraft/actions/workflows/bot-testing.yml)
+runs. Each desktop package includes the Elixir bot, both social platforms,
+and the React launcher. The following commands build standalone command-line
+packages without the desktop interface.
 
 Build and check a package for the current operating system:
 
@@ -188,7 +229,7 @@ The archive and SHA-256 file are written to `dist/`. The archive includes the
 escript, native run/setup/install scripts, configuration examples, a complete
 file checksum manifest, GPL source, locked dependency source and original licenses.
 Runtime configuration, state, logs and build caches are excluded. The escript
-needs Erlang/OTP; it does not need an installed Elixir or Ruby to run.
+needs Erlang/OTP; it does not need an installed Elixir compiler to run.
 
 Package names identify their operating system:
 
@@ -240,11 +281,12 @@ HEX_OFFLINE=1 MIX_ENV=prod mix escript.build
 
 The package's implementation history is included in `source/CHANGELOG.md`.
 
-## Upgrade or import Ruby state
+## Upgrade or import legacy state
 
 1. Stop the old process. Keep its directory as your rollback copy.
-2. Install the new Elixir package into a different directory. Copy the old `.env`
-   and desired `config/*.txt` into that new directory, keeping permissions private.
+2. Install into a different directory. Configure the account through desktop
+   Settings, or copy the old `.env` for command-line use. Copy desired
+   `config/*.txt` files, keeping permissions private.
 3. Use the same platform, service origin and account credentials. Import that
    account's old `data/<account-hash>/state.json`:
 
@@ -260,13 +302,15 @@ different account. If a source has no drafts, select its matching account hash
 carefully: history-only files do not contain account identity. The source is read
 only; IDs, record keys, blocks, seen posts and interaction history are preserved.
 Interrupted `publishing` drafts become `uncertain`; they are never made pending.
-Existing `uncertain`, `published` and `rejected` statuses stay unchanged.
+Existing statuses stay unchanged; completed `published` and `rejected` records
+are subject to the 10-day retention limit. Preserve a private rollback copy if you
+need older records, and manage that copy's retention yourself.
 
 `--status` lists unresolved IDs and counts. `--reject ID` can discard a pending
 draft, including one whose author has since opted out. Inspect the remote account
 before resolving any uncertain publication; no automatic reset/retry is provided.
 Do not resume the old process after using the new one without reconciling the
-new posting history. Do not share a live state directory across implementations.
+new posting history. Do not share a live state directory with an older installation.
 
 Schedules use the operating system's local timezone, including its `TZ` setting.
 `--active-hours 22-6` supports overnight operation; equal endpoints mean all day.
@@ -274,4 +318,4 @@ The daemon isolates job failures and uses monotonic intervals. It runs in the
 foreground so a service manager can supervise it; no service is started by setup.
 
 Read [SECURITY.md](SECURITY.md) for safeguards and known limits, and
-[RELEASE_NOTES.md](RELEASE_NOTES.md) for this implementation checkpoint.
+[RELEASE_NOTES.md](RELEASE_NOTES.md) for this preview.

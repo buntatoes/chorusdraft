@@ -3,138 +3,220 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 const os = require("node:os");
 const path = require("node:path");
+const { execFileSync } = require("node:child_process");
 const { _electron } = require("playwright");
-
 test(
-  "desktop routes all four bots and requires review before a publication",
-  { timeout: 120000 },
+  "Elixir desktop protects credentials, gates each publication, and recalls local history",
+  { timeout: 240000 },
   async () => {
     const source = path.resolve(__dirname, "../..");
     const root = await fs.realpath(
       await fs.mkdtemp(path.join(os.tmpdir(), "ChorusDraft desktop test ")),
     );
-    let application, page;
+    let app, page;
     try {
-      for (const entry of ["bluesky", "mastodon", "lib", "VERSION"])
-        await fs.cp(path.join(source, entry), path.join(root, entry), {
-          recursive: true,
-        });
-      await fs.mkdir(path.join(root, "elixir"), { recursive: true });
-      for (const entry of ["bluesky", "mastodon", "chorusdraft"])
+      await fs.copyFile(
+        path.join(source, "VERSION"),
+        path.join(root, "VERSION"),
+      );
+      await fs.mkdir(path.join(root, "elixir"));
+      for (const folder of ["bluesky", "mastodon"])
         await fs.cp(
-          path.join(source, "elixir", entry),
-          path.join(root, "elixir", entry),
+          path.join(source, "elixir", folder),
+          path.join(root, "elixir", folder),
           { recursive: true },
         );
-      const probe = path.join(root, "desktop_client.rb");
-      await fs.writeFile(
-        probe,
-        `require File.join(ENV.fetch('CHORUSDRAFT_ROOT'), 'lib/chorus_draft/cli')
-class DesktopClient
-  def login = nil
-  def identity = 'desktop-test'
-  def account_key = 'https://example.org:desktop-test'
-  def actor_aliases(actor) = [actor]
-  def mentioned_actors(text) = []
-  def limit = 500
-  def publish(draft) = File.write(File.join(ENV.fetch('CHORUSDRAFT_ROOT'), 'published.txt'), draft.fetch('text'))
-end
-ChorusDraft::Bluesky.define_singleton_method(:new) { |*_| DesktopClient.new }
-ChorusDraft::Mastodon.define_singleton_method(:new) { |*_| DesktopClient.new }
-`,
-      );
-      application = await _electron.launch({
+      const fixture = path.join(root, "elixir", "chorusdraft");
+      const args = [
+        "run",
+        path.join(source, "desktop/test/build_fixture.exs"),
+        fixture,
+      ];
+      if (process.platform === "win32")
+        execFileSync(
+          "cmd.exe",
+          ["/d", "/s", "/c", "mix " + args.map((x) => '"' + x + '"').join(" ")],
+          {
+            cwd: path.join(source, "elixir"),
+            env: { ...process.env, MIX_ENV: "prod" },
+            stdio: "pipe",
+          },
+        );
+      else
+        execFileSync("mix", args, {
+          cwd: path.join(source, "elixir"),
+          env: { ...process.env, MIX_ENV: "prod" },
+          stdio: "pipe",
+        });
+      const userData = path.join(root, "private-settings");
+      app = await _electron.launch({
         args: [
-          ...(process.platform === "linux" ? ["--no-sandbox"] : []),
-          path.resolve(__dirname, ".."),
+          "--force-device-scale-factor=1",
+          ...(process.platform === "linux" ? ["--no-sandbox", "--ozone-platform=x11"] : []),
+          ...(process.env.CHORUSDRAFT_TEST_KEYRING
+            ? ["--password-store=gnome-libsecret"]
+            : []),
+          path.join(source, "desktop/test/entry.cjs"),
         ],
         env: {
           ...process.env,
           CHORUSDRAFT_ROOT: root,
-          RUBYLIB: root,
-          RUBYOPT: "-rdesktop_client",
+          CHORUSDRAFT_USER_DATA: userData,
+            ...(process.platform === "linux" ? {WAYLAND_DISPLAY: "", ELECTRON_OZONE_PLATFORM_HINT: "x11"} : {}),
         },
         timeout: 30000,
       });
-      page = await application.firstWindow();
-      page.setDefaultTimeout(10000);
+      page = await app.firstWindow();
+      page.setDefaultTimeout(30000);
       await page.getByRole("heading", { name: "Your bot workspace" }).waitFor();
-      const setUp = page.getByRole("button", { name: "Set up", exact: true });
-      for (const runtime of ["Ruby", "Elixir"]) {
-        await page.getByRole("button", { name: runtime, exact: true }).click();
-        for (const platform of ["bluesky", "mastodon"]) {
-          await page.getByLabel("Social platform").selectOption(platform);
-          await setUp.click();
-          await page.getByText("Session complete", { exact: true }).waitFor();
-          const base =
-            runtime === "Ruby"
-              ? path.join(root, platform)
-              : path.join(root, "elixir", platform);
-          assert.equal((await fs.stat(path.join(base, ".env"))).isFile(), true);
-        }
+      assert.equal(
+        await page.getByRole("button", { name: "Ruby", exact: true }).count(),
+        0,
+      );
+      for (const site of ["bluesky", "mastodon"]) {
+        await page.getByLabel("Social platform").selectOption(site);
+        await page.getByRole("button", { name: "Set up", exact: true }).click();
+        await page.getByText("Session complete", { exact: true }).waitFor();
+        assert.ok(
+          (await fs.stat(path.join(root, "elixir", site, ".env"))).isFile(),
+        );
       }
-      await page.getByRole("button", { name: "Ruby", exact: true }).click();
       await page.getByLabel("Social platform").selectOption("bluesky");
       await page
-        .getByRole("button", { name: "Write a post", exact: true })
+        .getByRole("button", { name: "Open configuration", exact: true })
         .click();
-      const text = 'A literal "draft" & pipes | $HOME; café';
-      await page.getByRole("textbox", { name: "Post text" }).fill(text);
-      await page.getByRole("button", { name: "Add to review queue" }).click();
-      await page.getByText("Session complete", { exact: true }).waitFor();
+      await page
+        .getByLabel("Bluesky handle", { exact: true })
+        .fill("desktop.example");
+      await page
+        .getByLabel("Bluesky app password", { exact: true })
+        .fill("desktop-fixture-password");
+      assert.equal(
+        await page
+          .getByLabel("Bluesky app password", { exact: true })
+          .getAttribute("type"),
+        "password",
+      );
+      const save = page.getByRole("button", {
+        name: "Save securely",
+        exact: true,
+      });
+      const secure = await save.isEnabled();
+      if (!secure)
+        console.log(
+          "Secure storage:",
+          await app.evaluate(({ safeStorage }) => ({
+            available: safeStorage.isEncryptionAvailable(),
+            backend:
+              process.platform === "linux"
+                ? safeStorage.getSelectedStorageBackend()
+                : process.platform,
+          })),
+        );
+      if (process.env.CHORUSDRAFT_TEST_KEYRING || process.platform === "win32")
+        assert.ok(
+          secure,
+          "OS secure storage must be available on this test runner",
+        );
+      await (
+        secure
+          ? save
+          : page.getByRole("button", { name: "Use for this session" })
+      ).click();
+      await page.getByRole("dialog").waitFor({ state: "hidden" });
+      if (secure) {
+        const disk = await fs.readFile(
+          path.join(userData, "credentials", "bluesky.enc"),
+        );
+        assert.ok(!disk.includes(Buffer.from("desktop-fixture-password")));
+        assert.ok(
+          !(
+            await fs.readFile(
+              path.join(root, "elixir", "bluesky", ".env"),
+              "utf8",
+            )
+          ).includes("BLUESKY_APP_PASSWORD="),
+        );
+      }
+      const info = await page.evaluate(() =>
+        window.chorus.settings({ runtime: "elixir", platform: "bluesky" }),
+      );
+      assert.equal(info.saved.BLUESKY_APP_PASSWORD, true);
+      assert.equal(info.values.BLUESKY_APP_PASSWORD, undefined);
+      const texts = [
+        'A literal "draft" & pipes | $HOME; café',
+        "This second draft requires separate approval.",
+      ];
+      for (const text of texts) {
+        await page
+          .getByRole("button", { name: "Write a post", exact: true })
+          .click();
+        await page.getByRole("textbox", { name: "Post text" }).fill(text);
+        await page.getByRole("button", { name: "Add to review queue" }).click();
+        await page.getByText("Session complete", { exact: true }).waitFor();
+      }
       await assert.rejects(fs.access(path.join(root, "published.txt")));
-      await page
-        .getByRole("button", { name: "Write a post", exact: true })
-        .click();
-      await page
-        .getByRole("textbox", { name: "Post text" })
-        .fill("This second draft needs its own approval.");
-      await page.getByRole("button", { name: "Add to review queue" }).click();
-      await page.getByText("Session complete", { exact: true }).waitFor();
       await page
         .getByRole("button", { name: "Open review", exact: true })
         .click();
       await page
         .getByRole("button", { name: "Publish this draft", exact: true })
         .waitFor();
-      assert.ok((await page.getByRole("log").innerText()).includes(text));
-      await assert.rejects(fs.access(path.join(root, "published.txt")));
+      const log = await page.getByRole("log").innerText();
+      assert.ok(log.includes(texts[0]));
+      assert.ok(!log.includes("desktop-fixture-password"));
+      assert.ok(log.includes("[redacted]"));
       await page
         .getByRole("button", { name: "Publish this draft", exact: true })
-        .evaluate((button) => {
-          button.click();
-          button.click();
+        .evaluate((b) => {
+          b.click();
+          b.click();
         });
       await page
         .getByRole("button", { name: "Reject draft", exact: true })
         .waitFor();
-      assert.ok(
-        (await page.getByRole("log").innerText()).includes(
-          "This second draft needs its own approval.",
-        ),
-      );
+      assert.ok((await page.getByRole("log").innerText()).includes(texts[1]));
       assert.equal(
         await fs.readFile(path.join(root, "published.txt"), "utf8"),
-        text,
+        texts[0],
       );
       await page
         .getByRole("button", { name: "Reject draft", exact: true })
         .click();
       await page.getByText("Session complete", { exact: true }).waitFor();
-      assert.equal(
-        await fs.readFile(path.join(root, "published.txt"), "utf8"),
-        text,
-      );
+      await page.getByRole("button", { name: "History", exact: true }).click();
+      await page
+        .getByRole("heading", { name: "History", exact: true })
+        .waitFor();
+      await page.getByText(texts[0], { exact: true }).waitFor();
+      assert.equal(await page.getByText(texts[1], { exact: true }).count(), 0);
+      await page
+        .getByRole("button", { name: "Bot activity", exact: true })
+        .click();
+      await page.getByLabel("Search history").fill("Credential check");
+      await page
+        .getByText(/Credential check: \[redacted\]/)
+        .first()
+        .waitFor();
+      for (const name of await fs.readdir(path.join(userData, "activity")))
+        assert.ok(
+          !(
+            await fs.readFile(path.join(userData, "activity", name), "utf8")
+          ).includes("desktop-fixture-password"),
+        );
     } catch (error) {
       console.error(error);
-      if (page) console.error(await page.locator("body").innerText());
+      if (page && !page.isClosed()) {
+        await page.screenshot({ path: "/tmp/chorusdraft-gui-failure.png" });
+        console.error(await page.locator("body").innerText());
+      }
       throw error;
     } finally {
-      if (application) {
-        await application.evaluate(({ dialog }) => {
+      if (app && app.process().exitCode === null) {
+        await app.evaluate(({ dialog }) => {
           dialog.showMessageBox = async () => ({ response: 1 });
         });
-        await application.close();
+        await app.close();
       }
       await fs.rm(root, {
         recursive: true,
