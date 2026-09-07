@@ -74,6 +74,29 @@ The package documentation contains the exact archive name, checksum command,
 and platform-specific requirements for that release. Packaged executables need
 an Erlang/OTP runtime, but do not require an installed Elixir toolchain.
 
+### Choose an installation path
+
+Use a release package when you want the supported launcher, installer,
+configuration examples, and checksum manifest for your operating system. Build
+from source when you are developing, reviewing a change, or need to run the
+test and packaging commands yourself. In both cases, use a new directory for a
+new installation rather than sharing a live account's data directory between
+versions or machines.
+
+## Requirements at a glance
+
+| Use case | Requirements |
+|---|---|
+| Run a release package on Linux | Erlang/OTP 25+ and util-linux (`flock`) |
+| Run a release package on macOS | Erlang/OTP 25+ and Python 3 |
+| Run a release package on Windows | Erlang/OTP 25+, Python 3, and PowerShell |
+| Build or test from source | Elixir 1.15+, Mix, and Erlang/OTP 25+ |
+
+To connect an account, you also need a Bluesky app password or a Mastodon
+access token. AI drafting needs either a local OpenAI-compatible endpoint or
+Google Gemini credentials and a model name. These are local operator settings,
+not values to commit to the repository.
+
 ## Configure an account and AI provider
 
 Each installed package has separate `bluesky/` and `mastodon/` directories.
@@ -145,6 +168,19 @@ AI-generated draft:
 ./run.sh mastodon post "Maintenance is complete." --publish
 ```
 
+## Keep account state predictable
+
+Configuration, queues, and history are scoped by social service, service
+origin, and account. Keep a separate installation or base directory for each
+account, and run no more than one daemon against an account at a time. This
+avoids competing writers and makes it clear which review queue you are
+inspecting.
+
+If you move to a fresh installation, use the documented explicit state-import
+workflow only after verifying that the destination is empty. Do not copy a
+live state directory between implementations or resume an old process after a
+move without reconciling its publication history.
+
 ## Command reference
 
 Run `./run.sh bluesky --help` or `./run.sh mastodon --help` for the complete,
@@ -215,6 +251,14 @@ These controls reduce risk; they do not replace a review of the full context,
 target, visibility, and exact text before approval. Run only one daemon per
 account. Use disposable accounts to test login, search, staging, review,
 publication, deletion, opt-outs, and reconnect behavior before production use.
+
+### Handling a failed or uncertain publication
+
+Use `status` to see pending and unresolved drafts. If the service response is
+ambiguous, ChorusDraft records the draft as `uncertain` rather than retrying it.
+Inspect the account directly before deciding what happened, then resolve the
+queue deliberately. Pending drafts can be rejected with `reject ID`; do not
+assume that a network failure means a post was not published.
 
 Read the [security policy](SECURITY.md) for supported versions, credential
 handling, safeguards, known limits, and vulnerability reporting.
