@@ -116,7 +116,7 @@ defmodule ChorusDraft.CLI do
   defp platform(_),
     do:
       {:error,
-       "Choose a product first: chorusdraft bluesky [options] or chorusdraft mastodon [options]."}
+       "Choose a platform first: chorusdraft bluesky [options] or chorusdraft mastodon [options]."}
 
   defp parse(argv) do
     argv = argv |> normalize_short_command() |> normalize_compatibility_args()
@@ -338,7 +338,7 @@ defmodule ChorusDraft.CLI do
     runner = Runner.new(client, store, platform, env, io_opts)
 
     IO.puts(
-      "#{product(platform)} #{ChorusDraft.version()} | AI drafts require review | automatic likes disabled"
+      "#{platform_title(platform)} #{ChorusDraft.version()} | AI drafts require review | automatic likes disabled"
     )
 
     dispatch(runner, options, hours, base)
@@ -523,12 +523,12 @@ defmodule ChorusDraft.CLI do
   end
 
   defp default_base(platform), do: Path.expand(platform, File.cwd!())
-  defp product("bluesky"), do: "ChorusDraft for Bluesky"
-  defp product("mastodon"), do: "ChorusDraft for Mastodon"
+  defp platform_title("bluesky"), do: "ChorusDraft for Bluesky"
+  defp platform_title("mastodon"), do: "ChorusDraft for Mastodon"
 
   defp help(platform) do
     """
-    #{product(platform)} #{ChorusDraft.version()} — human-reviewed social drafting
+    #{platform_title(platform)} #{ChorusDraft.version()} — human-reviewed social drafting
     Usage: chorusdraft #{platform} [options]
 
     Short commands:
@@ -556,7 +556,7 @@ defmodule ChorusDraft.CLI do
           --import-state FILE  Copy compatible state into an empty account store
           --status             Show queue counts and unresolved draft IDs
           --reject ID          Reject one pending draft without publishing
-          --base PATH          Product configuration and data directory
+          --base PATH          Platform configuration and data directory
           --random-reply QUERY Choose a public reply target for --text
           --target HANDLE      Account for --targets-only
           --query QUERY        Discovery search (or DISCOVERY_KEYWORDS/TAGS)
