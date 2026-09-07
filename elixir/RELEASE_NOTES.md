@@ -41,8 +41,8 @@ errors omit remote bodies and credential-bearing details.
 
 Every archive includes its executable, native setup/install/verification
 scripts, configuration examples, documentation, GPL source, pinned dependency
-source and licenses, a complete manifest, and a SHA-256 sidecar. Runtime
-credentials, state, logs, and build caches are excluded.
+source and licenses, and a complete manifest. Each archive is published with a
+SHA-256 sidecar. Runtime credentials, state, logs, and build caches are excluded.
 
 ## Verification status
 
