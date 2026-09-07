@@ -22,7 +22,7 @@ verify() {
 }
 (cd "$src" && verify MANIFEST.sha256)
 mkdir -m 700 "$dest"
-for item in chorusdraft run.sh setup.sh install.sh bluesky mastodon source README.md RELEASE_NOTES.md CHANGELOG.md SECURITY.md PARITY.md LICENSE NOTICE THIRD_PARTY_NOTICES.md VERSION MANIFEST.sha256; do
+for item in chorusdraft run.sh setup.sh install.sh bluesky mastodon source README.md RELEASE_NOTES.md CHANGELOG.md SECURITY.md LICENSE NOTICE THIRD_PARTY_NOTICES.md VERSION MANIFEST.sha256; do
   cp -R "$src/$item" "$dest/$item"
 done
 (cd "$dest" && verify MANIFEST.sha256)

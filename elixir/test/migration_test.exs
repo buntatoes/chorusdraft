@@ -12,7 +12,7 @@ defmodule ChorusDraft.MigrationTest do
     %{root: root, source: source, destination: destination, runner: runner}
   end
 
-  test "Ruby-compatible import preserves identity, history and unresolved publications", %{
+  test "compatible import preserves identity, history and unresolved publications", %{
     source: source,
     destination: destination,
     runner: runner
@@ -54,36 +54,44 @@ defmodule ChorusDraft.MigrationTest do
     end
   end
 
-  @tag :ruby_reference
-  test "imports state produced by the companion Ruby implementation", %{
+  test "imports a legacy ChorusDraft state fixture", %{
     root: root,
     destination: destination
   } do
-    if reference = System.get_env("RUBY_REFERENCE_ROOT") do
-      fixture = Path.join(root, "ruby-fixture")
+    fixture = Path.join(root, "legacy-fixture")
+    File.mkdir_p!(fixture)
+    path = Path.join(fixture, "state.json")
 
-      script = """
-      require File.join(ARGV.fetch(0), 'lib/chorus_draft/core')
-      store = ChorusDraft::Store.new(ARGV.fetch(1))
-      draft = {'platform'=>'mastodon', 'account'=>'https://example.org:me',
-        'text'=>'Ruby reference draft', 'action'=>'ai_generated',
-        'visibility'=>'public', 'language'=>'en', 'author'=>'alice'}
-      store.stage(draft, source: 'ruby-seen', unsolicited: true)
-      store.block('no-contact')
-      """
+    state = %{
+      "drafts" => [
+        %{
+          "id" => "12345678-1234-1234-1234-123456789abc",
+          "record_key" => "2222222222222",
+          "created_at" => "2026-09-06T00:00:00.000000Z",
+          "status" => "pending",
+          "platform" => "mastodon",
+          "account" => "https://example.org:me",
+          "text" => "Legacy draft",
+          "action" => "ai_generated",
+          "visibility" => "public",
+          "language" => "en",
+          "author" => "alice"
+        }
+      ],
+      "seen" => ["legacy-seen"],
+      "authors" => %{"alice" => 1_700_000_000},
+      "daily" => [1_700_000_000],
+      "blocked" => ["no-contact"]
+    }
 
-      assert {_, 0} =
-               System.cmd("ruby", ["-e", script, reference, fixture], stderr_to_stdout: true)
-
-      path = Path.join(fixture, "state.json")
-      original = File.read!(path)
-      assert Store.import_state(destination, path, "mastodon", "https://example.org:me") == 1
-      assert File.read!(path) == original
-      assert hd(Store.drafts(destination))["text"] == "Ruby reference draft"
-      assert Store.seen?(destination, "ruby-seen")
-      assert Store.blocked?(destination, "no-contact")
-      refute Store.available?(destination, author: "alice", unsolicited: true)
-    end
+    File.write!(path, Jason.encode!(state))
+    original = File.read!(path)
+    assert Store.import_state(destination, path, "mastodon", "https://example.org:me") == 1
+    assert File.read!(path) == original
+    assert hd(Store.drafts(destination))["text"] == "Legacy draft"
+    assert Store.seen?(destination, "legacy-seen")
+    assert Store.blocked?(destination, "no-contact")
+    refute Store.available?(destination, author: "alice", unsolicited: true)
   end
 
   test "cross-account and malformed imports leave destination empty", %{

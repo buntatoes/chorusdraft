@@ -4,12 +4,12 @@ Copyright (C) 2026 ChorusDraft contributors
 ChorusDraft is free software licensed under the GNU General Public License,
 version 3. See LICENSE for the complete terms and source-code obligations.
 
-Version 0.51.3 ships supported Ruby and Elixir implementations. Ruby provides
-separate Bluesky and Mastodon applications; Elixir provides both modes in one
-application. Elixir dependency attribution and corresponding source are
-documented in elixir/THIRD_PARTY_NOTICES.md and included with Elixir packages.
+Version 0.51.3 uses the Elixir implementation under `elixir/`. One application
+supports Bluesky and Mastodon through separate modes and configuration
+directories. Dependency attribution and corresponding source are documented in
+`elixir/THIRD_PARTY_NOTICES.md` and included with release packages.
 
-Safeguards are part of both implementations. AI-generated text requires
+Safeguards are part of the program behavior. AI-generated text requires
 interactive review. Privacy exclusions, opt-outs, do-not-contact enforcement,
 harassment screening, interaction budgets, ownership validation, and uncertain
 publication handling apply before publication. Automatic likes, favourites,

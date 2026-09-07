@@ -4,8 +4,8 @@
 
 | Version | Runtime | Security support |
 |---|---|---|
-| 0.51.3 | Ruby and Elixir | Current |
-| 0.51.2 and earlier | Ruby | Upgrade recommended |
+| 0.51.3 | Elixir | Current |
+| 0.51.2 and earlier | Earlier runtimes | Unsupported; upgrade recommended |
 
 Report vulnerabilities through GitHub private vulnerability reporting when
 available, or contact the maintainer privately through the GitHub profile. Do
@@ -49,31 +49,30 @@ do not replay the draft until the outcome is known.
 
 ## State and process safety
 
-State is separated by platform, service origin, and account. Both implementations
-serialize writers, create private files where the runtime supports Unix modes,
-replace state atomically, and fail closed on malformed state. Elixir additionally
-applies protected Windows ACLs and explicitly refuses symlinks and special files.
+State is separated by platform, service origin, and account. Native locks
+serialize writers and release after crashes. Unix files use private modes;
+Windows uses protected ACLs. State replacement is atomic, symlinks and special
+files are refused, and malformed state fails closed.
 
-Run only one daemon per account. Do not operate Ruby and Elixir against the same
-account simultaneously or share a live state directory. Elixir import accepts
-compatible state only into an empty account store and never alters the source.
+Run only one daemon per account. State import accepts compatible data only into
+an empty account store and never alters the source file.
 
-## Elixir Jetstream
+## Jetstream
 
-Jetstream is an optional wake-up signal for the Elixir Bluesky notification
-workflow. Streamed bodies do not enter AI context, terminal output, or state.
-Frame size, handshake headers, fragment counts, receive deadlines, heartbeats,
-and reconnect backoff are bounded. Invalid handshakes and unsolicited
-compression are refused. Periodic API checks reduce missed notifications after
-disconnects but cannot guarantee complete delivery.
+Jetstream is an optional wake-up signal for the Bluesky notification workflow.
+Streamed bodies do not enter AI context, terminal output, or state. Frame size,
+handshake headers, fragment counts, receive deadlines, heartbeats, and reconnect
+backoff are bounded. Invalid handshakes and unsolicited compression are refused.
+Periodic API checks reduce missed notifications after disconnects but cannot
+guarantee complete delivery.
 
 ## Verification and known limits
 
-The Elixir 0.51.3 suite contains 65 offline regressions and package checks on
-Linux, macOS, and Windows. Ruby CI builds all six release archives and runs
-source safety, command, archive, native launcher, setup, queue, and package tests
-on Linux, Windows, Intel macOS, and ARM macOS. Tests use synthetic fixtures and
-loopback servers without credentials or publication.
+The 0.51.3 suite contains 65 offline regressions and package checks on Linux,
+macOS, and Windows. Tests use synthetic fixtures and loopback servers without
+credentials or publication. Package checks cover checksums, installation,
+private configuration, runtime-data exclusion, both platform modes, and an
+offline rebuild from shipped source.
 
 Live Bluesky, Mastodon, and AI-provider acceptance and a sustained daemon soak
 remain operator checks. Use disposable accounts first and exercise login,

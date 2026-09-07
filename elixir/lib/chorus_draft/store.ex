@@ -80,7 +80,7 @@ defmodule ChorusDraft.Store do
     end)
   rescue
     error in Error -> raise error
-    _ -> raise Error, "Could not import state; source must be a valid Ruby or Elixir state.json."
+    _ -> raise Error, "Could not import state; source must be a valid ChorusDraft state.json."
   end
 
   def validate_draft!(draft) do

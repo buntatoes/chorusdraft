@@ -140,7 +140,7 @@ defmodule ChorusDraft.CLI do
     end
   end
 
-  # Human-friendly commands introduced by the Ruby 0.51.2 release. Translation
+  # Human-friendly commands translate to the strict option interface. Translation
   # happens before strict option parsing, and none of these aliases adds
   # --publish: generated and manual drafts remain queued unless the owner uses
   # the explicit advanced publication flag or approves them interactively.
@@ -553,7 +553,7 @@ defmodule ChorusDraft.CLI do
           --random-post [QUERY] Display a random public search/timeline result
           --delete ID          Interactively delete your own post
           --setup              Create missing configuration files, without login
-          --import-state FILE  Copy Ruby/Elixir state into an empty account store
+          --import-state FILE  Copy compatible state into an empty account store
           --status             Show queue counts and unresolved draft IDs
           --reject ID          Reject one pending draft without publishing
           --base PATH          Product configuration and data directory

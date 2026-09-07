@@ -2,10 +2,10 @@ name: Elixir checks
 
 on:
   push:
-    branches: [main-ruby, elixir-experimental]
+    branches: [main, elixir-experimental]
     paths: ['elixir/**', '.github/workflows/elixir.yml']
   pull_request:
-    branches: [main-ruby]
+    branches: [main]
     paths: ['elixir/**', '.github/workflows/elixir.yml']
 
 permissions:
@@ -40,11 +40,6 @@ jobs:
         with:
           otp-version: '25.3'
           elixir-version: '1.15.8'
-      - name: Set up Ruby for the pinned state fixture
-        if: matrix.package_os == 'linux'
-        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b
-        with:
-          ruby-version: '4.0.6'
       - name: Dependencies
         shell: bash
         run: |
@@ -52,12 +47,7 @@ jobs:
           mix local.rebar --force
           mix deps.get
           git diff --exit-code -- mix.lock
-      - name: Offline regression tests with current Ruby state fixture
-        if: matrix.package_os == 'linux'
-        shell: bash
-        run: RUBY_REFERENCE_ROOT="$GITHUB_WORKSPACE" mix test --warnings-as-errors
       - name: Offline regression tests
-        if: matrix.package_os != 'linux'
         shell: bash
         run: mix test --warnings-as-errors
       - name: Build and inspect the escript

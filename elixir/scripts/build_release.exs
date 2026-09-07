@@ -1,5 +1,5 @@
 defmodule ChorusDraft.Package do
-  @documents ~w(README.md RELEASE_NOTES.md SECURITY.md PARITY.md NOTICE THIRD_PARTY_NOTICES.md VERSION CHANGELOG.md)
+  @documents ~w(README.md RELEASE_NOTES.md SECURITY.md NOTICE THIRD_PARTY_NOTICES.md VERSION CHANGELOG.md)
   @platforms ~w(bluesky mastodon)
 
   def build do

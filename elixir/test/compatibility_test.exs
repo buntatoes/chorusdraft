@@ -1,10 +1,10 @@
-defmodule ChorusDraft.ParityTest do
+defmodule ChorusDraft.CompatibilityTest do
   use ExUnit.Case
   import ExUnit.CaptureIO
   alias ChorusDraft.{CLI, Error, Runner, Store, TestClient}
 
   setup do
-    dir = Path.join(System.tmp_dir!(), "parity-#{System.unique_integer([:positive])}")
+    dir = Path.join(System.tmp_dir!(), "compatibility-#{System.unique_integer([:positive])}")
     Store.new(dir)
     on_exit(fn -> File.rm_rf!(dir) end)
     %{dir: dir}
@@ -61,7 +61,7 @@ defmodule ChorusDraft.ParityTest do
     assert_raise Error, fn -> CLI.active?("9:99-17") end
   end
 
-  test "Ruby flags and short commands translate without publishing" do
+  test "advanced flags and short commands translate without publishing" do
     assert CLI.normalize_short_command(["draft"]) == ["--post-only"]
     assert CLI.normalize_short_command(["review"]) == ["--process-queue"]
     assert CLI.normalize_short_command(["start", "--poll", "30"]) == ["--daemon", "--poll", "30"]
