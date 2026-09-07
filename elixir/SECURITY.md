@@ -39,10 +39,12 @@ Setup never overwrites an existing `.env`, executes its contents, starts a
 service, or contacts a provider. Release packages exclude `.env`, state, logs,
 and build caches.
 
-Remote endpoints require HTTPS. Plain HTTP is allowed only for loopback local AI
-servers. Redirects and automatic retries are disabled, request times and response
-sizes are bounded, and remote bodies or credential-bearing details are omitted
-from errors. Publication requests are never automatically retried.
+Remote social and Gemini endpoints require HTTPS. When `AI_PROVIDER` is `local`
+or `ollama`, `LOCAL_LLM_URL` must use a loopback host (`localhost`, `127.0.0.1`,
+or `::1`) over HTTP or HTTPS — remote HTTPS hosts are rejected for local AI.
+Redirects and automatic retries are disabled, request times and response sizes
+are bounded, and remote bodies or credential-bearing details are omitted from
+errors. Publication requests are never automatically retried.
 
 Ambiguous publication results become `uncertain`. Inspect the account manually;
 do not replay the draft until the outcome is known.
@@ -73,6 +75,11 @@ macOS, and Windows. Tests use synthetic fixtures and loopback servers without
 credentials or publication. Package checks cover checksums, installation,
 private configuration, runtime-data exclusion, both platform modes, and an
 offline rebuild from shipped source.
+
+Inbound prompt-injection screening is a best-effort regex on normalized text
+(NFKC and format-character stripping, matching opt-out and harassment). It can
+still miss novel phrasing; interactive review before publish remains the
+primary control.
 
 Live Bluesky, Mastodon, and AI-provider acceptance and a sustained daemon soak
 remain operator checks. Use disposable accounts first and exercise login,

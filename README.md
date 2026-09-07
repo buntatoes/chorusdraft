@@ -19,8 +19,9 @@ what reaches your account.
   concise commands as well as a complete option interface.
 - Keeps queues and account state locally, separated by social service, service
   origin, and account.
-- Applies opt-outs, do-not-contact lists, interaction limits, and content
-  safeguards before a draft is staged and again before it is published.
+- Applies opt-outs, do-not-contact lists, interaction limits, and best-effort
+  content screening before a draft is staged and again before it is published.
+  Screening limits are documented in [SECURITY.md](SECURITY.md).
 - Offers optional Bluesky Jetstream wake-ups for listener and daemon workflows;
   Mastodon continues to use polling.
 
@@ -33,7 +34,7 @@ a drafting and approval workflow, not an unattended engagement tool.
 |---|---|
 | Configure | You choose a Bluesky or Mastodon account and an AI provider in a local configuration file. |
 | Discover or draft | The application can search public posts, collect eligible public mentions, or create a draft. |
-| Safety checks | Opt-outs, do-not-contact entries, interaction budgets, visibility rules, and content safeguards are applied. |
+| Safety checks | Opt-outs, do-not-contact entries, interaction budgets, visibility rules, and best-effort content screening are applied (see [SECURITY.md](SECURITY.md)). |
 | Review | Drafts enter a local queue for interactive review, rejection, or approval. |
 | Publish | Only an explicit approval can publish an AI draft. Owner-written text needs an explicit `--publish` flag to bypass the queue. |
 
@@ -118,6 +119,11 @@ LOCAL_LLM_URL=http://localhost:11434/v1/chat/completions
 LOCAL_LLM_MODEL=llama3.2:3b
 ```
 
+When `AI_PROVIDER` is `local` or `ollama`, `LOCAL_LLM_URL` must use a loopback
+host (`localhost`, `127.0.0.1`, or `::1`) over HTTP or HTTPS. Remote HTTPS hosts
+are rejected for local AI; Bluesky, Mastodon, and Gemini remote endpoints still
+require HTTPS as usual.
+
 To use Gemini, set `AI_PROVIDER=gemini` and provide `GEMINI_API_KEY` and
 `GEMINI_MODEL`. Optional settings include `ACTIVE_HOURS`, the status language,
 and discovery keywords.
@@ -176,10 +182,20 @@ account, and run no more than one daemon against an account at a time. This
 avoids competing writers and makes it clear which review queue you are
 inspecting.
 
-If you move to a fresh installation, use the documented explicit state-import
-workflow only after verifying that the destination is empty. Do not copy a
-live state directory between implementations or resume an old process after a
-move without reconciling its publication history.
+If you move to a fresh installation, import compatible older state only after
+verifying that the destination account store is empty. Do not copy a live state
+directory between implementations or resume an old process after a move without
+reconciling its publication history.
+
+```sh
+# Example: import one account's state.json into a new package install.
+./run.sh bluesky --import-state /absolute/path/to/old/data/ACCOUNT_HASH/state.json
+./run.sh bluesky status
+```
+
+Use `mastodon` instead of `bluesky` when importing that platform. Full upgrade
+steps, refusal cases, and `uncertain` handling are in
+[Upgrade or import older state](elixir/README.md#upgrade-or-import-older-state).
 
 ## Command reference
 
@@ -321,6 +337,11 @@ compatibility; perform the disposable-account checks described above before
 relying on a new deployment.
 
 ## Documentation and license
+
+This repository keeps a short package landing page at the root and the full
+operator manual under [`elixir/README.md`](elixir/README.md). `SECURITY.md`,
+`CHANGELOG.md`, and `RELEASE_NOTES.md` are mirrored at the root and under
+`elixir/`; keep each pair identical when you edit them.
 
 - [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases) provides
   current downloads, release notes, and upgrade guidance.
