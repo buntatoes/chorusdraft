@@ -175,7 +175,10 @@ test(
         await page.getByRole("textbox", { name: "Post text" }).fill(text);
         await page.getByRole("button", { name: "Add to review queue" }).click();
         await page.getByText("Session complete", { exact: true }).waitFor();
-        assert.match(await page.getByRole("log").innerText(), /Staged draft /);
+        assert.match(
+          await page.getByRole("log").innerText(),
+          /Staged manual draft /,
+        );
       }
       await assert.rejects(fs.access(path.join(root, "published.txt")));
       await page

@@ -1,4 +1,5 @@
 import { Settings, History } from "./Privacy.jsx";
+import { TerminalText } from "./terminal.mjs";
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
@@ -133,20 +134,10 @@ function App() {
   const [text, setText] = useState("");
   const [result, setResult] = useState("");
   const logRef = useRef(null);
-  const escapeTail = useRef("");
+  const terminalText = useRef(new TerminalText());
   const promptBuffer = useRef("");
   const approvalAvailable = useRef(false);
   const [reviewPrompt, setReviewPrompt] = useState(false);
-  const clean = (chunk) => {
-    let value = escapeTail.current + chunk;
-    const incomplete = value.match(/\x1b(?:\[[0-?]*[ -/]*|\][^\x07]*)?$/);
-    escapeTail.current = incomplete ? incomplete[0] : "";
-    if (incomplete) value = value.slice(0, incomplete.index);
-    return value
-      .replace(/\x1b\[[0-?]*[ -/]*[@-~]|\x1b\][^\x07]*(?:\x07|\x1b\\)/g, "")
-      .replace(/\r\n/g, "\n")
-      .replace(/\r/g, "");
-  };
   useEffect(() => {
     if (!api) {
       setError("Open ChorusDraft in the desktop app to use the bot controls.");
@@ -158,7 +149,7 @@ function App() {
       .catch((e) => setError(e.message));
     return api.onEvent((event) => {
       if (event.type === "output") {
-        const output = clean(event.value);
+        const output = terminalText.current.push(event.value);
         if (output) {
           promptBuffer.current = (promptBuffer.current + output).slice(-4096);
           const ready = /Publish this exact draft\? \[[^\]]+\]:\s*$/.test(
@@ -253,7 +244,7 @@ function App() {
     setActivity("");
     setResult("");
     setResponse("");
-    escapeTail.current = "";
+    terminalText.current.reset();
     promptBuffer.current = "";
     approvalAvailable.current = false;
     setReviewPrompt(false);
