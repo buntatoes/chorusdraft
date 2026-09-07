@@ -18,7 +18,7 @@ defmodule ChorusDraft.Safety do
   end
 
   def opt_out?(text), do: Regex.match?(@opt_out, screening_text(text))
-  def injection?(text), do: Regex.match?(@injection, to_string_or_empty(text))
+  def injection?(text), do: Regex.match?(@injection, screening_text(text))
 
   def eligible?(post) do
     public?(post) and String.trim(to_string_or_empty(post["text"])) != "" and
