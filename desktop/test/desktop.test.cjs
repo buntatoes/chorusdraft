@@ -35,7 +35,12 @@ test(
       if (process.platform === "win32")
         execFileSync(
           "cmd.exe",
-          ["/d", "/s", "/c", '"mix ' + args.map((x) => '"' + x + '"').join(" ") + '"'],
+          [
+            "/d",
+            "/s",
+            "/c",
+            '"mix ' + args.map((x) => '"' + x + '"').join(" ") + '"',
+          ],
           {
             cwd: path.join(source, "elixir"),
             windowsVerbatimArguments: true,
@@ -53,7 +58,9 @@ test(
       app = await _electron.launch({
         args: [
           "--force-device-scale-factor=1",
-          ...(process.platform === "linux" ? ["--no-sandbox", "--ozone-platform=x11"] : []),
+          ...(process.platform === "linux"
+            ? ["--no-sandbox", "--ozone-platform=x11"]
+            : []),
           ...(process.env.CHORUSDRAFT_TEST_KEYRING
             ? ["--password-store=gnome-libsecret"]
             : []),
@@ -63,13 +70,26 @@ test(
           ...process.env,
           CHORUSDRAFT_ROOT: root,
           CHORUSDRAFT_USER_DATA: userData,
-            ...(process.platform === "linux" ? {WAYLAND_DISPLAY: "", ELECTRON_OZONE_PLATFORM_HINT: "x11"} : {}),
+          ...(process.platform === "linux"
+            ? { WAYLAND_DISPLAY: "", ELECTRON_OZONE_PLATFORM_HINT: "x11" }
+            : {}),
         },
         timeout: 30000,
       });
       page = await app.firstWindow();
       page.setDefaultTimeout(30000);
       await page.getByRole("heading", { name: "Your bot workspace" }).waitFor();
+      await page.evaluate(() => {
+        window.sessionEvents = [];
+        window.chorus.onEvent((event) => {
+          if (["started", "exit", "error"].includes(event.type))
+            window.sessionEvents.push({
+              type: event.type,
+              action: event.action,
+              value: event.type === "exit" ? event.value : undefined,
+            });
+        });
+      });
       assert.equal(
         await page.getByRole("button", { name: "Ruby", exact: true }).count(),
         0,
@@ -155,6 +175,7 @@ test(
         await page.getByRole("textbox", { name: "Post text" }).fill(text);
         await page.getByRole("button", { name: "Add to review queue" }).click();
         await page.getByText("Session complete", { exact: true }).waitFor();
+        assert.match(await page.getByRole("log").innerText(), /Staged draft /);
       }
       await assert.rejects(fs.access(path.join(root, "published.txt")));
       await page
@@ -208,8 +229,12 @@ test(
     } catch (error) {
       console.error(error);
       if (page && !page.isClosed()) {
-        await page.screenshot({ path: "/tmp/chorusdraft-gui-failure.png" });
+        await page.screenshot({ path: path.join(root, "failure.png") });
         console.error(await page.locator("body").innerText());
+        console.error(
+          "Session lifecycle:",
+          await page.evaluate(() => window.sessionEvents),
+        );
       }
       throw error;
     } finally {
