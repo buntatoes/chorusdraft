@@ -179,10 +179,10 @@ Apple Silicon (`arm64`) from Intel (`x64`); Linux and Windows builds target `x64
 AI-generated content requires review. Do-not-contact lists, public opt-outs,
 visibility checks, and interaction limits apply to both platforms.
 Ambiguous publication failures are not retried automatically.
-See [SECURITY.md](SECURITY.md) for safeguards and vulnerability reporting.
+See [SECURITY.md](../SECURITY.md) for safeguards and vulnerability reporting.
 
 ## License
 
-ChorusDraft is licensed under the [GNU General Public License v3.0](LICENSE).
-See [NOTICE](NOTICE) and [Elixir third-party notices](elixir/THIRD_PARTY_NOTICES.md)
+ChorusDraft is licensed under the [GNU General Public License v3.0](../LICENSE).
+See [NOTICE](../NOTICE) and [Elixir third-party notices](../elixir/THIRD_PARTY_NOTICES.md)
 for attribution and dependency licenses.
