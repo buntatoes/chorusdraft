@@ -580,7 +580,7 @@ defmodule ChorusDraft.CLI do
 
   defp help(platform) do
     """
-    #{platform_title(platform)} #{ChorusDraft.version()} — safeguarded social drafting
+    #{platform_title(platform)} #{ChorusDraft.version()} — review-first social drafting
     Usage: chorusdraft #{platform} [options]
 
     Short commands:
@@ -628,10 +628,10 @@ defmodule ChorusDraft.CLI do
       -h, --help               Show this help
 
     Review is the default. Automatic mode never publishes old queued, manual,
-    discovery, target-commentary, or safeguard-held drafts. No arguments prints this help.
+    discovery, target-commentary, or held drafts. No arguments prints this help.
     """
   end
 
-  defp publication_banner(%{automatic: true}), do: "safeguarded automatic AI publication"
+  defp publication_banner(%{automatic: true}), do: "automatic AI publication"
   defp publication_banner(_options), do: "AI drafts require review"
 end

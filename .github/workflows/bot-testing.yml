@@ -1,17 +1,18 @@
+# Desktop CI (filename is historical; this is not a branch-specific workflow).
 name: Elixir desktop checks
 
 on:
   push:
-    branches: [main, bot-testing, 'v0.*']
+    branches: [main, 'v0.*']
   pull_request:
-    branches: [main, bot-testing]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: bot-testing-${{ github.ref }}
+  group: desktop-checks-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -23,11 +24,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
       - uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124
@@ -100,7 +103,7 @@ jobs:
         id: version
         shell: bash
         run: echo "version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: chorusdraft-${{ matrix.os }}
           path: dist/chorusdraft-v${{ steps.version.outputs.version }}-*

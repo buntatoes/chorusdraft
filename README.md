@@ -38,7 +38,7 @@ Providers: local/Ollama, Gemini, or ChatGPT/OpenAI.
 - Local queues, split by service, origin, and account
 - Opt-outs, do-not-contact, budgets, and screening
 - Bluesky Jetstream for listen/daemon; Mastodon polls
-- Explicit automatic daemon with attempt budget, source rechecks, and lockout
+- `automatic` daemon: attempt budget, source recheck, lockout
 
 Does not auto-like, favourite, boost, or repost. Does not publish unsolicited
 target or discovery commentary. Owner text needs `--publish`.

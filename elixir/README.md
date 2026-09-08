@@ -4,7 +4,7 @@ Elixir app for Linux, macOS, and Windows. One executable, Bluesky and Mastodon
 modes. Version 0.51.5. See [CHANGELOG.md](CHANGELOG.md).
 
 Review is the default. `automatic` may publish new originals and eligible
-public-mention replies after stricter checks.
+public-mention replies after screening and a source recheck.
 
 ## Requirements
 
@@ -85,7 +85,7 @@ Default: `wss://jetstream.us-east.bsky.network`. Override with
 
 Per platform `data/` directory, split by platform, origin, and account.
 Do-not-contact and public opt-outs apply. Ambiguous publishes become
-`uncertain`. Screening is deterministic regex; review is the real control.
+`uncertain`. Screens are regex. They miss things. Review is what matters.
 
 ## Providers
 

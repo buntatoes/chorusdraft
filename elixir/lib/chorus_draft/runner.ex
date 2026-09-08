@@ -503,7 +503,7 @@ defmodule ChorusDraft.Runner do
   end
 
   defp staged_message(%{automatic: true}, item),
-    do: "Staged draft #{item["id"]}; checking automatic-publication safeguards."
+    do: "Staged draft #{item["id"]}; checking before automatic publication."
 
   defp staged_message(_runner, item),
     do: "Staged draft #{item["id"]}; use --process-queue to review."

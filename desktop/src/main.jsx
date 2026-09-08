@@ -363,7 +363,7 @@ function App() {
             <Icon name="check" size={16} />
           </span>
           <h4>You have the final say.</h4>
-          <p>Review drafts yourself, or explicitly start safeguarded automatic mode.</p>
+          <p>Review drafts, or start automatic mode when you mean to.</p>
         </div>
         <button
           className="nav-button help-link"
@@ -544,7 +544,7 @@ function App() {
                     "automatic",
                     "monitor",
                     "Automatic mode",
-                    "Publish new originals and eligible mention replies after safeguards. Up to five attempts per day.",
+                    "May publish new originals and eligible mention replies. Five attempts per day.",
                     "Start automatic mode",
                   ],
                 ].map(([key, icon, title, description, label]) => (

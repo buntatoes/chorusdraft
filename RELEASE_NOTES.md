@@ -2,16 +2,12 @@
 
 Downloads: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
-0.51.5 adds a desktop queue, pending-draft editing, and automatic-budget
-visibility. Review stays the default. Automatic mode is unchanged: it still
-cannot publish edited, manual, or previously queued drafts.
-
-## Highlights
+Queue UI, pending-draft edit, and automatic budget in `status`. Edit never
+publishes. Review is still the default.
 
 - Desktop **Queue** lists pending, publishing, and uncertain drafts from the
-  account store last used on the selected platform. It shows remaining
-  automatic attempts and whether a publishing or uncertain draft has frozen
-  automatic mode.
+  account store last used on the selected platform. Remaining automatic
+  attempts and freeze state are shown there.
 - `chorusdraft PLATFORM edit ID TEXT` replaces pending draft text after the
   same screens used at review. The draft stays pending. `--publish` is
   rejected with `--edit`. `--edit` cannot take reply, quote, or queue flags.
@@ -23,8 +19,7 @@ cannot publish edited, manual, or previously queued drafts.
   needed.
 - CI artifact names are read from `VERSION`.
 
-See [docs/DESKTOP.md](docs/DESKTOP.md) for the GUI. 0.51.4 notes for
-automatic mode, Jetstream, ChatGPT, and privacy still apply.
+GUI: [docs/DESKTOP.md](docs/DESKTOP.md).
 
 ## Packages
 
@@ -39,5 +34,5 @@ Windows) includes the Elixir bot and the launcher.
 
 Each archive has the executable, setup/install/verify scripts, config
 examples, docs, application source, pinned dependency source and licenses, a
-manifest, and a SHA-256 sidecar. Install into a new directory. Import
-compatible state explicitly after stopping the old process.
+manifest, and a SHA-256 sidecar. Stop the old process, then import state if
+you need it.
