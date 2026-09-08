@@ -5,6 +5,7 @@ Elixir matches the Ruby 0.51.1 workflows and safety rules (commit
 Old JSON state still imports.
 
 0.51.5 adds Queue, pending-draft edit, and automatic budget in `status`.
+0.51.6 is fixes only; see CHANGELOG.
 
 | From Ruby 0.51.1 | Elixir | Tests |
 |---|---|---|
