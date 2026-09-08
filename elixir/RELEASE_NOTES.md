@@ -9,6 +9,10 @@ default.
 `main` has later privacy and screening fixes. Those are not in the v0.51.4
 zips. See [CHANGELOG.md](CHANGELOG.md).
 
+The desktop preview includes protected credentials, ten-day local history, and
+verified Windows console detection. Desktop packages are CI artifacts and are
+not the published v0.51.4 CLI release.
+
 ## Highlights
 
 - `chorusdraft PLATFORM automatic` may auto-post new originals and eligible

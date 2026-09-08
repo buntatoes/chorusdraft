@@ -6,6 +6,7 @@ defmodule ChorusDraft.Store do
   @publication_lease_seconds 300
 
   def new(dir) do
+    storage_path!(dir)
     File.mkdir_p!(dir)
 
     unless File.lstat!(dir).type == :directory,
@@ -37,7 +38,7 @@ defmodule ChorusDraft.Store do
     try do
       stored = read_state(Path.join(dir, "state.json"))
       original = recover_stale_publications(stored, System.system_time(:second))
-      {result, state} = fun.(original)
+      {result, state} = fun.(prune_history(original))
       validate_state!(state)
       if state != stored, do: write_state(Path.join(dir, "state.json"), state)
       result
@@ -214,10 +215,12 @@ defmodule ChorusDraft.Store do
         raise Error, "Draft changed after review; review the new content before publishing."
       end
 
+      changed = draft |> Map.put("status", to) |> maybe_record_claim(to)
+
       changed =
-        draft
-        |> Map.put("status", to)
-        |> maybe_record_claim(to)
+        if to in ["published", "rejected"],
+          do: Map.put(changed, "finished_at", DateTime.to_iso8601(DateTime.utc_now())),
+          else: changed
 
       {changed, put_in(state, ["drafts", Access.at(index)], changed)}
     end)
@@ -297,6 +300,66 @@ defmodule ChorusDraft.Store do
   defp unsolicited_unavailable?(state, author, now) do
     recent = Enum.count(state["daily"], &(&1 > now - 86_400))
     recent >= 5 or Map.get(state["authors"], author, 0) > now - 2_592_000
+  end
+
+  def history(base) do
+    storage_path!(Path.join(base, "data"))
+    data = Path.join(base, "data")
+
+    if File.exists?(data) do
+      unless File.lstat!(data).type == :directory,
+        do: raise(Error, "History directory must not be a link.")
+
+      File.ls!(data)
+      |> Enum.filter(&Regex.match?(~r/^[a-f0-9]{24}$/, &1))
+      |> Enum.flat_map(fn entry ->
+        folder = Path.join(data, entry)
+
+        if File.lstat!(folder).type == :directory and
+             File.regular?(Path.join(folder, "state.json")),
+           do: folder |> new() |> drafts() |> Enum.filter(&(&1["status"] == "published")),
+           else: []
+      end)
+    else
+      []
+    end
+  end
+
+  # Check the account/data/base boundary before creating or pruning anything.
+  defp storage_path!(dir) do
+    base =
+      if Path.basename(Path.dirname(dir)) == "data",
+        do: Path.dirname(Path.dirname(dir)),
+        else: Path.dirname(dir)
+
+    paths = [dir, Path.dirname(dir), base]
+
+    paths =
+      if Path.basename(Path.dirname(base)) == "elixir",
+        do: [Path.dirname(base) | paths],
+        else: paths
+
+    Enum.each(paths, fn path ->
+      case File.lstat(path) do
+        {:ok, %{type: :directory}} -> :ok
+        {:error, :enoent} -> :ok
+        _ -> raise Error, "Storage directories must not contain links."
+      end
+    end)
+  end
+
+  defp prune_history(state) do
+    cutoff = System.system_time(:second) - 10 * 86_400
+
+    Map.update!(state, "drafts", fn drafts ->
+      Enum.reject(drafts, fn draft ->
+        draft["status"] in ["published", "rejected"] and
+          case DateTime.from_iso8601(draft["finished_at"] || draft["created_at"]) do
+            {:ok, date, _} -> DateTime.to_unix(date) <= cutoff
+            _ -> false
+          end
+      end)
+    end)
   end
 
   defp prune_interactions(state, now) do

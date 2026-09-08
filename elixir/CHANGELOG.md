@@ -5,6 +5,9 @@ Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/r
 ## Unreleased
 
 - Apache License 2.0.
+- Desktop preview 0.51.4-testing: ChatGPT credentials, automatic mode, and
+  ten-day local history. Windows console detection is verified in the terminal
+  launcher before enabling queue review.
 - Replace the README project image with a high-contrast ChorusDraft banner.
 - Screen inherited content warnings before automatic publication and honor
   opt-outs in source text and content warnings.

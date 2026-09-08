@@ -467,6 +467,8 @@ defmodule ChorusDraft.Runner do
   defp write(runner, text), do: IO.write(runner.output, text)
 
   defp terminal? do
-    match?({:ok, _}, :io.columns(:standard_io))
+    match?({:ok, _}, :io.columns(:standard_io)) or
+      (match?({:win32, _}, :os.type()) and
+         System.get_env("CHORUSDRAFT_WINDOWS_CONSOLE") == "1")
   end
 end

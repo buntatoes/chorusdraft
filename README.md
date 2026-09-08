@@ -21,6 +21,10 @@ Providers: local/Ollama, Gemini, or ChatGPT/OpenAI.
 
 ## Latest
 
+Desktop preview: encrypted account settings, ten-day searchable local history,
+ChatGPT/OpenAI setup, and an explicit automatic-mode action. See
+[the desktop guide](docs/DESKTOP.md).
+
 **On `main`, not in the v0.51.4 downloads yet**
 
 - Redacts recognized personal information before it goes to an AI provider.

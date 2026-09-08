@@ -1,5 +1,9 @@
 # Security
 
+Current main also screens inherited content warnings before automatic publication,
+honors content-warning opt-outs, and expands deterministic threat and harassment
+screening. These unreleased changes are listed in CHANGELOG.md.
+
 ## Supported versions
 
 | Version | Runtime | Support |

@@ -105,6 +105,7 @@ defmodule ChorusDraft.Package do
     """
     #!/bin/sh
     set -eu
+    export ERL_CRASH_DUMP=/dev/null ERL_CRASH_DUMP_SECONDS=0
     umask 077
     base=$(CDPATH= cd "$(dirname "$0")" && pwd)
     if [ "$#" -lt 1 ]; then
@@ -117,7 +118,7 @@ defmodule ChorusDraft.Package do
       bluesky|mastodon) ;;
       *) echo 'Choose bluesky or mastodon.' >&2; exit 1 ;;
     esac
-    exec "$base/chorusdraft" "$platform" --base "$base/$platform" "$@"
+    exec "$base/chorusdraft" "$platform" "$@" --base "$base/$platform"
     """
   end
 
@@ -125,6 +126,7 @@ defmodule ChorusDraft.Package do
     """
     #!/bin/sh
     set -eu
+    export ERL_CRASH_DUMP=/dev/null ERL_CRASH_DUMP_SECONDS=0
     umask 077
     base=$(CDPATH= cd "$(dirname "$0")" && pwd)
     if [ "$#" -eq 0 ]; then

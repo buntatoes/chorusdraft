@@ -7,6 +7,7 @@ defmodule ChorusDraft.CLI do
     setup: :boolean,
     import_state: :string,
     status: :boolean,
+    history: :boolean,
     reject: :string,
     reply_cid: :string,
     quote_cid: :string,
@@ -120,7 +121,7 @@ defmodule ChorusDraft.CLI do
        "Choose a platform first: chorusdraft bluesky [options] or chorusdraft mastodon [options]."}
 
   defp parse(argv) do
-    argv = argv |> normalize_short_command() |> normalize_compatibility_args()
+    argv = argv |> ChorusDraft.Commands.normalize() |> normalize_compatibility_args()
 
     case OptionParser.parse(argv, strict: @switches, aliases: @aliases) do
       {[], [], []} ->
@@ -232,6 +233,7 @@ defmodule ChorusDraft.CLI do
       :setup,
       :import_state,
       :status,
+      :history,
       :reject,
       :text,
       :post_only,
@@ -312,6 +314,12 @@ defmodule ChorusDraft.CLI do
   @doc false
   def jetstream_enabled?(platform, options) do
     platform == "bluesky" and (options[:listen] || options[:daemon])
+  end
+
+  defp execute(platform, %{history: true} = options, _io_opts) do
+    base = Path.expand(Map.get(options, :base, default_base(platform)))
+    IO.puts(Jason.encode!(Store.history(base)))
+    0
   end
 
   defp execute(platform, %{setup: true} = options, _io_opts) do
@@ -545,7 +553,7 @@ defmodule ChorusDraft.CLI do
     Usage: chorusdraft #{platform} [options]
 
     Short commands:
-      setup, draft, review, start, automatic, listen, replies, status
+      setup, draft, review, start, automatic, listen, replies, status, history
       post TEXT, reply ID TEXT, quote ID TEXT, search QUERY
       random [QUERY], discover [QUERY], targets [HANDLE], delete ID, reject ID
 
