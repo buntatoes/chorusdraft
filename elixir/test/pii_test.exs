@@ -30,6 +30,28 @@ defmodule ChorusDraft.PIITest do
     end
   end
 
+  test "obfuscated email matching stays linear on long whitespace runs" do
+    text = "a" <> String.duplicate(" ", 32_000) <> "b"
+    {elapsed, result} = :timer.tc(fn -> PII.sensitive?(text) end)
+    refute result
+    assert elapsed < 200_000
+  end
+
+  test "own-platform and common service credentials are redacted" do
+    for value <- [
+          "abcd-efgh-ijkl-mn0p",
+          "AKIAIOSFODNN7EXAMPLE",
+          "sk_live_" <> String.duplicate("a", 24),
+          "rk_test_" <> String.duplicate("b", 24),
+          "-----BEGIN RSA PRIVATE KEY-----"
+        ] do
+      assert PII.sensitive?(value), value
+      assert PII.redact("key: " <> value) == "key: [REDACTED]"
+    end
+
+    refute PII.sensitive?("read the changelog, then run mix test")
+  end
+
   test "ordinary discussion and public social mentions remain usable" do
     for text <- [
           "Ruby 4.0 and Elixir 1.15 run on Linux.",

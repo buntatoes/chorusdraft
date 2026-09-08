@@ -4,8 +4,8 @@
 
 | Version | Runtime | Support |
 |---|---|---|
-| 0.51.5 | Elixir | Current |
-| 0.51.4 and earlier | Earlier releases | Unsupported |
+| 0.51.6 | Elixir | Current |
+| 0.51.5 and earlier | Earlier releases | Unsupported |
 
 Report vulnerabilities through GitHub private reporting when it is available,
 or contact the maintainer privately. Do not put credentials, private posts,
@@ -19,8 +19,9 @@ auto-publish. Owner text needs `--publish` or it goes to the queue.
 
 `automatic` may publish only the original or eligible public-mention reply
 created in that daemon cycle. It does not sweep older drafts. Automatic output
-is screened again for harassment, pile-ons, model-added mentions, links, and
-common email, phone, and street-address patterns. Held drafts stay pending.
+is screened again for harassment, pile-ons, mixed-script words, model-added
+mentions, links, and common email, phone, and street-address patterns. Held
+drafts stay pending.
 
 Before an automatic reply is claimed, the source is fetched again. ID, text,
 content warning, handle, author identity, and public visibility must still
@@ -38,6 +39,12 @@ leave the draft pending. They cannot publish. `--edit` cannot be combined with
 `--publish`, reply, quote, or queue flags. Desktop review Edit prefills the
 current text, keeps line breaks, and disables the response field until the
 replacement is saved and review asks again.
+
+`--random-reply` picks the target; it cannot be combined with `--publish`.
+
+Review indents draft text. The desktop recognises the approval prompt and the
+draft header only at the start of a line, so draft content cannot pose as
+either.
 
 These are regex checks. They miss some bad text and block some fine text.
 Do not loosen them to chase people.
@@ -75,7 +82,9 @@ uncertain draft until you know what happened.
 Matching personal information in AI context is replaced with `[REDACTED]`
 before the model request: ordinary and obfuscated emails, Unicode numeric
 contact details, long numeric IDs, street/PO-box addresses, labeled identity
-details, coordinate pairs, and common credential formats.
+details, coordinate pairs, and common credential formats including Bluesky app
+passwords, Google, GitHub, OpenAI, Stripe, and AWS keys, JWTs, and PEM
+private-key headers.
 
 AI output with those patterns is rejected, including in review mode. Saved AI
 drafts and content warnings are checked again before publish. Reviewed text is

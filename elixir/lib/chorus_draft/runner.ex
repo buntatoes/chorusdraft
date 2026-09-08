@@ -314,7 +314,7 @@ defmodule ChorusDraft.Runner do
     if item["reply_to"], do: puts(runner, "Reply: #{Safety.clean(item["reply_to"])}")
     if item["quote_to"], do: puts(runner, "Quote: #{Safety.clean(item["quote_to"])}")
     if item["cw"], do: puts(runner, "Content warning: #{Safety.clean(item["cw"])}")
-    puts(runner, item["text"])
+    puts(runner, indent(item["text"]))
     write(runner, "Publish this exact draft? [y/N/e=edit/d=reject/q=quit]: ")
 
     case runner.input |> IO.gets("") |> to_string() |> String.trim() |> String.downcase() do
@@ -527,6 +527,10 @@ defmodule ChorusDraft.Runner do
   defp empty?(_), do: false
   defp puts(runner, text), do: IO.puts(runner.output, text)
   defp write(runner, text), do: IO.write(runner.output, text)
+
+  # Draft text is shown verbatim, so it is indented to keep it visually apart
+  # from the header and prompt lines, which always start at column 0.
+  defp indent(text), do: text |> String.split("\n") |> Enum.map_join("\n", &("  " <> &1))
 
   defp terminal? do
     match?({:ok, _}, :io.columns(:standard_io)) or

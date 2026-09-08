@@ -89,7 +89,7 @@ defmodule ChorusDraft.AI do
     key = Config.required(env, "GEMINI_API_KEY")
     model = Config.required(env, "GEMINI_MODEL")
 
-    if not Regex.match?(~r/^[a-zA-Z0-9._-]+$/, model), do: raise(Error, "Invalid GEMINI_MODEL.")
+    if not Regex.match?(~r/\A[a-zA-Z0-9._-]+\z/, model), do: raise(Error, "Invalid GEMINI_MODEL.")
 
     response =
       http.request(
@@ -115,7 +115,8 @@ defmodule ChorusDraft.AI do
     key = Config.required(env, "OPENAI_API_KEY")
     model = Config.required(env, "OPENAI_MODEL")
 
-    if not Regex.match?(~r/^[a-zA-Z0-9._:-]+$/, model), do: raise(Error, "Invalid OPENAI_MODEL.")
+    if not Regex.match?(~r/\A[a-zA-Z0-9._:-]+\z/, model),
+      do: raise(Error, "Invalid OPENAI_MODEL.")
 
     response =
       http.request(

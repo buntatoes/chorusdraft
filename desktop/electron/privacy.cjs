@@ -4,6 +4,8 @@ const crypto = require("node:crypto");
 const DAYS = 10 * 86400000;
 const AUTOMATIC_LIMIT = 5;
 const PUBLICATION_LEASE_SECONDS = 300;
+// Bot state and activity files are read whole; anything larger is not ours.
+const FILE_LIMIT = 50 * 1024 * 1024;
 const SECRET = [
   "BLUESKY_APP_PASSWORD",
   "MASTODON_ACCESS_TOKEN",
@@ -47,6 +49,23 @@ function stat(file) {
 function regular(file) {
   const value = stat(file);
   if (value && !value.isFile()) throw Error("Storage must be a regular file.");
+}
+// Check and read through one descriptor so the path cannot be swapped between
+// the size check and the read.
+function contents(file, message) {
+  regular(file);
+  const fd = fs.openSync(
+    file,
+    fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0),
+  );
+  try {
+    const value = fs.fstatSync(fd);
+    if (!value.isFile()) throw Error("Storage must be a regular file.");
+    if (value.size > FILE_LIMIT) throw Error(message);
+    return fs.readFileSync(fd, "utf8");
+  } finally {
+    fs.closeSync(fd);
+  }
 }
 function directory(dir) {
   const value = stat(dir);
@@ -380,9 +399,10 @@ class History {
       }));
   }
   activity(file) {
-    regular(file);
-    return fs
-      .readFileSync(file, "utf8")
+    return contents(
+      file,
+      "Local activity is invalid; it has been preserved for recovery.",
+    )
       .split("\n")
       .filter(Boolean)
       .map((line) => {
@@ -516,7 +536,7 @@ class History {
           );
           regular(file);
           if (!stat(file)) continue;
-          const state = JSON.parse(fs.readFileSync(file, "utf8"));
+          const state = JSON.parse(contents(file, "Invalid history file."));
           if (!state || !Array.isArray(state.drafts))
             throw Error("Invalid history file.");
           for (const draft of state.drafts) {
@@ -575,7 +595,7 @@ class History {
         );
         regular(file);
         if (!stat(file)) continue;
-        const state = JSON.parse(fs.readFileSync(file, "utf8"));
+        const state = JSON.parse(contents(file, "Invalid history file."));
         if (!state || !Array.isArray(state.drafts))
           throw Error("Invalid history file.");
         stores.push({

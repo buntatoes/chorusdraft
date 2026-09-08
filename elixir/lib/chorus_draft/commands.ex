@@ -22,6 +22,9 @@ defmodule ChorusDraft.Commands do
       Map.has_key?(@simple, command) ->
         [Map.fetch!(@simple, command) | args]
 
+      command == "automatic" ->
+        ["--daemon", "--automatic" | args]
+
       command in ["post", "search", "delete", "import", "reject"] ->
         {value, rest} = required(args, command)
         flag = %{"post" => "text", "import" => "import-state"} |> Map.get(command, command)

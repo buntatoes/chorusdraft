@@ -1,7 +1,7 @@
 defmodule ChorusDraft.CompatibilityTest do
   use ExUnit.Case
   import ExUnit.CaptureIO
-  alias ChorusDraft.{CLI, Error, Runner, Store, TestClient}
+  alias ChorusDraft.{CLI, Commands, Error, Runner, Store, TestClient}
 
   setup do
     dir = Path.join(System.tmp_dir!(), "compatibility-#{System.unique_integer([:positive])}")
@@ -62,52 +62,39 @@ defmodule ChorusDraft.CompatibilityTest do
   end
 
   test "advanced flags and short commands translate without publishing" do
-    assert CLI.normalize_short_command(["draft"]) == ["--post-only"]
-    assert CLI.normalize_short_command(["review"]) == ["--process-queue"]
-    assert CLI.normalize_short_command(["start", "--poll", "30"]) == ["--daemon", "--poll", "30"]
-    assert CLI.normalize_short_command(["automatic"]) == ["--daemon", "--automatic"]
-    assert CLI.normalize_short_command(["post", "hello"]) == ["--text", "hello"]
+    assert Commands.normalize(["draft"]) == ["--post-only"]
+    assert Commands.normalize(["review"]) == ["--process-queue"]
+    assert Commands.normalize(["start", "--poll", "30"]) == ["--daemon", "--poll", "30"]
+    assert Commands.normalize(["automatic"]) == ["--daemon", "--automatic"]
 
-    assert CLI.normalize_short_command(["reply", "123", "hello"]) == [
-             "--text",
-             "hello",
-             "--reply-to",
-             "123"
+    assert Commands.normalize(["automatic", "--active-hours", "9-17"]) == [
+             "--daemon",
+             "--automatic",
+             "--active-hours",
+             "9-17"
            ]
 
-    assert CLI.normalize_short_command(["quote", "123", "hello"]) == [
-             "--text",
-             "hello",
-             "--quote-uri",
-             "123"
+    assert Commands.normalize(["post", "hello"]) == ["--text=hello"]
+    assert Commands.normalize(["reply", "123", "hello"]) == ["--text=hello", "--reply-to=123"]
+    assert Commands.normalize(["quote", "123", "hello"]) == ["--text=hello", "--quote-uri=123"]
+
+    assert Commands.normalize(["edit", "draft-id", "hello"]) == [
+             "--edit=draft-id",
+             "--text=hello"
            ]
 
-    assert CLI.normalize_short_command(["edit", "draft-id", "hello"]) == [
-             "--edit",
-             "draft-id",
-             "--text",
-             "hello"
-           ]
-
-    assert CLI.normalize_short_command(["search", "open source", "--limit", "2"]) == [
-             "--search",
-             "open source",
+    assert Commands.normalize(["search", "open source", "--limit", "2"]) == [
+             "--search=open source",
              "--limit",
              "2"
            ]
 
-    assert CLI.normalize_short_command(["random"]) == ["--random-post="]
+    assert Commands.normalize(["random"]) == ["--random-post="]
+    assert Commands.normalize(["discover", "elixir"]) == ["--discover", "--query=elixir"]
 
-    assert CLI.normalize_short_command(["discover", "elixir"]) == [
-             "--discover",
-             "--query",
-             "elixir"
-           ]
-
-    assert CLI.normalize_short_command(["targets", "alice.example"]) == [
+    assert Commands.normalize(["targets", "alice.example"]) == [
              "--targets-only",
-             "--target",
-             "alice.example"
+             "--target=alice.example"
            ]
 
     for arguments <- [
@@ -147,11 +134,21 @@ defmodule ChorusDraft.CompatibilityTest do
     ]
 
     Enum.each(commands, fn command ->
-      refute "--publish" in CLI.normalize_short_command(command)
+      refute "--publish" in Commands.normalize(command)
     end)
 
-    refute "--automatic" in CLI.normalize_short_command(["start"])
-    assert "--automatic" in CLI.normalize_short_command(["automatic"])
+    refute "--automatic" in Commands.normalize(["start"])
+    assert "--automatic" in Commands.normalize(["automatic"])
+  end
+
+  test "the automatic short command reaches the daemon path" do
+    message =
+      capture_io(:stderr, fn ->
+        assert CLI.run(["bluesky", "automatic", "--publish"]) == 1
+      end)
+
+    assert message =~ "--publish requires --text"
+    refute message =~ "Unknown command"
   end
 
   test "daemon schedules originals once per interval even after target failure", %{dir: dir} do

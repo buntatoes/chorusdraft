@@ -33,7 +33,17 @@ defmodule ChorusDraft.Store do
   end
 
   def transaction(dir, fun) do
+    # The lock is a separate OS process, so a nested transaction on the same
+    # store would wait out the lock timeout and report "busy". Fail at once.
+    key = {__MODULE__, :locked}
+    holding = Process.get(key, [])
+    expanded = Path.expand(dir)
+
+    if expanded in holding,
+      do: raise(Error, "State is already locked by this process.")
+
     lock = acquire_lock(Path.join(dir, "state.lock"))
+    Process.put(key, [expanded | holding])
 
     try do
       stored = read_state(Path.join(dir, "state.json"))
@@ -43,6 +53,7 @@ defmodule ChorusDraft.Store do
       if state != stored, do: write_state(Path.join(dir, "state.json"), state)
       result
     after
+      Process.put(key, holding)
       if Port.info(lock), do: Port.close(lock)
     end
   end
@@ -105,7 +116,10 @@ defmodule ChorusDraft.Store do
         draft["visibility"] in ["public", "unlisted", "private", "direct"] and
         (is_nil(draft["reply_to"]) or is_nil(draft["quote_to"])) and
         Enum.all?(required ++ optional, fn key ->
-          not Regex.match?(~r/[\x00-\x08\x0b-\x1f\x7f]/u, draft[key] || "")
+          not Regex.match?(~r/[\x00-\x08\x0b-\x1f\x7f-\x{9f}]/u, draft[key] || "")
+        end) and
+        Enum.all?(["reply_to", "quote_to", "author_id", "language"], fn key ->
+          not Regex.match?(~r/\s/u, draft[key] || "")
         end)
 
     unless valid, do: raise(Error, "Draft metadata is invalid; refusing to publish.")

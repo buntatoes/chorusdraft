@@ -18,7 +18,10 @@ defmodule ChorusDraft.Safety do
   @automatic_phone ~r/(?<![\p{L}\p{N}])\+?\d[\d .()-]{6,}\d(?![\p{L}\p{N}])/u
   @automatic_address ~r/\b\d{1,6}\s+[\p{L}\p{N}][\p{L}\p{N} .'’-]{0,60}\s+(?:avenue|ave|boulevard|blvd|court|ct|drive|dr|lane|ln|road|rd|street|st|way)\b/iu
   @injection ~r/ignore.{0,30}(instructions|rules)|system\s+prompt|jailbreak|reveal.{0,30}instructions|repeat\s+the\s+prompt|you\s+are\s+now|<\/?(?:system|untrusted_user_input)>/isu
-  @control ~r/[\x{0000}-\x{0008}\x{000B}-\x{001F}\x{007F}\x{200E}\x{200F}\x{202A}-\x{202E}\x{2066}-\x{2069}]/u
+  @control ~r/[\x{0000}-\x{0008}\x{000B}-\x{001F}\x{007F}-\x{009F}\x{200E}\x{200F}\x{202A}-\x{202E}\x{2066}-\x{2069}]/u
+  # A Latin word with a Cyrillic, Greek, or Armenian letter spliced in (or the
+  # reverse) is how "kill" becomes "kіll" and slips past the word lists above.
+  @mixed_script ~r/\p{Latin}[\p{L}\p{M}]*[\p{Cyrillic}\p{Greek}\p{Armenian}]|[\p{Cyrillic}\p{Greek}\p{Armenian}][\p{L}\p{M}]*\p{Latin}/u
   @format ~r/[\x{00AD}\x{0600}-\x{0605}\x{061C}\x{06DD}\x{070F}\x{0890}\x{0891}\x{08E2}\x{180E}\x{200B}-\x{200F}\x{202A}-\x{202E}\x{2060}-\x{206F}\x{FEFF}\x{FFF9}-\x{FFFB}\x{110BD}\x{110CD}\x{13430}-\x{1343F}\x{1BCA0}-\x{1BCA3}\x{1D173}-\x{1D17A}\x{E0001}\x{E0020}-\x{E007F}]/u
 
   def public?(post), do: post["visibility"] in ["public", "unlisted"]
@@ -73,6 +76,9 @@ defmodule ChorusDraft.Safety do
     value = screening_text(text)
 
     cond do
+      Regex.match?(@mixed_script, value) ->
+        raise Error, "Automatic AI output mixes scripts within a word."
+
       Enum.any?(@automatic_abuse, &Regex.match?(&1, value)) ->
         raise Error, "Post failed automatic harassment screening."
 

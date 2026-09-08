@@ -71,10 +71,33 @@ function selection(request) {
   }
   return request;
 }
+// One request per line; the bridge reads lines of at most 64 KiB.
+const REQUEST_LIMIT = 65536;
+// Anything the bot reads as a line; tabs are the only control allowed.
+const CONTROL = /[\x00-\x08\x0a-\x1f\x7f]/;
 function send(request) {
   if (!bridge || bridge.killed || !bridge.stdin.writable)
     throw new Error("The bot service is unavailable. Reopen ChorusDraft.");
-  bridge.stdin.write(JSON.stringify(request) + "\n");
+  const line = JSON.stringify(request) + "\n";
+  if (Buffer.byteLength(line) > REQUEST_LIMIT)
+    throw new Error("The request is too large to send.");
+  bridge.stdin.write(line);
+}
+function validText(text, limit) {
+  return (
+    typeof text === "string" &&
+    text.trim() !== "" &&
+    text.length <= limit &&
+    !/\0/.test(text)
+  );
+}
+function validId(id) {
+  return (
+    typeof id === "string" &&
+    id.trim() !== "" &&
+    id.length <= 80 &&
+    !CONTROL.test(id)
+  );
 }
 function emit(message) {
   if (window && !window.isDestroyed())
@@ -225,28 +248,18 @@ app
       ];
       if (!actions.includes(request.action) || running)
         throw new Error("Choose an action after the current session ends.");
-      if (request.action === "reject") {
-        if (
-          typeof request.text !== "string" ||
-          !request.text.trim() ||
-          request.text.length > 80 ||
-          /[\r\n\0]/.test(request.text)
-        )
-          throw new Error("Choose a pending or uncertain draft to reject.");
-      }
-      if (request.action === "edit") {
-        if (
-          typeof request.target !== "string" ||
-          !request.target.trim() ||
-          request.target.length > 80 ||
-          /[\r\n\0]/.test(request.target) ||
-          typeof request.text !== "string" ||
-          !request.text.trim() ||
-          request.text.length > 10000 ||
-          /[\0]/.test(request.text)
-        )
-          throw new Error("Enter replacement text for a pending draft.");
-      }
+      if (
+        ["search", "post"].includes(request.action) &&
+        !validText(request.text, 10000)
+      )
+        throw new Error("Enter text for this action (maximum 10,000 characters).");
+      if (request.action === "reject" && !validId(request.text))
+        throw new Error("Choose a pending or uncertain draft to reject.");
+      if (
+        request.action === "edit" &&
+        (!validId(request.target) || !validText(request.text, 10000))
+      )
+        throw new Error("Enter replacement text for a pending draft.");
       const environment = ["setup", "help", "version"].includes(request.action)
         ? {}
         : vault.values(request.platform);
@@ -269,11 +282,7 @@ app
       }
     });
     handle("bot:input", (text) => {
-      if (
-        typeof text !== "string" ||
-        text.length > 20000 ||
-        /[\r\n\0]/.test(text)
-      )
+      if (typeof text !== "string" || text.length > 20000 || CONTROL.test(text))
         throw new Error("Enter one response at a time.");
       send({ type: "input", text });
     });

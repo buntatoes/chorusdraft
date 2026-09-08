@@ -130,6 +130,7 @@ On Windows, replace `./bot` with `.\bot.bat`.
 | `discover ["QUERY"]` | Draft commentary on a public post |
 | `targets [HANDLE]` | Draft commentary from selected accounts |
 | `start` | Keep drafting posts and checking mentions |
+| `automatic` | Like `start`, but may publish new originals and eligible mention replies |
 | `listen` | Keep checking mentions |
 | `delete ID` | Delete your own post after confirmation |
 | `history` | Show locally recorded published posts from the last 10 days |

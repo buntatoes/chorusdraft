@@ -1,7 +1,7 @@
 # ChorusDraft
 
 Elixir app for Linux, macOS, and Windows. One executable, Bluesky and Mastodon
-modes. Version 0.51.5. See [CHANGELOG.md](CHANGELOG.md).
+modes. Version 0.51.6. See [CHANGELOG.md](CHANGELOG.md).
 
 Review is the default. `automatic` may publish new originals and eligible
 public-mention replies after screening and a source recheck.
@@ -100,9 +100,9 @@ auth, bounded output, and `store: false`.
 
 ## Packages
 
-- `ChorusDraft-elixir-0.51.5-linux.tar.gz`
-- `ChorusDraft-elixir-0.51.5-macos.tar.gz`
-- `ChorusDraft-elixir-0.51.5-windows.zip`
+- `ChorusDraft-elixir-0.51.6-linux.tar.gz`
+- `ChorusDraft-elixir-0.51.6-macos.tar.gz`
+- `ChorusDraft-elixir-0.51.6-windows.zip`
 
 Build: `MIX_ENV=prod mix run scripts/build_release.exs`  
 Verify: `./scripts/check_packages.sh` or `.\scripts\check_packages.ps1`
@@ -112,9 +112,12 @@ Verify: `./scripts/check_packages.sh` or `.\scripts\check_packages.ps1`
 Stop the old process, install into a new directory, copy `.env` and config:
 
 ```sh
-./run.sh bluesky --import-state /absolute/path/to/old/data/ACCOUNT_HASH/state.json
-./run.sh bluesky --status
+./chorusdraft bluesky import /absolute/path/to/old/data/ACCOUNT_HASH/state.json
+./chorusdraft bluesky status
 ```
+
+Inside a release package use `./run.sh` (or `run.ps1`) in place of
+`./chorusdraft`.
 
 `reject ID` drops a pending or uncertain draft and unfreezes automatic mode.
 Check the live account first. Do not force uncertain back to pending.

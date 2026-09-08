@@ -147,56 +147,6 @@ defmodule ChorusDraft.CLI do
     end
   end
 
-  def normalize_short_command([]), do: []
-  def normalize_short_command(["help"]), do: ["--help"]
-  def normalize_short_command(["version"]), do: ["--version"]
-  def normalize_short_command(["setup"]), do: ["--setup"]
-  def normalize_short_command(["draft" | rest]), do: ["--post-only" | rest]
-  def normalize_short_command(["review" | rest]), do: ["--process-queue" | rest]
-  def normalize_short_command(["start" | rest]), do: ["--daemon" | rest]
-  def normalize_short_command(["automatic" | rest]), do: ["--daemon", "--automatic" | rest]
-  def normalize_short_command(["listen" | rest]), do: ["--listen" | rest]
-  def normalize_short_command(["replies" | rest]), do: ["--replies-only" | rest]
-  def normalize_short_command(["post", text | rest]), do: ["--text", text | rest]
-
-  def normalize_short_command(["reply", id, text | rest]),
-    do: ["--text", text, "--reply-to", id | rest]
-
-  def normalize_short_command(["quote", id, text | rest]),
-    do: ["--text", text, "--quote-uri", id | rest]
-
-  def normalize_short_command(["search", query | rest]), do: ["--search", query | rest]
-  def normalize_short_command(["delete", id | rest]), do: ["--delete", id | rest]
-  def normalize_short_command(["status" | rest]), do: ["--status" | rest]
-  def normalize_short_command(["reject", id | rest]), do: ["--reject", id | rest]
-
-  def normalize_short_command(["edit", id, text | rest]),
-    do: ["--edit", id, "--text", text | rest]
-
-  def normalize_short_command(["random"]), do: ["--random-post="]
-
-  def normalize_short_command(["random", "--" <> _ = option | rest]),
-    do: ["--random-post=", option | rest]
-
-  def normalize_short_command(["random", query | rest]), do: ["--random-post", query | rest]
-  def normalize_short_command(["discover"]), do: ["--discover"]
-
-  def normalize_short_command(["discover", "--" <> _ = option | rest]),
-    do: ["--discover", option | rest]
-
-  def normalize_short_command(["discover", query | rest]),
-    do: ["--discover", "--query", query | rest]
-
-  def normalize_short_command(["targets"]), do: ["--targets-only"]
-
-  def normalize_short_command(["targets", "--" <> _ = option | rest]),
-    do: ["--targets-only", option | rest]
-
-  def normalize_short_command(["targets", handle | rest]),
-    do: ["--targets-only", "--target", handle | rest]
-
-  def normalize_short_command(argv), do: argv
-
   defp normalize_compatibility_args([]), do: []
   defp normalize_compatibility_args(["--random-post"]), do: ["--random-post="]
 
@@ -281,6 +231,9 @@ defmodule ChorusDraft.CLI do
 
       options[:publish] && (!options[:text] || options[:queue]) ->
         {:error, "--publish requires --text and cannot be combined with --queue."}
+
+      options[:publish] && options[:random_reply] ->
+        {:error, "--random-reply picks the target for you; stage it and publish from review."}
 
       options[:reply_to] && options[:quote_uri] ->
         {:error, "Choose either a reply or quote."}
@@ -587,7 +540,7 @@ defmodule ChorusDraft.CLI do
     Short commands:
       setup, draft, review, start, automatic, listen, replies, status, history
       post TEXT, reply ID TEXT, quote ID TEXT, search QUERY, edit ID TEXT
-      random [QUERY], discover [QUERY], targets [HANDLE], delete ID, reject ID
+      random [QUERY], discover [QUERY], targets [HANDLE], delete ID, reject ID, import FILE
 
       -m, --text TEXT          Stage a manual post
           --publish            Publish --text explicitly; never applies to AI
@@ -603,13 +556,14 @@ defmodule ChorusDraft.CLI do
           --automatic          With --daemon, publish new originals/replies after safety checks
           --jetstream          Compatibility no-op; Bluesky listen/start always streams
           --process-queue      Interactively review AI and manual drafts
-          --edit ID            Replace pending draft text; requires --text; then review; not with --publish, reply, or quote
+          --edit ID            Replace pending draft text; requires --text; then review; not with --publish, reply, quote, or queue
           --search QUERY       Display public posts
           --random-post [QUERY] Display a random public search/timeline result
           --delete ID          Interactively delete your own post
           --setup              Create missing configuration files, without login
           --import-state FILE  Copy compatible state into an empty account store
           --status             Show queue counts, unresolved IDs, and automatic budget
+          --history            Print locally recorded published posts as JSON
           --reject ID          Reject one pending or uncertain draft without publishing
           --base PATH          Platform configuration and data directory
           --random-reply QUERY Choose a public reply target for --text

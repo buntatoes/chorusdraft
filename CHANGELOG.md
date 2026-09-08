@@ -2,6 +2,59 @@
 
 Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
+## 0.51.6 — 2026-09-08
+
+Bug-fix and security release. No new features.
+
+### Fixed
+
+- `chorusdraft PLATFORM automatic` and the desktop **Start automatic mode**
+  button had exited with "Unknown command" since 0.51.4. `--daemon --automatic`
+  was unaffected. The tests that should have caught this were checking an
+  unused parser; that parser is gone and the tests now run against the real
+  one.
+- Long edits from the desktop were cut at 4095 bytes on Linux and 1024 on
+  macOS by the terminal line discipline, then rejected as invalid. The bot
+  terminal now reads lines whole.
+- Editing a reply or mention draft during review no longer times out on the
+  store lock. A nested store transaction fails at once with a clear message
+  instead of waiting five seconds and reporting "busy".
+- Help lists `import FILE` and `--history`, and the `--edit` line names every
+  option it refuses.
+
+### Security
+
+- Review indents the draft body, and the desktop only recognises the approval
+  prompt and draft header at the start of a line. Text inside a draft can no
+  longer light up the publish button early or point Edit at a different draft.
+- Desktop responses reject every control character except tab, so a response
+  cannot send the bot EOF, suspend, or line-erase keys. Requests to the bot
+  service are capped at its 64 KiB line limit.
+- The obfuscated-email screen was quadratic on runs of whitespace (3 s on 32k
+  spaces). It is linear now.
+- Automatic mode holds output that splices Cyrillic, Greek, or Armenian
+  letters into a Latin word, which is how "kill" got past the word list.
+- C1 control characters (U+0080–U+009F) are rejected in drafts like C0.
+- Bluesky app passwords, AWS access keys, Stripe keys, and PEM private-key
+  headers are redacted from AI context and refused in AI output.
+- Status IDs, at:// URIs, model names, and store keys are checked against the
+  whole value, so a trailing newline no longer passes. Draft identifier fields
+  reject whitespace.
+- `--publish` is refused with `--random-reply`. The target is chosen at random,
+  so the reply is staged for review instead of posted unseen.
+- Jetstream treats a session that drops right after the handshake as a failed
+  attempt, so a server that accepts and closes cannot hold the client in a
+  one-second reconnect loop.
+- History and Queue refuse state or activity files over 50 MB before reading
+  them. `build_bundle.py` raises instead of using `assert` for its integrity
+  checks. Both workflows pin the same `upload-artifact` release.
+
+### Docs
+
+- `docs/DESKTOP.md` lists `automatic`. Both READMEs say `run.sh` is the
+  package launcher and use `chorusdraft` from a source checkout. The supported
+  versions table covers 0.51.5.
+
 ## 0.51.5 — 2026-09-08
 
 ### Queue and review

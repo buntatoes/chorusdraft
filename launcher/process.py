@@ -62,6 +62,14 @@ class Session:
             import termios
             self.master, slave = pty.openpty()
             fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 40, 160, 0, 0))
+            # Canonical mode caps a line at 4095 bytes on Linux and 1024 on macOS and
+            # silently drops the rest, which truncates long edits. The bridge always
+            # sends complete lines, so hand them over unedited; signals still work.
+            attributes = termios.tcgetattr(slave)
+            attributes[3] &= ~termios.ICANON
+            attributes[6][termios.VMIN] = 1
+            attributes[6][termios.VTIME] = 0
+            termios.tcsetattr(slave, termios.TCSANOW, attributes)
             try:
                 self.process = subprocess.Popen(command, cwd=cwd, stdin=slave, stdout=slave,
                                                 stderr=slave, start_new_session=True, env=environment)

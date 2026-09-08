@@ -74,6 +74,15 @@ defmodule ChorusDraft.CommandsTest do
     assert message =~ "--publish cannot be combined with --edit"
   end
 
+  test "a random reply target is never published unseen" do
+    message =
+      capture_io(:stderr, fn ->
+        assert CLI.run(["bluesky", "post", "hello", "--random-reply", "query", "--publish"]) == 1
+      end)
+
+    assert message =~ "publish from review"
+  end
+
   test "edit cannot be combined with reply or quote targets" do
     for extra <- [
           ["--reply-to", "1"],
