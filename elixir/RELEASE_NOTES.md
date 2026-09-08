@@ -4,8 +4,9 @@ Release notes, downloads, and upgrade guidance are published in
 [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
 Version 0.51.4 adds an explicit safeguarded automatic mode, makes Bluesky
-Jetstream the default listener transport, and adds ChatGPT through the OpenAI
-Responses API. Review-first behavior remains the default.
+Jetstream required and automatically enabled for listener and daemon workflows,
+and adds ChatGPT through the OpenAI Responses API. Review-first behavior remains
+the default.
 
 ## Highlights
 
@@ -14,9 +15,9 @@ Responses API. Review-first behavior remains the default.
 - Keep `start`, `draft`, `replies`, manual posts, quotes, target commentary,
   discovery commentary, and existing queued items under the established review
   or explicit-owner-publication rules.
-- Use `AI_PROVIDER=chatgpt` (or `openai`) with `OPENAI_API_KEY` and
+- Use `AI_PROVIDER=chatgpt` or `AI_PROVIDER=openai` with `OPENAI_API_KEY` and
   `OPENAI_MODEL`. Local/Ollama and Gemini providers remain supported.
-- Bluesky `listen` and `start` now use Jetstream automatically.
+- Bluesky `listen`, `start`, and `automatic` now require and start Jetstream.
   `--jetstream` is retained as a compatibility no-op, and
   `--no-jetstream` is rejected.
 - All platform API calls, AI calls, and publication calls retain bounded
@@ -29,11 +30,13 @@ created by that daemon cycle, and only when it is an original or a reply to an
 eligible incoming public mention.
 
 Before an automatic reply is claimed, ChorusDraft re-fetches the source through
-the canonical service API. The ID, text, content warning, handle, immutable
-author identity, and visibility must match the generation context. Injection,
-opt-out, and do-not-contact checks run again. Generated output receives an
-additional deterministic screen that holds model-added mentions, links, common
-contact-information patterns, harassment, and pile-on language for review.
+the canonical service API. The ID, text, content warning, handle, and immutable
+author identity must match the generation context, and the source must retain
+supported public visibility. Injection, opt-out, and do-not-contact checks run
+again, including opt-outs in source text or its content warning. Generated text
+and any content warning receive an additional deterministic screen that holds
+account mentions, links, common contact-information patterns, normalized
+prompt-injection patterns, harassment, and pile-on language for review.
 
 Each account receives at most five automatic publication attempts per rolling
 24 hours. The attempt is reserved atomically before the network call and counts
@@ -58,17 +61,22 @@ continues to use polling.
 
 ## ChatGPT and data handling
 
-Set `AI_PROVIDER=chatgpt`, `OPENAI_API_KEY`, and `OPENAI_MODEL` in the
-selected platform's private `.env`. The `openai` provider name is an alias.
-ChorusDraft sends the drafting task and selected cleaned public context to the
-OpenAI Responses API, requests a bounded text response, and sets `store` to
-`false`. The API key is sent only in the authorization header; remote response
-details are omitted from local errors.
+Set `AI_PROVIDER=chatgpt` or `AI_PROVIDER=openai`, plus `OPENAI_API_KEY` and
+`OPENAI_MODEL`, in the selected platform's private `.env`. Both provider names
+select the same adapter.
+ChorusDraft sends its system instructions separately from the JSON-encoded
+drafting task and selected cleaned public context to the OpenAI Responses API,
+caps generated output at 256 tokens, and sets `store` to `false` so the generated
+response is not stored for later retrieval through that API. The API key is sent
+only in the authorization header. Failed, incomplete, malformed, and empty
+responses are rejected without including remote response details in local
+errors; extracted text still passes the ordinary platform-length and content
+safeguards.
 
-Using a remote provider changes the privacy boundary. Review the provider's
-terms and data controls before sending public conversation context. Credentials,
-local state, logs, and runtime configuration remain excluded from release
-packages.
+Using a remote provider changes the privacy boundary. `store: false` is not a
+claim of zero data retention; review [OpenAI's current data controls](https://developers.openai.com/api/docs/guides/your-data)
+before sending public conversation context. Credentials, local state, logs, and
+runtime configuration remain excluded from release packages.
 
 ## Packages
 

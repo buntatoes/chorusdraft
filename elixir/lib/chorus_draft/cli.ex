@@ -128,7 +128,8 @@ defmodule ChorusDraft.CLI do
 
       {options, [], []} ->
         if Keyword.get(options, :jetstream, :unspecified) == false do
-          {:error, "Jetstream cannot be disabled; Bluesky listen and start use it automatically."}
+          {:error,
+           "Jetstream cannot be disabled; Bluesky listener and daemon modes use it automatically."}
         else
           validate_options(
             options
@@ -567,10 +568,10 @@ defmodule ChorusDraft.CLI do
           --replies-only       Process public mentions once
           --targets-only       Stage public target commentary
           --discover           Stage discovery commentary
-          --listen             Poll public mentions
+          --listen             Listen for public mentions continuously
           --daemon             Poll mentions and periodically draft originals
           --automatic          With --daemon, publish new originals/replies after safety checks
-          --jetstream          Compatibility no-op; Bluesky listen/start always streams
+          --jetstream          Compatibility no-op; Bluesky listener/daemon modes always stream
           --process-queue      Interactively review AI and manual drafts
           --search QUERY       Display public posts
           --random-post [QUERY] Display a random public search/timeline result
@@ -584,7 +585,7 @@ defmodule ChorusDraft.CLI do
           --target HANDLE      Account for --targets-only
           --query QUERY        Discovery search (or DISCOVERY_KEYWORDS/TAGS)
           --limit N            Inspection results, 1–40 (default 5)
-          --poll-interval N    Poll seconds, 10–3600 (default 60)
+          --poll-interval N    Cycle/catch-up seconds, 10–3600 (default 60)
           --interval N         Daemon original interval in minutes (default 120)
           --jitter N           Random delay up to N minutes, 0–60
           --active-hours RANGE Local HH:MM-HH:MM, including overnight ranges

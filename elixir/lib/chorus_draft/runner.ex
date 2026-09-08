@@ -131,7 +131,7 @@ defmodule ChorusDraft.Runner do
 
     Enum.each(notifications, fn post ->
       if Safety.public?(post) and post["author_id"] != client_call(runner, :identity) and
-           Safety.opt_out?(post["text"]) do
+           (Safety.opt_out?(post["text"]) or Safety.opt_out?(post["cw"])) do
         block_post(runner, post)
       end
     end)
@@ -354,6 +354,10 @@ defmodule ChorusDraft.Runner do
       preflight =
         try do
           Safety.validate_automatic_text!(generated, client_call(runner, :limit))
+
+          unless empty?(item["cw"]),
+            do: Safety.validate_automatic_text!(item["cw"], client_call(runner, :limit))
+
           validate_draft!(runner, item)
           actors = automatic_source_actors!(runner, item, post)
 
@@ -395,7 +399,7 @@ defmodule ChorusDraft.Runner do
       raise Error, "Source changed or is no longer eligible for automatic publication."
     end
 
-    if Safety.opt_out?(current["text"]) do
+    if Safety.opt_out?(current["text"]) or Safety.opt_out?(current["cw"]) do
       block_post(runner, current)
       block_post(runner, post)
       raise Error, "Source account opted out of replies."

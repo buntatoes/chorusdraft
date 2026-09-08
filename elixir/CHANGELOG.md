@@ -12,20 +12,25 @@ notes are published in [GitHub Releases](https://github.com/buntatoes/chorusdraf
 - Allowed only each newly generated original and eligible public-mention reply
   to publish automatically. Older queued drafts, owner-written text, quotes,
   target commentary, and discovery commentary remain review-only.
-- Added stricter automatic-output screening for harassment, pile-ons,
-  model-added mentions, links, and common personal-contact patterns.
-- Added immediate source re-fetch and exact content, content-warning, handle,
-  immutable-author, visibility, injection, opt-out, and do-not-contact checks.
+- Added stricter generated-text and content-warning screening for harassment,
+  pile-ons, normalized injection patterns, account mentions, links across generic
+  and internationalized domains, and common personal-contact patterns; expanded
+  recognized opt-out language and checks across source text and content warnings.
+- Added immediate source re-fetch; exact content, content-warning, handle, and
+  immutable-author checks; continued public-visibility validation; and repeated
+  injection, opt-out, and do-not-contact checks.
 - Added an atomic five-attempt rolling 24-hour budget, single-flight claims,
   unresolved-publication lockout, and stale-claim recovery to `uncertain`.
 
 ### Providers and Bluesky
 
-- Added ChatGPT through the OpenAI Responses API with `chatgpt` and `openai`
-  provider names, configurable API key/model, bounded output, sanitized errors,
-  and request-level response storage disabled.
-- Made Jetstream the default, non-disableable wake-up transport for Bluesky
-  listener and daemon modes. `--jetstream` remains a compatibility no-op.
+- Added ChatGPT through the OpenAI Responses API with both `chatgpt` and `openai`
+  provider names, configurable API key/model, a 256-token output cap,
+  completed-response validation, sanitized errors, and request-level response
+  storage disabled.
+- Made Jetstream the required, automatically enabled wake-up transport for
+  Bluesky listener and daemon modes, including `automatic`. `--jetstream`
+  remains a compatibility no-op.
 - Preserved canonical notification/API fetches and periodic catch-up; streamed
   post bodies remain outside AI context, output, and persistent state.
 

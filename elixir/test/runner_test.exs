@@ -123,6 +123,32 @@ defmodule ChorusDraft.RunnerTest do
     assert hd(Store.drafts(dir))["status"] == "published"
   end
 
+  test "automatic mode never republishes an unsafe source content warning", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    source = Map.put(post("unsafe-cw"), "cw", "Meet at 123 Example Street")
+    Runner.mentions(runner(%{client | posts: [source]}, dir, automatic: true))
+
+    assert Agent.get(published, & &1) == []
+    assert hd(Store.drafts(dir))["status"] == "pending"
+  end
+
+  test "an opt-out in a source content warning blocks automatic replies before generation", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    source = Map.put(post("cw-opt-out"), "cw", "Please stop replying to me")
+    Runner.mentions(runner(%{client | posts: [source]}, dir, automatic: true))
+
+    refute_received {:ai_context, _}
+    assert Store.blocked?(dir, source["author_id"])
+    assert Store.drafts(dir) == []
+    assert Agent.get(published, & &1) == []
+  end
+
   test "automatic mode holds unsafe AI, target, and discovery drafts for review", %{
     dir: dir,
     client: client,

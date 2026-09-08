@@ -132,10 +132,21 @@ LOCAL_LLM_MODEL=llama3.2:3b
 ```
 
 To use Gemini, set `AI_PROVIDER=gemini` and provide `GEMINI_API_KEY` and
-`GEMINI_MODEL`. To use ChatGPT, set `AI_PROVIDER=chatgpt` (the `openai` alias is
-also accepted) and provide `OPENAI_API_KEY` and `OPENAI_MODEL`. Remote providers
-receive the task plus selected, cleaned public drafting context. Optional
-settings include `ACTIVE_HOURS`, the status language, and discovery keywords.
+`GEMINI_MODEL`. To use ChatGPT through the OpenAI API, set
+`AI_PROVIDER=chatgpt` or `AI_PROVIDER=openai` and provide `OPENAI_API_KEY` and
+`OPENAI_MODEL`. Remote providers receive the task plus selected, cleaned public
+drafting context. Optional settings include `ACTIVE_HOURS`, the status language,
+and discovery keywords.
+
+The OpenAI adapter sends the system instructions separately from the
+JSON-encoded task and untrusted context, authenticates only through the bearer
+header, caps generated output at 256 tokens, and sets `store: false` so the
+generated response is not stored for later retrieval through the Responses API.
+Failed, incomplete, malformed, and empty responses are rejected; extracted text
+still passes the platform-length and content safeguards. Consult
+[OpenAI's current data controls](https://developers.openai.com/api/docs/guides/your-data)
+before choosing a remote provider because `store: false` is not a claim of zero
+data retention.
 
 Setup is safe to run again: it creates only missing configuration files and
 does not log in, execute `.env` contents, or start a daemon.
@@ -221,7 +232,7 @@ automatic-publication permission.
 | `review` | Interactively review queued drafts |
 | `start` | Run the foreground daemon; stop it with Ctrl+C |
 | `automatic` | Run the daemon and allow safeguarded new originals/mention replies to publish |
-| `listen` | Poll public mentions |
+| `listen` | Listen for public mentions (Jetstream wake-ups on Bluesky; polling on Mastodon) |
 | `replies` | Process eligible public mentions once |
 | `post TEXT` | Stage owner-written text |
 | `reply ID TEXT` | Stage an owner-written reply |
@@ -250,11 +261,12 @@ Examples of advanced options:
 ./run.sh bluesky status
 ```
 
-Bluesky `listen` and `start` always use Jetstream. The old `--jetstream` flag is
-accepted as a compatibility no-op, while `--no-jetstream` is rejected. Stream
-events only wake the ordinary notification workflow: streamed post bodies never
-enter AI context, terminal output, or local state. Canonical API-fetched posts
-still pass through opt-out, deduplication, safety, and publication-policy checks.
+Bluesky `listen`, `start`, and `automatic` require and start Jetstream. The old
+`--jetstream` flag is accepted as a compatibility no-op, while
+`--no-jetstream` is rejected. Stream events only wake the ordinary notification
+workflow: streamed post bodies never enter AI context, terminal output, or local
+state. Canonical API-fetched posts still pass through opt-out, deduplication,
+safety, and publication-policy checks.
 
 ## Safety, privacy, and reliability
 
@@ -263,10 +275,13 @@ only on documentation:
 
 - Review is the default. Explicit automatic mode is limited to a just-created
   original or eligible incoming mention reply; every other AI draft stays queued.
-- Automatic output receives an additional deterministic screen for harassment,
-  pile-ons, model-added mentions, links, and common contact-information patterns.
-  A source reply is re-fetched, checked for public visibility, immutable author
-  identity, injection, opt-out, and do-not-contact status before the atomic claim.
+- Generated text and any content warning receive an additional deterministic
+  screen for harassment, pile-ons, normalized prompt-injection patterns, account
+  mentions, links, and common contact-information patterns. A source reply is
+  re-fetched; its text, content warning, handle, and immutable author identity
+  must still match, it must retain supported public visibility, and injection,
+  opt-out, and do-not-contact checks run again before the claim. Opt-outs in
+  either source text or its content warning are honored.
 - Automatic attempts are persisted and capped at five per rolling 24 hours.
   Only one may be in flight, and any `publishing` or `uncertain` draft blocks
   later automatic claims. Crash-stranded claims age into `uncertain` and are not

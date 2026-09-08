@@ -1,11 +1,19 @@
 defmodule ChorusDraft.Safety do
   alias ChorusDraft.Error
 
-  @opt_out ~r/\b(?:leave\s+me\s+alone|(?:do\s+not|don't|dont|stop)\s+(?:reply(?:ing)?|respond(?:ing)?|contact(?:ing)?|mention(?:ing)?)(?:\s+to)?\s+me)\b/iu
+  @opt_out ~r/\b(?:leave\s+me\s+alone|(?:do\s+not|don't|dont|never|stop)\s+(?:reply(?:ing)?|respond(?:ing)?|contact(?:ing)?|mention(?:ing)?|messag(?:e|ing)|talk(?:ing)?|interact(?:ing)?)(?:\s+(?:to|with))?\s+me(?:\s+again)?)\b/iu
   @abuse ~r/(?:\b(?:kill|hang)\s+yourself\b|\bdie\s+in\s+(?:a\s+)?fire\b|\bbomb\s+threat\b|\bdoxx?(?:ing|ed)?\b|\b(?:everyone|everybody)\s+(?:go\s+)?(?:attack|harass|report|threaten)\b|\byou(?:'re|\s+are)\s+(?:an?\s+)?(?:idiot|moron|worthless|pathetic)\b)/iu
-  @automatic_abuse ~r/(?:\b(?:clown|creep|disgusting|dumb|idiot|loser|moron|pathetic|stupid|trash|worthless)\b|\b(?:shut\s+up|go\s+(?:away|die)|nobody\s+likes\s+you)\b|\b(?:attack|dogpile|harass|mass[- ]?report|ratio|threaten)\s+@?\w+|\b(?:send\s+nudes|nice\s+(?:ass|tits)|your\s+(?:body|chest)\s+is\s+hot)\b)/iu
+  @automatic_abuse [
+    ~r/\b(?:clown|creep|disgusting|dumb|fool|idiot|jerk|loser|moron|pathetic|stupid|trash|worthless)\b/iu,
+    ~r/\b(?:shut\s+up|go\s+(?:away|die)|nobody\s+likes\s+you)\b/iu,
+    ~r/\b(?:attack|destroy|dogpile|doxx?|harm|harass|hurt|kill|mass[- ]?report|ratio|threaten)\s+@?\w+/iu,
+    ~r/\b(?:everyone|everybody|all\s+of\s+you|we)\b.{0,40}\b(?:attack|destroy|dogpile|doxx?|harm|harass|hurt|kill|mass[- ]?report|report|threaten)\b/iu,
+    ~r/\b(?:i|we)(?:'ll|\s+will|(?:'m|'re|\s+(?:am|are))\s+going\s+to|\s+gonna|\s+(?:plan|want)\s+to)?\s+(?:attack|destroy|doxx?|harm|hurt|kill|find)\s+you\b/iu,
+    ~r/(?:\b(?:end|take)\s+your\s+(?:own\s+)?life\b|\bcommit\s+suicide\b|\byou\s+deserve\s+to\s+(?:die|be\s+(?:hurt|killed))\b|\bkys\b)/iu,
+    ~r/\b(?:send\s+nudes|nice\s+(?:ass|tits)|your\s+(?:body|chest)\s+is\s+hot)\b/iu
+  ]
   @automatic_mention ~r/(?<![\p{L}\p{N}_@])@[\p{L}\p{N}_][\p{L}\p{N}_.-]*(?:@[\p{L}\p{N}_][\p{L}\p{N}_.-]*)?/u
-  @automatic_url ~r/(?:\b(?:https?:\/\/|www\.)[^\s<>]+|\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:ai|app|co|com|dev|io|net|org|social|xyz)(?:\/[^\s<>]*)?)/iu
+  @automatic_url ~r/(?:\b(?:https?:\/\/|www\.)[^\s<>]+|(?<![@\p{L}\p{N}_-])(?:[\p{L}\p{N}](?:[\p{L}\p{N}-]{0,61}[\p{L}\p{N}])?\.)+(?:[\p{L}]{2,63}|xn--[a-z0-9-]{2,59})(?:\/[^\s<>]*)?)/iu
   @automatic_email ~r/\b[a-z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+\b/iu
   @automatic_phone ~r/(?<![\p{L}\p{N}])\+?\d[\d .()-]{6,}\d(?![\p{L}\p{N}])/u
   @automatic_address ~r/\b\d{1,6}\s+[\p{L}\p{N}][\p{L}\p{N} .'’-]{0,60}\s+(?:avenue|ave|boulevard|blvd|court|ct|drive|dr|lane|ln|road|rd|street|st|way)\b/iu
@@ -24,7 +32,7 @@ defmodule ChorusDraft.Safety do
   end
 
   def opt_out?(text), do: Regex.match?(@opt_out, screening_text(text))
-  def injection?(text), do: Regex.match?(@injection, to_string_or_empty(text))
+  def injection?(text), do: Regex.match?(@injection, screening_text(text))
 
   def eligible?(post) do
     public?(post) and String.trim(to_string_or_empty(post["text"])) != "" and
@@ -64,8 +72,11 @@ defmodule ChorusDraft.Safety do
     value = screening_text(text)
 
     cond do
-      Regex.match?(@automatic_abuse, value) ->
+      Enum.any?(@automatic_abuse, &Regex.match?(&1, value)) ->
         raise Error, "Post failed automatic harassment screening."
+
+      Regex.match?(@injection, value) ->
+        raise Error, "Post failed prompt-injection screening."
 
       Regex.match?(@automatic_mention, value) ->
         raise Error, "Automatic AI output cannot add account mentions."

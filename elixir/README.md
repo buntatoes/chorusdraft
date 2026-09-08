@@ -103,12 +103,14 @@ Use `automatic` for an explicit unattended daemon:
 ```
 
 Only the exact original or eligible incoming public-mention reply created in
-that cycle can be claimed. Before an automatic reply, the source is re-fetched
-and its ID, text, content warning, handle, immutable author identity, and public
-visibility must match the generation context. Injection, opt-out, and
-do-not-contact checks run again. Generated output is also held if it contains
-model-added mentions, links, common personal-contact patterns, pile-ons, or
-expanded harassment language.
+that cycle can be claimed. Before an automatic reply, the source is re-fetched;
+its ID, text, content warning, handle, and immutable author identity must match
+the generation context, and it must retain supported public visibility.
+Injection, opt-out, and do-not-contact checks run again. Generated output is
+also held if it contains account mentions, links, common personal-contact
+patterns, normalized prompt-injection patterns, pile-ons, or expanded harassment
+language. Any content warning is subject to the same strict automatic screen,
+and opt-outs in source text or its content warning are honored.
 
 Each account receives at most five automatic publication attempts per rolling
 24 hours. Attempts are reserved atomically and failures count. Only one may be
@@ -117,11 +119,13 @@ claims. A crash-stranded claim ages into `uncertain`; it is never retried.
 
 ## Bluesky Jetstream
 
-Jetstream starts automatically for Bluesky listener and daemon modes:
+Jetstream is required and starts automatically for Bluesky listener and daemon
+modes, including the automatic daemon:
 
 ```sh
 ./chorusdraft bluesky --listen
 ./chorusdraft bluesky start
+./chorusdraft bluesky automatic
 ```
 
 The client uses the current `network.bsky.jetstream.subscribeEvents` API with the
@@ -157,7 +161,7 @@ existing 30-notification fetch window and five-reply batch limit still apply.
 
 The Mastodon mode continues to use polling; Jetstream is a Bluesky service. The
 legacy `--jetstream` flag is accepted as a compatibility no-op for Bluesky
-`listen`/`start`, while `--no-jetstream` is rejected.
+`listen`, `start`, and `automatic`, while `--no-jetstream` is rejected.
 
 Protocol reference: [Bluesky Jetstream documentation](https://bsky.network/docs/jetstream/).
 
@@ -178,8 +182,8 @@ The separate automatic-publication budget is five attempts per rolling 24
 hours. It does not expand the target/discovery interaction budget.
 
 The Mastodon mode processes only public and unlisted source statuses; restricted
-bodies are discarded immediately. The Bluesky mode supports public feed posts only. Automatic likes,
-favourites, boosts, and reposts are not implemented.
+bodies are discarded immediately. The Bluesky mode supports public feed posts
+only. Automatic likes, favourites, boosts, and reposts are not implemented.
 
 If a publication request has an ambiguous result, the draft is marked `uncertain`.
 Inspect the account manually before doing anything else with it. The program will
@@ -195,9 +199,17 @@ Configure one AI provider in the selected platform `.env`:
 | `gemini` | `GEMINI_API_KEY`, `GEMINI_MODEL` | Google Gemini |
 | `chatgpt` or `openai` | `OPENAI_API_KEY`, `OPENAI_MODEL` | OpenAI Responses API |
 
-Remote providers receive the task and selected cleaned public context. The
-OpenAI request uses bearer authorization, bounded output, and `store: false`.
-Errors omit credential-bearing and remote response details.
+Remote providers receive the task and selected cleaned public context. For
+ChatGPT through the OpenAI API, either `AI_PROVIDER=chatgpt` or
+`AI_PROVIDER=openai` is accepted. The adapter separates system instructions
+from the JSON-encoded task and untrusted context, uses bearer authorization,
+caps generated output at 256 tokens, and sets `store: false` so the generated
+response is not stored for later retrieval through the Responses API. It
+rejects failed, incomplete, malformed, and empty responses before applying the
+ordinary platform-length and content safeguards. Errors omit credential-bearing
+and remote response details. `store: false` does not itself claim zero data
+retention; review [OpenAI's current data controls](https://developers.openai.com/api/docs/guides/your-data)
+before sending public conversation context.
 
 Mint 1.10.0 handles Bluesky, Mastodon, and AI-provider HTTP requests with explicit
 timeouts and response limits, without redirect following or automatic retries.
