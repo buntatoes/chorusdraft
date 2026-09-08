@@ -17,10 +17,12 @@ Do not:
 - Spam, advertise, or derail threads
 
 Report a problem with this repo through GitHub private vulnerability reporting
-if it is a security issue. For other conduct problems, contact the maintainer
+if it is a security issue. For other conduct problems, contact me
 through GitHub. Do not file a public issue if that would spread the harm.
 
 The maintainer can edit or hide comments, close or lock threads, and block
 people. Repeated or serious violations get you removed from these spaces.
 
 This is about project conduct. It does not replace the license.
+
+If for some reason you are unable to contact me or any other future/current maintainer of the project, and it is not a very serious issue, open an issue request or comment. I will get to it when i can. 
