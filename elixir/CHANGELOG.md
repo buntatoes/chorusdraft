@@ -41,14 +41,6 @@ notes are published in [GitHub Releases](https://github.com/buntatoes/chorusdraf
 - Preserved canonical notification/API fetches and periodic catch-up; streamed
   post bodies remain outside AI context, output, and persistent state.
 
-### Release and verification
-
-- Updated all version markers, configuration examples, user/security docs,
-  release notes, package paths, and testing-branch CI coverage for 0.51.4.
-- Expanded offline regression coverage to 83 tests, including automatic-mode
-  publication boundaries, source edits, budgets, crash recovery, and OpenAI
-  response validation.
-
 ## 0.51.3 — 2026-09-06
 
 ### Elixir runtime
