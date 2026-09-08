@@ -4,6 +4,15 @@
 
 # ChorusDraft
 
+<p align="center">
+  <a href="https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml"><img alt="Elixir checks" src="https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/buntatoes/chorusdraft/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/buntatoes/chorusdraft?display_name=tag&sort=semver"></a>
+  <a href="LICENSE"><img alt="License: GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-blue.svg"></a>
+  <img alt="Top language" src="https://img.shields.io/github/languages/top/buntatoes/chorusdraft">
+  <img alt="Platforms: Linux, macOS, Windows" src="https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20Windows-6f42c1">
+  <img alt="Services: Bluesky and Mastodon" src="https://img.shields.io/badge/services-Bluesky%20%2B%20Mastodon-0ea5e9">
+</p>
+
 ChorusDraft is a social drafting and publishing assistant for Bluesky and
 Mastodon. Review-first operation remains the default; an explicit `automatic`
 mode (`automatic` / `--daemon --automatic`) may publish only newly generated
