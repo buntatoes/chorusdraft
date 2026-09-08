@@ -50,10 +50,22 @@ function regular(file) {
   const value = stat(file);
   if (value && !value.isFile()) throw Error("Storage must be a regular file.");
 }
+// Check and read through one descriptor so the path cannot be swapped between
+// the size check and the read.
 function contents(file, message) {
   regular(file);
-  if (fs.statSync(file).size > FILE_LIMIT) throw Error(message);
-  return fs.readFileSync(file, "utf8");
+  const fd = fs.openSync(
+    file,
+    fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0),
+  );
+  try {
+    const value = fs.fstatSync(fd);
+    if (!value.isFile()) throw Error("Storage must be a regular file.");
+    if (value.size > FILE_LIMIT) throw Error(message);
+    return fs.readFileSync(fd, "utf8");
+  } finally {
+    fs.closeSync(fd);
+  }
 }
 function directory(dir) {
   const value = stat(dir);
