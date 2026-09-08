@@ -7,5 +7,6 @@ if ($Platform) {
 }
 foreach ($platform in $platforms) {
     & escript (Join-Path $PSScriptRoot 'chorusdraft') $platform --base (Join-Path $PSScriptRoot $platform) --setup
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
+exit 0

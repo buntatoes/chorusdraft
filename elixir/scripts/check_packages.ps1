@@ -65,7 +65,7 @@ try {
 
     $autoHome = Join-Path $work 'auto-home'
     $null = New-Item -ItemType Directory -Path $autoHome
-    $autoOut = & { $env:LOCALAPPDATA = $autoHome; & (Join-Path $package 'install.ps1') }
+    $autoOut = ((& { $env:LOCALAPPDATA = $autoHome; & (Join-Path $package 'install.ps1') }) | Out-String).TrimEnd()
     if ($autoOut -notmatch 'Installed ChorusDraft in (.+)\. Edit') { throw 'Automatic install did not report a destination.' }
     $autoInstalled = $Matches[1]
     if (-not (Test-Path -LiteralPath $autoInstalled)) { throw 'Automatic install directory is missing.' }

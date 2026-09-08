@@ -2,6 +2,21 @@
 set -eu
 umask 077
 src=$(CDPATH= cd "$(dirname "$0")" && pwd)
+parent=$(CDPATH= cd "$src/.." && pwd)
+if [ -f "$parent/VERSION" ] && [ -x "$parent/bot" ]; then
+  case $(uname -s) in
+    Darwin)
+      if [ -d "$parent/ChorusDraft.app" ]; then
+        exec "$parent/install.sh" "$@"
+      fi
+      ;;
+    *)
+      if [ -x "$parent/launcher/ChorusDraft" ]; then
+        exec "$parent/install.sh" "$@"
+      fi
+      ;;
+  esac
+fi
 
 default_dest() {
   version=$(tr -d '[:space:]' < "$src/VERSION")
@@ -39,6 +54,7 @@ verify() {
 }
 
 (cd "$src" && verify MANIFEST.sha256)
+mkdir -p "$(dirname "$dest")"
 mkdir -m 700 "$dest"
 for item in chorusdraft run.sh setup.sh install.sh bluesky mastodon source README.md RELEASE_NOTES.md CHANGELOG.md SECURITY.md LICENSE NOTICE THIRD_PARTY_NOTICES.md VERSION MANIFEST.sha256; do
   cp -R "$src/$item" "$dest/$item"

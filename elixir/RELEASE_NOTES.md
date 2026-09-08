@@ -2,17 +2,19 @@
 
 Downloads: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
-Patch release. `./install.sh` and `install.ps1` no longer need a destination
-argument. Run them from the extracted package and they install into a versioned
-folder under your user data directory, then run setup.
+Patch release. Desktop downloads include `./install.sh` and `install.ps1`.
+Run either with no arguments from the extracted package and ChorusDraft
+installs into a versioned folder under your user data directory, registers an
+application entry, runs setup, and opens the desktop app.
 
 Default locations:
 
 - Linux: `~/.local/share/chorusdraft-0.52.1`
-- macOS: `~/Library/Application Support/chorusdraft-0.52.1`
-- Windows: `%LOCALAPPDATA%\ChorusDraft-0.52.1`
+- macOS: `~/Library/Application Support/chorusdraft-0.52.1` (with ChorusDraft in Applications)
+- Windows: `%LOCALAPPDATA%\ChorusDraft-0.52.1` (with a Start menu shortcut)
 
-Pass a path when you want a custom install directory.
+Pass a path when you want a custom install directory. CLI-only packages still
+use the same install scripts for the bot; they do not launch a GUI.
 
 Details: [CHANGELOG.md](CHANGELOG.md).
 

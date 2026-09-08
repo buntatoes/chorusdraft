@@ -29,7 +29,7 @@ archive = ROOT / 'dist' / (name + ('.zip' if OS == 'windows' else '.tar.gz'))
 digest, filename = Path(str(archive) + '.sha256').read_text().split()
 assert filename == archive.name
 assert hashlib.sha256(archive.read_bytes()).hexdigest() == digest
-with tempfile.TemporaryDirectory(prefix='ChorusDraft combined test ') as temporary:
+with tempfile.TemporaryDirectory(prefix='chorusdraft-combined-') as temporary:
     work = Path(temporary)
     if OS == 'windows':
         with zipfile.ZipFile(archive) as packed:
@@ -41,6 +41,45 @@ with tempfile.TemporaryDirectory(prefix='ChorusDraft combined test ') as tempora
     for line in (root / 'MANIFEST.sha256').read_text().splitlines():
         digest, path = line.split('  ', 1)
         assert hashlib.sha256((root / path).read_bytes()).hexdigest() == digest, path
+    install_home = work / 'install-home'
+    install_home.mkdir()
+    install_env = os.environ.copy()
+    if OS == 'windows':
+        install_dest = install_home / f'ChorusDraft-{VERSION}'
+        install_env['LOCALAPPDATA'] = str(install_home)
+        install_env['APPDATA'] = str(install_home / 'Roaming')
+        install_env['USERPROFILE'] = str(install_home)
+        install_cmd = [
+            'pwsh', '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass',
+            '-File', str(root / 'install.ps1'),
+            '-Destination', str(install_dest),
+        ]
+    else:
+        install_dest = install_home / f'chorusdraft-{VERSION}'
+        install_env['HOME'] = str(install_home)
+        install_cmd = [str(root / 'install.sh'), str(install_dest)]
+    install_result = subprocess.run(
+        install_cmd, cwd=root, env=install_env, capture_output=True,
+        text=True, encoding='utf-8', errors='replace', timeout=120,
+    )
+    assert install_result.returncode == 0, (install_cmd, install_result.stdout, install_result.stderr)
+    install_output = install_result.stdout + install_result.stderr
+    assert 'Installed ChorusDraft in ' in install_output, install_output
+    installed_root = install_dest
+    assert installed_root.is_dir(), install_output
+    assert (installed_root / 'elixir' / 'run.sh' if OS != 'windows' else installed_root / 'elixir' / 'run.ps1').is_file()
+    if OS == 'linux':
+        desktop = install_home / '.local/share/applications/chorusdraft.desktop'
+        assert desktop.is_file(), 'Application menu entry is missing'
+        assert str(installed_root / 'launcher/ChorusDraft') in desktop.read_text()
+    elif OS == 'macos':
+        apps_link = install_home / 'Applications/ChorusDraft.app'
+        assert apps_link.exists(), 'Applications shortcut is missing'
+    else:
+        programs = Path(install_env['APPDATA']) / 'Microsoft' / 'Windows' / 'Start Menu' / 'Programs'
+        shortcut = programs / 'ChorusDraft.lnk'
+        command = programs / 'ChorusDraft.cmd'
+        assert shortcut.is_file() or command.is_file(), 'Start menu shortcut is missing'
     gui = root / ('ChorusDraft.app/Contents/MacOS/ChorusDraft' if OS == 'macos' else
                   'launcher/ChorusDraft.exe' if OS == 'windows' else 'launcher/ChorusDraft')
     assert gui.is_file(), 'Desktop executable is missing'
