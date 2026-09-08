@@ -137,7 +137,7 @@ function App() {
   const [notice, setNotice] = useState("");
   const activityParts = useRef([]);
   const [platform, setPlatform] = useState("bluesky");
-  const [version, setVersion] = useState("0.51.5");
+  const [version, setVersion] = useState("0.51.6");
   const [running, setRunning] = useState(false);
   const [action, setAction] = useState(null);
   const [activity, setActivity] = useState("");
