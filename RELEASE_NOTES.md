@@ -14,7 +14,10 @@ publishes. Review is still the default.
 - Interactive review accepts `e`, then replacement text, then asks again
   before publish. Empty replacement cancels the edit. Desktop review Edit
   prefills the current text, keeps line breaks, and disables the response
-  field so `y` cannot publish the original.
+  field so `y` cannot publish the original. Edit also works on pending
+  replies and mentions.
+- Queue Save ignores a second click. A failed review Save cancels the
+  replacement prompt instead of leaving the response field disabled.
 - `status` includes `automatic: remaining/limit` and a freeze line when
   needed.
 - CI artifact names are read from `VERSION`.

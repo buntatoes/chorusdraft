@@ -75,7 +75,12 @@ defmodule ChorusDraft.CommandsTest do
   end
 
   test "edit cannot be combined with reply or quote targets" do
-    for extra <- [["--reply-to", "1"], ["--quote-uri", "1"], ["--queue"]] do
+    for extra <- [
+          ["--reply-to", "1"],
+          ["--quote-uri", "1"],
+          ["--queue"],
+          ["--random-reply", "query"]
+        ] do
       message =
         capture_io(:stderr, fn ->
           assert CLI.run(["bluesky", "edit", "draft-id", "hello" | extra]) == 1

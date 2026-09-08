@@ -199,7 +199,14 @@ test(
         .getByRole("button", { name: "Edit text", exact: true })
         .click();
       await page.getByLabel("Edited draft text").fill(edited);
-      await page.getByRole("button", { name: "Save edit", exact: true }).click();
+      const queueSave = page.getByRole("button", {
+        name: "Save edit",
+        exact: true,
+      });
+      await queueSave.evaluate((b) => {
+        b.click();
+        b.click();
+      });
       await page.getByText(edited, { exact: true }).waitFor();
       assert.equal(await page.getByText(texts[0], { exact: true }).count(), 0);
       await page
@@ -237,8 +244,11 @@ test(
       assert.equal(await editor.inputValue(), edited);
       const reviewed = "Edited during review.\nSecond line.";
       await editor.fill(reviewed);
-      const save = page.getByRole("button", { name: "Save edit", exact: true });
-      await save.evaluate((b) => {
+      const saveEdit = page.getByRole("button", {
+        name: "Save edit",
+        exact: true,
+      });
+      await saveEdit.evaluate((b) => {
         b.click();
         b.click();
       });

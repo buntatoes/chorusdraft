@@ -198,6 +198,19 @@ defmodule ChorusDraft.StoreTest do
     assert hd(Store.drafts(dir))["text"] == "hello"
   end
 
+  test "replace_pending updater can read blocked accounts from locked state", %{dir: dir} do
+    item = Store.stage(dir, pending_draft("hello"))
+    Store.block(dir, "alice")
+
+    updated =
+      Store.replace_pending(dir, item["id"], fn draft, state ->
+        assert "alice" in state["blocked"]
+        Map.put(draft, "text", "hello there")
+      end)
+
+    assert updated["text"] == "hello there"
+  end
+
   defp pending_draft(text) do
     %{
       "platform" => "mastodon",

@@ -34,10 +34,17 @@ defmodule ChorusDraft.Runner do
       not blocked_post?(runner, post)
   end
 
-  def blocked?(runner, actor) do
+  def blocked?(runner, actor, state \\ nil) do
     runner
     |> client_call(:actor_aliases, [actor])
-    |> Enum.any?(&Store.blocked?(runner.store, &1))
+    |> Enum.any?(fn alias ->
+      if is_map(state) do
+        key = Safety.actor_key(alias)
+        key != "" and key in (state["blocked"] || [])
+      else
+        Store.blocked?(runner.store, alias)
+      end
+    end)
   end
 
   def draft(runner, text, action, post \\ nil, quote? \\ false) do
@@ -216,7 +223,7 @@ defmodule ChorusDraft.Runner do
     saved
   end
 
-  def validate_draft!(runner, item) do
+  def validate_draft!(runner, item, state \\ nil) do
     unless item["account"] == client_call(runner, :account_key) and
              item["platform"] == runner.platform do
       raise Error, "Draft belongs to a different account or platform."
@@ -249,7 +256,7 @@ defmodule ChorusDraft.Runner do
         client_call(runner, :mentioned_actors, [item["text"]]) ++
         client_call(runner, :mentioned_actors, [item["cw"]])
 
-    if actors |> Enum.reject(&is_nil/1) |> Enum.any?(&blocked?(runner, &1)) do
+    if actors |> Enum.reject(&is_nil/1) |> Enum.any?(&blocked?(runner, &1, state)) do
       raise Error, "Draft contacts an account on the do-not-contact list."
     end
 
@@ -288,7 +295,7 @@ defmodule ChorusDraft.Runner do
   end
 
   def replace_pending(runner, id, text, opts \\ []) do
-    Store.replace_pending(runner.store, id, fn item ->
+    Store.replace_pending(runner.store, id, fn item, state ->
       changed = Map.put(item, "text", text)
 
       changed =
@@ -296,7 +303,7 @@ defmodule ChorusDraft.Runner do
           do: Map.put(changed, "cw", Keyword.get(opts, :cw)),
           else: changed
 
-      validate_draft!(runner, changed)
+      validate_draft!(runner, changed, state)
       changed
     end)
   end

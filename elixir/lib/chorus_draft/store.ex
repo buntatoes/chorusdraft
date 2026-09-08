@@ -141,13 +141,17 @@ defmodule ChorusDraft.Store do
   end
 
   def replace_pending(dir, id, updater) when is_function(updater, 1) do
+    replace_pending(dir, id, fn draft, _state -> updater.(draft) end)
+  end
+
+  def replace_pending(dir, id, updater) when is_function(updater, 2) do
     transaction(dir, fn state ->
       index = Enum.find_index(state["drafts"], &(&1["id"] == id and &1["status"] == "pending"))
 
       if is_nil(index),
         do: raise(Error, "Draft is unavailable or not pending.")
 
-      changed = updater.(Enum.at(state["drafts"], index))
+      changed = updater.(Enum.at(state["drafts"], index), state)
 
       unless is_map(changed) and is_binary(changed["text"]) and
                String.trim(changed["text"]) != "",

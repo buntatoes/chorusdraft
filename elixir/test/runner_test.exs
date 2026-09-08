@@ -340,4 +340,58 @@ defmodule ChorusDraft.RunnerTest do
     assert hd(Store.drafts(dir))["status"] == "pending"
     assert Agent.get(published, & &1) == []
   end
+
+  test "replace_pending edits a reply draft without taking the store lock twice", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    source = post("reply-source")
+    client = %{client | posts: [source]}
+    saved = Runner.manual(runner(client, dir), "reply wording", reply_to: "reply-source")
+    assert saved["author"] == source["author"]
+    assert saved["author_id"] == source["author_id"]
+
+    updated =
+      Runner.replace_pending(runner(client, dir), saved["id"], "replacement reply")
+
+    assert updated["text"] == "replacement reply"
+    assert updated["status"] == "pending"
+    assert updated["author"] == source["author"]
+    assert Agent.get(published, & &1) == []
+  end
+
+  test "replace_pending edits mention text without taking the store lock twice", %{
+    dir: dir,
+    client: client
+  } do
+    saved = Runner.manual(runner(client, dir), "hello there")
+
+    updated =
+      Runner.replace_pending(
+        runner(client, dir),
+        saved["id"],
+        "hello @someone@example.org"
+      )
+
+    assert updated["text"] == "hello @someone@example.org"
+    assert hd(Store.drafts(dir))["status"] == "pending"
+  end
+
+  test "replace_pending refuses a reply after the source account is blocked", %{
+    dir: dir,
+    client: client
+  } do
+    source = post("reply-source")
+    client = %{client | posts: [source]}
+    saved = Runner.manual(runner(client, dir), "reply wording", reply_to: "reply-source")
+    Store.block(dir, source["author_id"])
+
+    assert_raise Error, ~r/do-not-contact/, fn ->
+      Runner.replace_pending(runner(client, dir), saved["id"], "still a reply")
+    end
+
+    assert hd(Store.drafts(dir))["text"] == "reply wording"
+    assert hd(Store.drafts(dir))["status"] == "pending"
+  end
 end

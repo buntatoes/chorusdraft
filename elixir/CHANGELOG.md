@@ -20,6 +20,9 @@ Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/r
   frozen.
 - Queue stays on the Queue page after edit or reject, and expired publication
   leases display as uncertain so Reject is available.
+- Editing a pending reply or mention no longer times out on the store lock.
+  Queue Save ignores a second click, and a failed review Save does not leave
+  the response field disabled.
 
 ### Packaging
 

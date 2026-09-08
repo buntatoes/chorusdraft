@@ -421,6 +421,7 @@ export function Queue({ selection, running, onRun }) {
     [editing, setEditing] = useState(null),
     [text, setText] = useState(""),
     [revision, setRevision] = useState(0);
+  const saving = useRef(false);
   useEffect(() => {
     const timer = setInterval(() => setRevision((v) => v + 1), 60000);
     const remove = window.chorus?.onEvent((e) => {
@@ -435,7 +436,11 @@ export function Queue({ selection, running, onRun }) {
   useEffect(() => {
     setEditing(null);
     setText("");
+    saving.current = false;
   }, [selection.platform]);
+  useEffect(() => {
+    if (!running) saving.current = false;
+  }, [running]);
   useEffect(() => {
     if (!window.chorus) return;
     let active = true;
@@ -458,9 +463,16 @@ export function Queue({ selection, running, onRun }) {
   }, [selection.platform, running, revision]);
   const save = (item) => {
     const next = text.trim();
-    if (!next || running) return;
+    if (!next || running || saving.current) return;
+    saving.current = true;
     setEditing(null);
     onRun("edit", next, item.id);
+  };
+  const reject = (item) => {
+    if (running || saving.current) return;
+    saving.current = true;
+    setEditing(null);
+    onRun("reject", item.id);
   };
   return (
     <section className="history-page" aria-label="Draft queue">
@@ -559,7 +571,7 @@ export function Queue({ selection, running, onRun }) {
                     <button
                       className="text-button"
                       disabled={running}
-                      onClick={() => onRun("reject", item.id)}
+                      onClick={() => reject(item)}
                     >
                       Reject
                     </button>

@@ -156,6 +156,7 @@ function App() {
   const [savingReview, setSavingReview] = useState(false);
   const reviewDraftId = useRef("");
   const savingReviewLock = useRef(false);
+  const runningLock = useRef(false);
   useEffect(() => {
     if (!api) {
       setError("Open ChorusDraft in the desktop app to use the bot controls.");
@@ -240,24 +241,36 @@ function App() {
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
   }, []);
-  const invoke = async (operation) => {
+  useEffect(() => {
+    if (!running) runningLock.current = false;
+  }, [running]);
+  const invoke = async (operation, opts = {}) => {
     try {
       setError("");
       await operation();
+      return true;
     } catch (e) {
-      setError(
-        e.message.replace(/^Error invoking remote method '[^']+': Error: /, ""),
+      const message = e.message.replace(
+        /^Error invoking remote method '[^']+': Error: /,
+        "",
       );
-      setRunning(false);
+      setError(message);
+      if (
+        !opts.keepRunning &&
+        message !== "Choose an action after the current session ends."
+      )
+        setRunning(false);
+      return false;
     }
   };
   const run = async (nextAction, suppliedText, target, opts = {}) => {
-    if (!api || running) return;
+    if (!api || running || runningLock.current) return;
     if (["search", "post"].includes(nextAction) && suppliedText === undefined) {
       setText("");
       setCompose(nextAction);
       return;
     }
+    runningLock.current = true;
     setCompose(null);
     if (!opts.stay) setPage("overview");
     activityParts.current = [];
@@ -286,17 +299,23 @@ function App() {
     );
   };
   const send = async (value, opts = {}) => {
-    if (!api || !running) return;
+    if (!api || !running) return false;
     if ((editingReview || savingReview || savingReviewLock.current) && !opts.force)
-      return;
-    if (action === "review" && !opts.force && !approvalAvailable.current) return;
+      return false;
+    if (action === "review" && !opts.force && !approvalAvailable.current)
+      return false;
     approvalAvailable.current = false;
-    promptBuffer.current = "";
-    setReviewPrompt(false);
-    setResponse("");
-    // Prevent repeated approval clicks before the next prompt arrives.
-    setActivity((previous) => previous + "\n");
-    await invoke(() => api.respond(value));
+    const ok = await invoke(() => api.respond(value), { keepRunning: true });
+    if (ok) {
+      promptBuffer.current = "";
+      setReviewPrompt(false);
+      setResponse("");
+      // Prevent repeated approval clicks before the next prompt arrives.
+      setActivity((previous) => previous + "\n");
+    } else if (action === "review") {
+      approvalAvailable.current = true;
+    }
+    return ok;
   };
   const reviewReady = running && action === "review" && reviewPrompt;
   const canRespond =
@@ -667,15 +686,22 @@ function App() {
                             savingReviewLock.current = true;
                             setSavingReview(true);
                             try {
-                              await send("e", { force: true });
-                              await send("<<JSON>>" + JSON.stringify(next), {
-                                force: true,
-                              });
+                              if (!(await send("e", { force: true }))) return;
+                              if (
+                                !(await send(
+                                  "<<JSON>>" + JSON.stringify(next),
+                                  { force: true },
+                                ))
+                              ) {
+                                await send("", { force: true });
+                                return;
+                              }
                               setEditingReview(false);
                               setReviewEdit("");
                             } finally {
                               savingReviewLock.current = false;
                               setSavingReview(false);
+                              setEditingReview(false);
                             }
                           }}
                         >
