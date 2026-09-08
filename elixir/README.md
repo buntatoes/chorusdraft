@@ -112,9 +112,12 @@ Verify: `./scripts/check_packages.sh` or `.\scripts\check_packages.ps1`
 Stop the old process, install into a new directory, copy `.env` and config:
 
 ```sh
-./run.sh bluesky --import-state /absolute/path/to/old/data/ACCOUNT_HASH/state.json
-./run.sh bluesky --status
+./chorusdraft bluesky import /absolute/path/to/old/data/ACCOUNT_HASH/state.json
+./chorusdraft bluesky status
 ```
+
+Inside a release package use `./run.sh` (or `run.ps1`) in place of
+`./chorusdraft`.
 
 `reject ID` drops a pending or uncertain draft and unfreezes automatic mode.
 Check the live account first. Do not force uncertain back to pending.

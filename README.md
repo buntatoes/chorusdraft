@@ -45,6 +45,9 @@ target or discovery commentary. Owner text needs `--publish`.
 
 ## Everyday
 
+`./run.sh` is the launcher inside a release package. From a source checkout
+use `elixir/chorusdraft` after `mix escript.build`.
+
 ```sh
 ./run.sh bluesky --help
 ./run.sh bluesky draft
