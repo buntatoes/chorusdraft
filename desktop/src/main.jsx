@@ -1,5 +1,6 @@
 import { Settings, History, Queue } from "./Privacy.jsx";
 import { TerminalText } from "./terminal.mjs";
+import { REVIEW_PROMPT, reviewDraftIdFrom, tail } from "./review.mjs";
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
@@ -121,15 +122,6 @@ const titles = {
 };
 const api = window.chorus;
 
-function reviewDraftIdFrom(buffer) {
-  const matches = [
-    ...String(buffer).matchAll(
-      /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}) \| (?:manual|ai_generated) \|/g,
-    ),
-  ];
-  return matches.length ? matches[matches.length - 1][1] : "";
-}
-
 function App() {
   const runtime = "elixir";
   const [page, setPage] = useState("overview");
@@ -170,10 +162,8 @@ function App() {
       if (event.type === "output") {
         const output = terminalText.current.push(event.value);
         if (output) {
-          promptBuffer.current = (promptBuffer.current + output).slice(-4096);
-          const ready = /Publish this exact draft\? \[[^\]]+\]:\s*$/.test(
-            promptBuffer.current,
-          );
+          promptBuffer.current = tail(promptBuffer.current, output);
+          const ready = REVIEW_PROMPT.test(promptBuffer.current);
           approvalAvailable.current = ready;
           setReviewPrompt(ready);
           if (ready) {

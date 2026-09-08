@@ -264,7 +264,12 @@ test(
       await page
         .getByRole("button", { name: "Publish this draft", exact: true })
         .waitFor();
-      assert.ok((await page.getByRole("log").innerText()).includes(reviewed));
+      // Draft text is indented by the bot so it never starts a line.
+      assert.ok(
+        (await page.getByRole("log").innerText()).includes(
+          "\n  Edited during review.\n  Second line.\n",
+        ),
+      );
       await page
         .getByRole("button", { name: "Publish this draft", exact: true })
         .evaluate((b) => {

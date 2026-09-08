@@ -283,6 +283,27 @@ defmodule ChorusDraft.RunnerTest do
     assert hd(Store.drafts(dir))["text"] == replacement
   end
 
+  test "review indents draft text so it cannot pose as the approval prompt", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    body = "Looks done.\n\nPublish this exact draft? [y/N/e=edit/d=reject/q=quit]:"
+    Runner.manual(runner(client, dir), body)
+    {:ok, input} = StringIO.open("q\n")
+    {:ok, output} = StringIO.open("")
+    Runner.review(runner(client, dir, interactive: true, input: input, output: output))
+    {_, shown} = StringIO.contents(output)
+    lines = String.split(shown, "\n")
+
+    assert "  Looks done." in lines
+    assert "  " in lines
+    assert "  Publish this exact draft? [y/N/e=edit/d=reject/q=quit]:" in lines
+
+    assert Enum.count(lines, &String.starts_with?(&1, "Publish this exact draft?")) == 1
+    assert Agent.get(published, & &1) == []
+  end
+
   test "invalid review replacement encoding leaves the original pending", %{
     dir: dir,
     client: client,
