@@ -54,11 +54,18 @@ defmodule ChorusDraft.AITest do
     TestHTTP.set_responses([
       %{"candidates" => [%{"content" => %{"parts" => [%{"text" => "You are an idiot"}]}}]}
     ])
+
     assert_raise Error, fn -> AI.generate(env, "Draft", %{}, 300, http: TestHTTP) end
   end
 
   test "local and Gemini providers reject empty or nil answers with a clean error" do
-    for response <- [%{}, %{"choices" => [%{"message" => %{"content" => nil}}]}, %{"choices" => [%{"message" => %{"content" => "   "}}]}, %{"response" => nil}, %{"response" => "  "}] do
+    for response <- [
+          %{},
+          %{"choices" => [%{"message" => %{"content" => nil}}]},
+          %{"choices" => [%{"message" => %{"content" => "   "}}]},
+          %{"response" => nil},
+          %{"response" => "  "}
+        ] do
       TestHTTP.set_responses([response])
       error = assert_raise Error, fn -> AI.generate(%{}, "Draft", %{}, 300, http: TestHTTP) end
       assert Exception.message(error) == "AI response did not include text."

@@ -42,10 +42,12 @@ defmodule ChorusDraft.PIITest do
 
   test "nested context is redacted before an AI request" do
     TestHTTP.set_responses([%{"response" => "A calm observation."}])
+
     data = %{
       "post" => "Call 312-555-0199",
       "thread" => [%{"text" => "alice [at] example.org"}]
     }
+
     assert AI.generate(%{}, "Draft", data, 300, http: TestHTTP) == "A calm observation."
     [{:post, _, options}] = TestHTTP.calls()
     [_, user] = options[:body]["messages"]

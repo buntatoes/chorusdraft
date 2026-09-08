@@ -99,4 +99,3 @@ defmodule ChorusDraft.SafetyTest do
     File.rm!(path)
   end
 end
-

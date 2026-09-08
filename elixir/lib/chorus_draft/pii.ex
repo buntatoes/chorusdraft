@@ -33,6 +33,7 @@ defmodule ChorusDraft.PII do
   def validate!(text) do
     if sensitive?(text),
       do: raise(Error, "AI draft may contain personal information or credentials.")
+
     true
   end
 
@@ -45,6 +46,9 @@ defmodule ChorusDraft.PII do
   end
 
   def redact(value) when is_list(value), do: Enum.map(value, &redact/1)
-  def redact(value) when is_map(value), do: Map.new(value, fn {key, item} -> {key, redact(item)} end)
+
+  def redact(value) when is_map(value),
+    do: Map.new(value, fn {key, item} -> {key, redact(item)} end)
+
   def redact(value), do: value
 end
