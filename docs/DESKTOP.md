@@ -179,7 +179,8 @@ Apple Silicon (`arm64`) from Intel (`x64`); Linux and Windows builds target `x64
 
 ## Privacy and security
 
-AI-generated content requires review. Do-not-contact lists, public opt-outs,
+AI-generated content requires review unless automatic mode is explicitly started.
+Do-not-contact lists, public opt-outs,
 visibility checks, and interaction limits apply to both platforms.
 Ambiguous publication failures are not retried automatically.
 See [SECURITY.md](../SECURITY.md) for safeguards and vulnerability reporting.

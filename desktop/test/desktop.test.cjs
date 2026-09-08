@@ -122,6 +122,11 @@ test(
         name: "Save securely",
         exact: true,
       });
+      await page.getByLabel("Provider", { exact: true }).selectOption("chatgpt");
+      await page.getByLabel("OpenAI model", { exact: true }).fill("fixture-model");
+      await page.getByLabel("OpenAI API key", { exact: true }).fill("synthetic-openai-secret");
+      assert.equal(await page.getByLabel("OpenAI API key", { exact: true }).getAttribute("type"), "password");
+      await page.getByLabel("Provider", { exact: true }).selectOption("local");
       const secure = await save.isEnabled();
       if (!secure)
         console.log(
