@@ -2,6 +2,10 @@
 
 Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
+## Unreleased
+
+- README banner uses the desktop speech-bubble and voices mark.
+
 ## 0.51.4 — 2026-09-08
 
 ### License and desktop
