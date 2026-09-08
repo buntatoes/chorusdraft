@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/chorusdraft-logo.png" alt="ChorusDraft logo" width="420">
+</p>
+
 # ChorusDraft
 
 ChorusDraft is a social drafting and publishing assistant for Bluesky and
