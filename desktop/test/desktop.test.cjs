@@ -229,6 +229,17 @@ test(
       assert.ok(!log.includes("desktop-fixture-password"));
       assert.ok(log.includes("[redacted]"));
       await page.getByRole("button", { name: "Edit text", exact: true }).click();
+      const editor = page.getByLabel("Replacement draft text");
+      await editor.waitFor();
+      await page.waitForFunction(
+        (expected) => {
+          const field = document.querySelector(
+            '[aria-label="Replacement draft text"]',
+          );
+          return field && field.value === expected;
+        },
+        edited,
+      );
       assert.equal(
         await page.getByLabel("Review response").isDisabled(),
         true,
@@ -239,8 +250,6 @@ test(
           .count(),
         0,
       );
-      const editor = page.getByLabel("Replacement draft text");
-      await editor.waitFor();
       assert.equal(await editor.inputValue(), edited);
       const reviewed = "Edited during review.\nSecond line.";
       await editor.fill(reviewed);

@@ -713,36 +713,48 @@ function App() {
                         <span>Publish the exact draft displayed above?</span>
                         <button
                           className="button secondary"
+                          disabled={savingReview}
                           onClick={() => send("d")}
                         >
                           Reject draft
                         </button>
                         <button
                           className="button secondary"
+                          disabled={savingReview}
                           onClick={async () => {
-                            setSavingReview(false);
-                            setEditingReview(true);
+                            if (savingReviewLock.current) return;
+                            savingReviewLock.current = true;
+                            setSavingReview(true);
                             setResponse("");
                             let next = "";
                             try {
+                              const id =
+                                reviewDraftId.current ||
+                                reviewDraftIdFrom(promptBuffer.current);
+                              if (id) reviewDraftId.current = id;
                               const queue = await api.queue({
                                 runtime,
                                 platform,
                               });
                               const item = queue.items.find(
-                                (row) => row.id === reviewDraftId.current,
+                                (row) => row.id === id,
                               );
                               if (item) next = item.text;
                             } catch {
                               next = "";
+                            } finally {
+                              savingReviewLock.current = false;
+                              setSavingReview(false);
                             }
                             setReviewEdit(next);
+                            setEditingReview(true);
                           }}
                         >
                           Edit text
                         </button>
                         <button
                           className="button primary"
+                          disabled={savingReview}
                           onClick={() => send("y")}
                         >
                           Publish this draft

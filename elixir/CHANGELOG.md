@@ -13,9 +13,9 @@ Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/r
   stays pending for review. `--publish` cannot be combined with `--edit`, and
   `--edit` cannot be combined with reply, quote, or queue options.
 - Interactive review accepts `e` to replace the current draft, then asks again
-  before publish. Desktop review Edit prefills the current text, keeps line
-  breaks, and disables the response field so `y` cannot publish the original
-  while a replacement is being entered.
+  before publish. Desktop review Edit prefills the current text after it is
+  loaded, keeps line breaks, and disables the response field so `y` cannot
+  publish the original while a replacement is being entered.
 - `status` prints the automatic attempt budget and whether automatic mode is
   frozen.
 - Queue stays on the Queue page after edit or reject, and expired publication
