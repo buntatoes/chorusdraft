@@ -29,10 +29,15 @@ def arguments(request):
     if runtime != 'elixir' or platform not in ('bluesky', 'mastodon') or action not in ACTIONS:
         raise ValueError('Choose a valid bot and action.')
     args = [action]
-    if action in ('search', 'post', 'reject'):
+    if action in ('search', 'post'):
         text = request.get('text')
         if not isinstance(text, str) or not text.strip() or len(text) > 10000 or '\x00' in text:
             raise ValueError('Enter text for this action (maximum 10,000 characters).')
+        args.append(text)
+    if action == 'reject':
+        text = request.get('text')
+        if not isinstance(text, str) or not text.strip() or len(text) > 80 or any(c in text for c in '\r\n\x00'):
+            raise ValueError('Choose a pending or uncertain draft to reject.')
         args.append(text)
     if action == 'edit':
         target = request.get('target')
@@ -134,7 +139,7 @@ def serve(root):
                 emit('started', action=args[0], runtime=runtime, platform=platform)
             elif kind == 'input':
                 text = request.get('text')
-                if not isinstance(text, str) or len(text) > 10000 or any(c in text for c in '\r\n\x00'):
+                if not isinstance(text, str) or len(text) > 20000 or any(c in text for c in '\r\n\x00'):
                     raise ValueError('Enter one response at a time.')
                 if session and not session.finished:
                     session.send(text)

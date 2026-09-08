@@ -288,20 +288,17 @@ defmodule ChorusDraft.Runner do
   end
 
   def replace_pending(runner, id, text, opts \\ []) do
-    drafts = Store.drafts(runner.store)
-    item = Enum.find(drafts, &(&1["id"] == id and &1["status"] == "pending"))
+    Store.replace_pending(runner.store, id, fn item ->
+      changed = Map.put(item, "text", text)
 
-    if is_nil(item), do: raise(Error, "Draft is unavailable or not pending.")
+      changed =
+        if Keyword.has_key?(opts, :cw),
+          do: Map.put(changed, "cw", Keyword.get(opts, :cw)),
+          else: changed
 
-    changed = Map.put(item, "text", text)
-
-    changed =
-      if Keyword.has_key?(opts, :cw),
-        do: Map.put(changed, "cw", Keyword.get(opts, :cw)),
-        else: changed
-
-    validate_draft!(runner, changed)
-    Store.replace_pending(runner.store, id, Map.take(changed, ["text", "cw"]))
+      validate_draft!(runner, changed)
+      changed
+    end)
   end
 
   defp review_item(runner, item) do
@@ -319,21 +316,20 @@ defmodule ChorusDraft.Runner do
         {:cont, :ok}
 
       "e" ->
-        write(runner, "Replacement text (empty cancels): ")
-        replacement = runner.input |> IO.gets("") |> to_string() |> String.trim()
-
-        if replacement == "" do
-          review_item(runner, item)
-        else
-          try do
-            updated = replace_pending(runner, item["id"], replacement)
-            puts(runner, "Draft updated. Review the new text before publishing.")
-            review_item(runner, updated)
-          rescue
-            error in [Error] ->
-              puts(runner, error.message)
+        try do
+          case review_replacement(runner) do
+            :cancel ->
               review_item(runner, item)
+
+            {:ok, replacement} ->
+              updated = replace_pending(runner, item["id"], replacement)
+              puts(runner, "Draft updated. Review the new text before publishing.")
+              review_item(runner, updated)
           end
+        rescue
+          error in [Error] ->
+            puts(runner, error.message)
+            review_item(runner, item)
         end
 
       "d" ->
@@ -345,6 +341,31 @@ defmodule ChorusDraft.Runner do
 
       _ ->
         {:cont, :ok}
+    end
+  end
+
+  defp review_replacement(runner) do
+    write(runner, "Replacement text (empty cancels): ")
+    raw = runner.input |> IO.gets("") |> to_string() |> String.trim()
+
+    cond do
+      raw == "" ->
+        :cancel
+
+      String.starts_with?(raw, "<<JSON>>") ->
+        case Jason.decode(String.replace_prefix(raw, "<<JSON>>", "")) do
+          {:ok, text} when is_binary(text) and String.trim(text) != "" ->
+            {:ok, text}
+
+          {:ok, text} when is_binary(text) ->
+            :cancel
+
+          _ ->
+            raise Error, "Replacement text is invalid."
+        end
+
+      true ->
+        {:ok, raw}
     end
   end
 

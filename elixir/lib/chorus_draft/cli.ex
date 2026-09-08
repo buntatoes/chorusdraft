@@ -274,6 +274,10 @@ defmodule ChorusDraft.CLI do
       options[:publish] && options[:edit] ->
         {:error, "--publish cannot be combined with --edit."}
 
+      options[:edit] &&
+          (options[:reply_to] || options[:quote_uri] || options[:random_reply] || options[:queue]) ->
+        {:error, "--edit cannot be combined with reply, quote, or queue options."}
+
       options[:publish] && (!options[:text] || options[:queue]) ->
         {:error, "--publish requires --text and cannot be combined with --queue."}
 
@@ -598,7 +602,7 @@ defmodule ChorusDraft.CLI do
           --automatic          With --daemon, publish new originals/replies after safety checks
           --jetstream          Compatibility no-op; Bluesky listen/start always streams
           --process-queue      Interactively review AI and manual drafts
-          --edit ID            Replace pending draft text; requires --text; then review
+          --edit ID            Replace pending draft text; requires --text; then review; not with --publish, reply, or quote
           --search QUERY       Display public posts
           --random-post [QUERY] Display a random public search/timeline result
           --delete ID          Interactively delete your own post

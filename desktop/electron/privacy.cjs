@@ -2,6 +2,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 const DAYS = 10 * 86400000;
+const AUTOMATIC_LIMIT = 5;
+const PUBLICATION_LEASE_SECONDS = 300;
 const SECRET = [
   "BLUESKY_APP_PASSWORD",
   "MASTODON_ACCESS_TOKEN",
@@ -555,12 +557,12 @@ class History {
     platform(site);
     const now = this.now();
     const cutoff = Math.floor(now / 1000) - 86400;
-    const items = [];
-    const budgets = [];
+    const leaseCutoff = Math.floor(now / 1000) - PUBLICATION_LEASE_SECONDS;
     const data = within(
       this.root,
       path.join(this.root, "elixir", site, "data"),
     );
+    const stores = [];
     if (stat(data)) {
       if (!fs.lstatSync(data).isDirectory())
         throw Error("Invalid history directory.");
@@ -576,57 +578,73 @@ class History {
         const state = JSON.parse(fs.readFileSync(file, "utf8"));
         if (!state || !Array.isArray(state.drafts))
           throw Error("Invalid history file.");
-        let used = 0;
-        if (Array.isArray(state.automatic)) {
-          for (const stamp of state.automatic) {
-            if (!Number.isInteger(stamp) || stamp < 0)
-              throw Error("Invalid history file.");
-            if (stamp > cutoff) used += 1;
-          }
-        }
-        let frozen = false;
-        for (const draft of state.drafts) {
-          if (!draft || typeof draft !== "object")
-            throw Error("Invalid history file.");
-          if (!["pending", "publishing", "uncertain"].includes(draft.status))
-            continue;
-          if (typeof draft.id !== "string" || typeof draft.text !== "string")
-            throw Error("Invalid history file.");
-          if (draft.status === "publishing" || draft.status === "uncertain")
-            frozen = true;
-          const time = Date.parse(draft.created_at || draft.finished_at);
-          items.push({
-            id: draft.id,
-            status: draft.status,
-            text: draft.text,
-            account: typeof draft.account === "string" ? draft.account : "",
-            action: typeof draft.action === "string" ? draft.action : "post",
-            cw: typeof draft.cw === "string" ? draft.cw : "",
-            visibility:
-              typeof draft.visibility === "string" ? draft.visibility : "",
-            time: Number.isFinite(time) ? time : 0,
-          });
-        }
-        budgets.push({
-          used,
-          remaining: Math.max(0, 5 - used),
-          frozen,
+        stores.push({
+          name: entry.name,
+          mtime: fs.statSync(file).mtimeMs,
+          state,
         });
       }
+    }
+    stores.sort(
+      (a, b) => b.mtime - a.mtime || String(a.name).localeCompare(b.name),
+    );
+    const selected = stores[0];
+    if (!selected)
+      return {
+        items: [],
+        automatic: {
+          limit: AUTOMATIC_LIMIT,
+          used: 0,
+          remaining: AUTOMATIC_LIMIT,
+          frozen: false,
+        },
+      };
+    const items = [];
+    let used = 0;
+    if (Array.isArray(selected.state.automatic)) {
+      for (const stamp of selected.state.automatic) {
+        if (!Number.isInteger(stamp) || stamp < 0)
+          throw Error("Invalid history file.");
+        if (stamp > cutoff) used += 1;
+      }
+    }
+    let frozen = false;
+    for (const draft of selected.state.drafts) {
+      if (!draft || typeof draft !== "object")
+        throw Error("Invalid history file.");
+      if (!["pending", "publishing", "uncertain"].includes(draft.status))
+        continue;
+      if (typeof draft.id !== "string" || typeof draft.text !== "string")
+        throw Error("Invalid history file.");
+      const claimedAt = Number(draft.claimed_at);
+      const status =
+        draft.status === "publishing" &&
+        (!Number.isFinite(claimedAt) || claimedAt <= leaseCutoff)
+          ? "uncertain"
+          : draft.status;
+      if (status === "publishing" || status === "uncertain") frozen = true;
+      const time = Date.parse(draft.created_at || draft.finished_at);
+      items.push({
+        id: draft.id,
+        status,
+        text: draft.text,
+        account: typeof draft.account === "string" ? draft.account : "",
+        action: typeof draft.action === "string" ? draft.action : "post",
+        cw: typeof draft.cw === "string" ? draft.cw : "",
+        visibility:
+          typeof draft.visibility === "string" ? draft.visibility : "",
+        time: Number.isFinite(time) ? time : 0,
+      });
     }
     items.sort(
       (a, b) => a.time - b.time || String(a.id).localeCompare(String(b.id)),
     );
-    const frozen = budgets.some((budget) => budget.frozen);
-    const used = budgets.reduce((max, budget) => Math.max(max, budget.used), 0);
     return {
       items,
       automatic: {
-        limit: 5,
+        limit: AUTOMATIC_LIMIT,
         used,
-        remaining: budgets.length
-          ? Math.min(...budgets.map((budget) => budget.remaining))
-          : 5,
+        remaining: Math.max(0, AUTOMATIC_LIMIT - used),
         frozen,
       },
     };

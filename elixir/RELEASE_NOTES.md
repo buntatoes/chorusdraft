@@ -8,14 +8,17 @@ cannot publish edited, manual, or previously queued drafts.
 
 ## Highlights
 
-- Desktop **Queue** lists pending, publishing, and uncertain drafts for the
-  selected platform. It shows remaining automatic attempts and whether a
-  publishing or uncertain draft has frozen automatic mode.
+- Desktop **Queue** lists pending, publishing, and uncertain drafts from the
+  account store last used on the selected platform. It shows remaining
+  automatic attempts and whether a publishing or uncertain draft has frozen
+  automatic mode.
 - `chorusdraft PLATFORM edit ID TEXT` replaces pending draft text after the
   same screens used at review. The draft stays pending. `--publish` is
-  rejected with `--edit`.
+  rejected with `--edit`. `--edit` cannot take reply, quote, or queue flags.
 - Interactive review accepts `e`, then replacement text, then asks again
-  before publish. Empty replacement cancels the edit.
+  before publish. Empty replacement cancels the edit. Desktop review Edit
+  prefills the current text, keeps line breaks, and disables the response
+  field so `y` cannot publish the original.
 - `status` includes `automatic: remaining/limit` and a freeze line when
   needed.
 - CI artifact names are read from `VERSION`.

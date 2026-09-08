@@ -225,6 +225,15 @@ app
       ];
       if (!actions.includes(request.action) || running)
         throw new Error("Choose an action after the current session ends.");
+      if (request.action === "reject") {
+        if (
+          typeof request.text !== "string" ||
+          !request.text.trim() ||
+          request.text.length > 80 ||
+          /[\r\n\0]/.test(request.text)
+        )
+          throw new Error("Choose a pending or uncertain draft to reject.");
+      }
       if (request.action === "edit") {
         if (
           typeof request.target !== "string" ||
@@ -262,7 +271,7 @@ app
     handle("bot:input", (text) => {
       if (
         typeof text !== "string" ||
-        text.length > 10000 ||
+        text.length > 20000 ||
         /[\r\n\0]/.test(text)
       )
         throw new Error("Enter one response at a time.");

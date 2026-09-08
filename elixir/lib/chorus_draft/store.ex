@@ -135,18 +135,25 @@ defmodule ChorusDraft.Store do
     unless is_binary(attrs["text"]) and String.trim(attrs["text"]) != "",
       do: raise(Error, "Replacement text is required.")
 
+    replace_pending(dir, id, fn draft ->
+      changed = Map.put(draft, "text", attrs["text"])
+      if Map.has_key?(attrs, "cw"), do: Map.put(changed, "cw", attrs["cw"]), else: changed
+    end)
+  end
+
+  def replace_pending(dir, id, updater) when is_function(updater, 1) do
     transaction(dir, fn state ->
       index = Enum.find_index(state["drafts"], &(&1["id"] == id and &1["status"] == "pending"))
 
       if is_nil(index),
         do: raise(Error, "Draft is unavailable or not pending.")
 
-      draft = Enum.at(state["drafts"], index)
-      changed = Map.put(draft, "text", attrs["text"])
+      changed = updater.(Enum.at(state["drafts"], index))
 
-      changed =
-        if Map.has_key?(attrs, "cw"), do: Map.put(changed, "cw", attrs["cw"]), else: changed
+      unless is_map(changed) and is_binary(changed["text"]) and String.trim(changed["text"]) != "",
+        do: raise(Error, "Replacement text is required.")
 
+      validate_draft!(changed)
       {changed, put_in(state, ["drafts", Access.at(index)], changed)}
     end)
   end

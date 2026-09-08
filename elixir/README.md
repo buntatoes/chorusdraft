@@ -35,6 +35,8 @@ overwrite existing config. Run one daemon per account.
 ```sh
 ./chorusdraft bluesky draft
 ./chorusdraft bluesky review
+./chorusdraft bluesky edit DRAFT_ID "replacement text"
+./chorusdraft bluesky status
 ./chorusdraft bluesky start
 ./chorusdraft bluesky automatic
 ./chorusdraft mastodon reply STATUS_ID "Thanks for the context."

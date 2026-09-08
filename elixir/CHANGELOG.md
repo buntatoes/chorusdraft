@@ -6,14 +6,20 @@ Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/r
 
 ### Queue and review
 
-- Desktop Queue lists pending, publishing, and uncertain drafts, with remaining
-  automatic attempts and freeze state.
+- Desktop Queue lists pending, publishing, and uncertain drafts from the
+  account store last used on the selected platform, with remaining automatic
+  attempts and freeze state.
 - `edit ID TEXT` replaces pending draft text. The new text is screened, then
-  stays pending for review. `--publish` cannot be combined with `--edit`.
+  stays pending for review. `--publish` cannot be combined with `--edit`, and
+  `--edit` cannot be combined with reply, quote, or queue options.
 - Interactive review accepts `e` to replace the current draft, then asks again
-  before publish.
+  before publish. Desktop review Edit prefills the current text, keeps line
+  breaks, and disables the response field so `y` cannot publish the original
+  while a replacement is being entered.
 - `status` prints the automatic attempt budget and whether automatic mode is
   frozen.
+- Queue stays on the Queue page after edit or reject, and expired publication
+  leases display as uncertain so Reject is available.
 
 ### Packaging
 

@@ -121,6 +121,15 @@ const titles = {
 };
 const api = window.chorus;
 
+function reviewDraftIdFrom(buffer) {
+  const matches = [
+    ...String(buffer).matchAll(
+      /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}) \| (?:manual|ai_generated) \|/g,
+    ),
+  ];
+  return matches.length ? matches[matches.length - 1][1] : "";
+}
+
 function App() {
   const runtime = "elixir";
   const [page, setPage] = useState("overview");
@@ -144,6 +153,9 @@ function App() {
   const [reviewPrompt, setReviewPrompt] = useState(false);
   const [editingReview, setEditingReview] = useState(false);
   const [reviewEdit, setReviewEdit] = useState("");
+  const [savingReview, setSavingReview] = useState(false);
+  const reviewDraftId = useRef("");
+  const savingReviewLock = useRef(false);
   useEffect(() => {
     if (!api) {
       setError("Open ChorusDraft in the desktop app to use the bot controls.");
@@ -163,6 +175,10 @@ function App() {
           );
           approvalAvailable.current = ready;
           setReviewPrompt(ready);
+          if (ready) {
+            const id = reviewDraftIdFrom(promptBuffer.current);
+            if (id) reviewDraftId.current = id;
+          }
           const now = Date.now();
           activityParts.current = activityParts.current.filter(
             (p) => p.time > now - 10 * 86400000,
@@ -235,7 +251,7 @@ function App() {
       setRunning(false);
     }
   };
-  const run = async (nextAction, suppliedText, target) => {
+  const run = async (nextAction, suppliedText, target, opts = {}) => {
     if (!api || running) return;
     if (["search", "post"].includes(nextAction) && suppliedText === undefined) {
       setText("");
@@ -243,7 +259,7 @@ function App() {
       return;
     }
     setCompose(null);
-    setPage("overview");
+    if (!opts.stay) setPage("overview");
     activityParts.current = [];
     setAction(nextAction);
     setRunning(true);
@@ -256,6 +272,9 @@ function App() {
     setReviewPrompt(false);
     setEditingReview(false);
     setReviewEdit("");
+    setSavingReview(false);
+    savingReviewLock.current = false;
+    reviewDraftId.current = "";
     await invoke(() =>
       api.run({
         runtime,
@@ -268,6 +287,8 @@ function App() {
   };
   const send = async (value, opts = {}) => {
     if (!api || !running) return;
+    if ((editingReview || savingReview || savingReviewLock.current) && !opts.force)
+      return;
     if (action === "review" && !opts.force && !approvalAvailable.current) return;
     approvalAvailable.current = false;
     promptBuffer.current = "";
@@ -278,7 +299,11 @@ function App() {
     await invoke(() => api.respond(value));
   };
   const reviewReady = running && action === "review" && reviewPrompt;
-  const canRespond = running && (action !== "review" || reviewReady);
+  const canRespond =
+    running &&
+    !editingReview &&
+    !savingReview &&
+    (action !== "review" || reviewReady);
   const selected = `${platform === "bluesky" ? "Bluesky" : "Mastodon"}`;
   const configure = () => api && setSettingsTarget({ runtime, platform });
   return (
@@ -379,6 +404,17 @@ function App() {
               </button>
             </div>
           )}
+          {error && page !== "overview" && (
+            <div className="error-banner" role="alert">
+              <span>{error}</span>
+              <button
+                aria-label="Dismiss error"
+                onClick={() => setError("")}
+              >
+                <Icon name="close" size={16} />
+              </button>
+            </div>
+          )}
           {page === "history" ? (
             <>
               <label className="history-selection">
@@ -412,7 +448,9 @@ function App() {
               <Queue
                 selection={{ runtime, platform }}
                 running={running}
-                onRun={(action, text, target) => run(action, text, target)}
+                onRun={(action, text, target) =>
+                  run(action, text, target, { stay: true })
+                }
               />
             </>
           ) : (
@@ -611,22 +649,34 @@ function App() {
                         </label>
                         <button
                           className="button secondary"
+                          disabled={savingReview}
                           onClick={() => {
                             setEditingReview(false);
                             setReviewEdit("");
+                            setSavingReview(false);
                           }}
                         >
                           Cancel
                         </button>
                         <button
                           className="button primary"
-                          disabled={!reviewEdit.trim()}
+                          disabled={savingReview || !reviewEdit.trim()}
                           onClick={async () => {
-                            const next = reviewEdit.replace(/\s+/g, " ").trim();
-                            setEditingReview(false);
-                            setReviewEdit("");
-                            await send("e");
-                            await send(next, { force: true });
+                            const next = reviewEdit.trim();
+                            if (!next || savingReviewLock.current) return;
+                            savingReviewLock.current = true;
+                            setSavingReview(true);
+                            try {
+                              await send("e", { force: true });
+                              await send("<<JSON>>" + JSON.stringify(next), {
+                                force: true,
+                              });
+                              setEditingReview(false);
+                              setReviewEdit("");
+                            } finally {
+                              savingReviewLock.current = false;
+                              setSavingReview(false);
+                            }
                           }}
                         >
                           Save edit
@@ -643,9 +693,24 @@ function App() {
                         </button>
                         <button
                           className="button secondary"
-                          onClick={() => {
+                          onClick={async () => {
+                            setSavingReview(false);
                             setEditingReview(true);
-                            setReviewEdit("");
+                            setResponse("");
+                            let next = "";
+                            try {
+                              const queue = await api.queue({
+                                runtime,
+                                platform,
+                              });
+                              const item = queue.items.find(
+                                (row) => row.id === reviewDraftId.current,
+                              );
+                              if (item) next = item.text;
+                            } catch {
+                              next = "";
+                            }
+                            setReviewEdit(next);
                           }}
                         >
                           Edit text

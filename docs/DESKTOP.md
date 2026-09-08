@@ -37,14 +37,18 @@ use the same script with `--remove` before removing an old download.
 Choose Bluesky or Mastodon, click **Set up**, then click **Open configuration** to enter your
 account and AI settings. Click **Create a draft** to draft a post and
 **Open review** to approve, edit, or reject it. **Queue** lists pending and
-uncertain drafts, remaining automatic attempts, and freeze state. Edit text
-from Queue or during review; the replacement is screened and still needs
-approval. During review, use **Publish this draft**, **Edit text**, or
-**Reject draft**. You can also send `y`, `e`, `d`, or `q` through the response field.
-Review mode requires individual approval. **Start automatic mode** explicitly
-permits only newly generated originals and eligible incoming mention replies,
-after source, privacy, harassment, opt-out, and publication-budget checks.
-Manual posts, existing drafts, quotes, targets and discovery still require review.
+uncertain drafts from the account store last used on the selected platform,
+remaining automatic attempts, and freeze state. Edit text from Queue or during
+review; the replacement is screened and still needs approval. During review,
+**Edit text** prefills the current draft and keeps line breaks. Use **Publish
+this draft**, **Edit text**, or **Reject draft**. The response field is
+disabled while the edit form is open so `y` cannot publish the original. After
+you save, review asks again. You can also send `y`, `e`, `d`, or `q` through
+the response field when those buttons are showing. Review mode requires
+individual approval. **Start automatic mode** explicitly permits only newly
+generated originals and eligible incoming mention replies, after source,
+privacy, harassment, opt-out, and publication-budget checks. Manual posts,
+existing drafts, quotes, targets and discovery still require review.
 
 Use **Start monitoring** for continuous drafting and **Stop session** to end a
 running session. Closing the window asks before stopping an active bot.
@@ -135,7 +139,7 @@ On Windows, replace `./bot` with `.\bot.bat`.
 | `listen` | Keep checking mentions |
 | `delete ID` | Delete your own post after confirmation |
 | `history` | Show locally recorded published posts from the last 10 days |
-| `status` | Show account state and unresolved drafts |
+| `status` | Show queue counts, unresolved drafts, automatic budget, and freeze |
 | `import FILE` | Import compatible state into an empty account store |
 | `reject ID` | Reject a pending or uncertain draft |
 | `edit ID "TEXT"` | Replace pending draft text; review still required |

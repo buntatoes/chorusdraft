@@ -57,6 +57,7 @@ defmodule ChorusDraft.CommandsTest do
     version = String.trim(File.read!("VERSION"))
     assert version == ChorusDraft.version()
     assert version == String.trim(File.read!("../VERSION"))
+    assert File.read!("../desktop/package.json") =~ ~s("version": "#{version}")
   end
 
   test "edit cannot skip review by adding --publish" do
@@ -66,6 +67,17 @@ defmodule ChorusDraft.CommandsTest do
       end)
 
     assert message =~ "--publish cannot be combined with --edit"
+  end
+
+  test "edit cannot be combined with reply or quote targets" do
+    for extra <- [["--reply-to", "1"], ["--quote-uri", "1"], ["--queue"]] do
+      message =
+        capture_io(:stderr, fn ->
+          assert CLI.run(["bluesky", "edit", "draft-id", "hello" | extra]) == 1
+        end)
+
+      assert message =~ "--edit cannot be combined with reply, quote, or queue options."
+    end
   end
 
   test "short help and version work without account credentials" do

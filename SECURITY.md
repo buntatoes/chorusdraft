@@ -34,7 +34,10 @@ publishing claim older than five minutes becomes `uncertain` and is never
 retried automatically.
 
 `edit ID` and review `e` replace pending text after the same screens, then
-leave the draft pending. They cannot publish.
+leave the draft pending. They cannot publish. `--edit` cannot be combined with
+`--publish`, reply, quote, or queue flags. Desktop review Edit prefills the
+current text, keeps line breaks, and disables the response field until the
+replacement is saved and review asks again.
 
 These checks are deterministic. They can miss harm or hold benign text. Review
 is the real control. Do not weaken them to target people.

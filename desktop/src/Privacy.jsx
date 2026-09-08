@@ -419,22 +419,43 @@ export function Queue({ selection, running, onRun }) {
   const [data, setData] = useState(null),
     [error, setError] = useState(""),
     [editing, setEditing] = useState(null),
-    [text, setText] = useState("");
-  const load = () => {
+    [text, setText] = useState(""),
+    [revision, setRevision] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setRevision((v) => v + 1), 60000);
+    const remove = window.chorus?.onEvent((e) => {
+      if (["exit", "history-updated"].includes(e.type))
+        setRevision((v) => v + 1);
+    });
+    return () => {
+      clearInterval(timer);
+      if (remove) remove();
+    };
+  }, []);
+  useEffect(() => {
+    setEditing(null);
+    setText("");
+  }, [selection.platform]);
+  useEffect(() => {
     if (!window.chorus) return;
+    let active = true;
     window.chorus
       .queue(selection)
       .then((v) => {
+        if (!active) return;
         setData(v);
         setError("");
       })
-      .catch(() =>
-        setError("The local queue could not be read. Check storage permissions."),
-      );
-  };
-  useEffect(() => {
-    load();
-  }, [selection.platform, running]);
+      .catch(() => {
+        if (active)
+          setError(
+            "The local queue could not be read. Check storage permissions.",
+          );
+      });
+    return () => {
+      active = false;
+    };
+  }, [selection.platform, running, revision]);
   const save = (item) => {
     const next = text.trim();
     if (!next || running) return;
@@ -448,7 +469,8 @@ export function Queue({ selection, running, onRun }) {
       <p>
         Pending drafts stay here until you review, edit, or reject them.
         Uncertain drafts freeze automatic mode until you reject them after
-        checking the account.
+        checking the account. Queue reads the account store last used on this
+        platform.
       </p>
       {data?.automatic && (
         <p className={`queue-budget${data.automatic.frozen ? " frozen" : ""}`}>
@@ -464,6 +486,7 @@ export function Queue({ selection, running, onRun }) {
           {error}
         </p>
       )}
+      {!data && !error && <p>Reading queue…</p>}
       {data && !data.items.length && (
         <div className="history-empty">
           <h2>Queue is empty</h2>

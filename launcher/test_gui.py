@@ -64,7 +64,8 @@ class DesktopTests(unittest.TestCase):
         for request in ({'runtime': 'elixir', 'platform': 'bluesky', 'action': '--publish'},
                         {'runtime': 'python', 'platform': 'mastodon', 'action': 'review'},
                         {'runtime': 'elixir', 'platform': '../bluesky', 'action': 'review'},
-                        {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'edit', 'text': text}):
+                        {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'edit', 'text': text},
+                        {'runtime': 'elixir', 'platform': 'mastodon', 'action': 'reject', 'text': 'draft\nid'}):
             with self.assertRaises(ValueError):
                 arguments(request)
 

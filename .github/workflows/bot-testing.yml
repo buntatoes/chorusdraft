@@ -2,7 +2,7 @@ name: Elixir desktop checks
 
 on:
   push:
-    branches: [main, bot-testing]
+    branches: [main, bot-testing, 'v0.*']
   pull_request:
     branches: [main, bot-testing]
   workflow_dispatch:

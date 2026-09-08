@@ -23,10 +23,10 @@ Providers: local/Ollama, Gemini, or ChatGPT/OpenAI.
 
 **[v0.51.5](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.5)**
 
-- Desktop Queue for pending and uncertain drafts, with automatic-attempt
-  remaining count.
+- Desktop Queue for pending and uncertain drafts from the last-used account
+  store, with automatic-attempt remaining count.
 - Edit a pending draft (`edit ID TEXT`, or `e` during review). The replacement
-  is screened and still needs review before publish.
+  is screened, keeps line breaks, and still needs review before publish.
 - CI packages use the `VERSION` file instead of a hardcoded version string.
 
 [Changelog](CHANGELOG.md) · [Releases](https://github.com/buntatoes/chorusdraft/releases) · [Build](elixir/README.md) · [Security](SECURITY.md)
@@ -64,7 +64,7 @@ target or discovery commentary. Owner text needs `--publish`.
 | `listen` / `replies` | Mentions |
 | `post` / `reply` / `quote` | Owner-written text |
 | `search` / `random` / `discover` / `targets` | Read or stage commentary |
-| `status` | Queue counts and unresolved IDs |
+| `status` | Queue counts, unresolved IDs, automatic budget, freeze |
 | `reject ID` | Drop one pending or uncertain draft |
 | `edit ID TEXT` | Replace pending draft text; still review before publish |
 | `delete ID` | Delete one of your posts |

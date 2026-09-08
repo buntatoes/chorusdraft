@@ -187,4 +187,14 @@ defmodule ChorusDraft.StoreTest do
     assert Store.automatic_budget(dir).frozen
     assert_raise Error, fn -> Store.replace_pending(dir, item["id"], %{"text" => "too late"}) end
   end
+
+  test "replace_pending re-validates inside the store lock", %{dir: dir} do
+    item = Store.stage(dir, %{"text" => "hello"})
+
+    assert_raise Error, fn ->
+      Store.replace_pending(dir, item["id"], %{"text" => "hello\u0001there"})
+    end
+
+    assert hd(Store.drafts(dir))["text"] == "hello"
+  end
 end
