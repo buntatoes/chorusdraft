@@ -7,8 +7,36 @@ import tempfile
 import time
 import unittest
 from unittest.mock import patch
-from bridge import arguments
+from bridge import arguments, has_control
 from process import Session, bot_command
+
+
+def run_prompt_session(program, reply, prompt='Approve this exact draft?'):
+    """Start PROGRAM in a session, answer PROMPT with REPLY, and return everything it printed."""
+    session = Session([sys.executable, str(program)], str(program.parent))
+    output = ''
+    sent = False
+    deadline = time.monotonic() + 20
+    while time.monotonic() < deadline:
+        try:
+            kind, value = session.events.get(timeout=0.2)
+        except queue.Empty:
+            continue
+        if kind == 'output':
+            output += value
+            if prompt in output and not sent:
+                session.send(reply)
+                sent = True
+        elif kind == 'exit':
+            break
+        else:
+            raise AssertionError(value)
+    else:
+        session.stop()
+        raise AssertionError('Interactive session timed out')
+    if not sent:
+        raise AssertionError('The prompt never appeared')
+    return output
 
 
 class DesktopTests(unittest.TestCase):
@@ -16,30 +44,27 @@ class DesktopTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix='ChorusDraft GUI test ') as folder:
             program = Path(folder) / 'prompt.py'
             program.write_text("import sys,os\nassert os.environ['ERL_CRASH_DUMP'] == os.devnull\nassert os.environ['ERL_CRASH_DUMP_SECONDS'] == '0'\nprint('TTY=' + str(sys.stdin.isatty()), flush=True)\nprint('Approve this exact draft? ', end='', flush=True)\nprint('REPLY=' + input(), flush=True)\n")
-            session = Session([sys.executable, str(program)], folder)
-            output = ''
-            sent = False
-            deadline = time.monotonic() + 20
-            while time.monotonic() < deadline:
-                try:
-                    kind, value = session.events.get(timeout=0.2)
-                except queue.Empty:
-                    continue
-                if kind == 'output':
-                    output += value
-                    if 'Approve this exact draft?' in output and not sent:
-                        session.send('yes & $HOME | café')
-                        sent = True
-                elif kind == 'exit':
-                    break
-                else:
-                    self.fail(value)
-            else:
-                session.stop()
-                self.fail('Interactive session timed out')
-            self.assertTrue(sent)
+            output = run_prompt_session(program, 'yes & $HOME | café')
             self.assertIn('TTY=True', output)
             self.assertIn('REPLY=yes & $HOME | café', output)
+
+    @unittest.skipIf(os.name == 'nt', 'POSIX terminal line discipline only')
+    def test_long_replies_reach_the_bot_intact(self):
+        with tempfile.TemporaryDirectory(prefix='ChorusDraft GUI test ') as folder:
+            program = Path(folder) / 'prompt.py'
+            program.write_text("import sys\nprint('Approve this exact draft? ', end='', flush=True)\nreply = sys.stdin.readline()\nprint('LEN=' + str(len(reply.rstrip('\\n'))), flush=True)\n")
+            long_reply = '<<JSON>>"' + 'é' * 6000 + '"'
+            output = run_prompt_session(program, long_reply)
+            self.assertIn('LEN=' + str(len(long_reply)), output)
+
+    def test_control_characters_are_rejected_before_the_terminal(self):
+        for text in ('\x03', 'y\x1a', 'stop\x04', 'del\x7f', 'line\n', 'ret\r', 'nul\x00'):
+            self.assertTrue(has_control(text), repr(text))
+        self.assertFalse(has_control('tabs\tare fine, so is café'))
+        for request in ({'runtime': 'elixir', 'platform': 'mastodon', 'action': 'reject', 'text': 'draft\x03id'},
+                        {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'edit', 'target': 'draft\x1bid', 'text': 'ok'}):
+            with self.assertRaises(ValueError):
+                arguments(request)
 
     def test_stop_ends_a_running_session(self):
         session = Session([sys.executable, '-c', 'import time; print("READY", flush=True); time.sleep(90)'], tempfile.gettempdir())

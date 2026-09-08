@@ -22,6 +22,16 @@ def settings(request):
 
 ACTIONS = {'setup', 'draft', 'review', 'start', 'listen', 'replies', 'search', 'post', 'help', 'version'}
 ACTIONS.update({'automatic', 'reject', 'edit', 'status'})
+LINE_LIMIT = 65536
+
+
+def has_control(text):
+    """True for any control character other than a tab; these reach the bot as a terminal line."""
+    return any((ord(c) < 0x20 and c != '\t') or c == '\x7f' for c in text)
+
+
+def valid_id(value):
+    return isinstance(value, str) and value.strip() and len(value) <= 80 and not has_control(value)
 
 
 def arguments(request):
@@ -36,13 +46,13 @@ def arguments(request):
         args.append(text)
     if action == 'reject':
         text = request.get('text')
-        if not isinstance(text, str) or not text.strip() or len(text) > 80 or any(c in text for c in '\r\n\x00'):
+        if not valid_id(text):
             raise ValueError('Choose a pending or uncertain draft to reject.')
         args.append(text)
     if action == 'edit':
         target = request.get('target')
         text = request.get('text')
-        if not isinstance(target, str) or not target.strip() or len(target) > 80 or any(c in target for c in '\r\n\x00'):
+        if not valid_id(target):
             raise ValueError('Choose a pending draft to edit.')
         if not isinstance(text, str) or not text.strip() or len(text) > 10000 or '\x00' in text:
             raise ValueError('Enter replacement text (maximum 10,000 characters).')
@@ -86,11 +96,14 @@ def serve(root):
 
     def reader():
         while True:
-            line = sys.stdin.readline(65537)
+            line = sys.stdin.readline(LINE_LIMIT + 1)
             if not line:
                 requests.put({'type': 'quit'})
                 return
-            if len(line) > 65536:
+            if len(line) > LINE_LIMIT:
+                # Drain the rest of the oversized line so it is one bad request, not several.
+                while line and not line.endswith('\n'):
+                    line = sys.stdin.readline(LINE_LIMIT + 1)
                 requests.put({'type': 'invalid'})
                 continue
             try:
@@ -139,7 +152,7 @@ def serve(root):
                 emit('started', action=args[0], runtime=runtime, platform=platform)
             elif kind == 'input':
                 text = request.get('text')
-                if not isinstance(text, str) or len(text) > 20000 or any(c in text for c in '\r\n\x00'):
+                if not isinstance(text, str) or len(text) > 20000 or has_control(text):
                     raise ValueError('Enter one response at a time.')
                 if session and not session.finished:
                     session.send(text)
