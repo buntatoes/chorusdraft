@@ -1,7 +1,13 @@
-param([Parameter(Mandatory=$true)][string]$Destination)
+param([string]$Destination)
 $ErrorActionPreference = 'Stop'
+if (-not $Destination) {
+    $version = (Get-Content -LiteralPath (Join-Path $PSScriptRoot 'VERSION') -Raw).Trim()
+    $Destination = Join-Path $env:LOCALAPPDATA "ChorusDraft-$version"
+}
 $dest = [IO.Path]::GetFullPath($Destination)
-if (Test-Path -LiteralPath $dest) { throw 'Destination already exists; choose a new version directory.' }
+if (Test-Path -LiteralPath $dest) {
+    throw "Destination already exists: $dest. Choose another directory or remove the old install first."
+}
 & (Join-Path $PSScriptRoot 'verify.ps1') $PSScriptRoot
 $null = New-Item -ItemType Directory -Path $dest
 foreach ($item in @('chorusdraft','run.ps1','setup.ps1','install.ps1','verify.ps1','bluesky','mastodon','source','README.md','RELEASE_NOTES.md','CHANGELOG.md','SECURITY.md','LICENSE','NOTICE','THIRD_PARTY_NOTICES.md','VERSION','MANIFEST.sha256')) {
