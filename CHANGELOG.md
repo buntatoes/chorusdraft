@@ -1,18 +1,19 @@
 # Changelog
 
-This file preserves the existing project history. Future updates and release
-notes are published in [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
+Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
 ## Unreleased
 
-- Replace the README project image with a new high-contrast ChorusDraft banner.
+- Apache License 2.0.
+- Replace the README project image with a high-contrast ChorusDraft banner.
 - Screen inherited content warnings before automatic publication and honor
-  opt-outs in both source text and content warnings.
+  opt-outs in source text and content warnings.
 - Expand automatic screening for direct threats, self-harm encouragement,
   coordinated harassment, Unicode domains, and normalized injection patterns.
-- Redact recognized personal information from AI context before provider requests.
-- Reject detected personal information and common credential formats in AI output
-  and recheck saved AI drafts and content warnings before publication.
+- Redact recognized personal information from AI context before provider
+  requests.
+- Reject detected personal information and common credential formats in AI
+  output and recheck saved AI drafts and content warnings before publication.
 - Expand automatic link screening beyond a small list of domain suffixes.
 - Add a verified email-history cleanup utility for authenticated local use.
 
@@ -20,101 +21,95 @@ notes are published in [GitHub Releases](https://github.com/buntatoes/chorusdraf
 
 ### Automatic mode
 
-- Added the explicit `automatic` command (`--daemon --automatic`) while keeping
-  `start` and every other command review-first by default.
-- Allowed only each newly generated original and eligible public-mention reply
-  to publish automatically. Older queued drafts, owner-written text, quotes,
-  target commentary, and discovery commentary remain review-only.
-- Added stricter automatic-output screening for harassment, pile-ons,
-  model-added mentions, links, and common personal-contact patterns.
-- Added immediate source re-fetch and exact content, content-warning, handle,
-  immutable-author, visibility, injection, opt-out, and do-not-contact checks.
-- Added an atomic five-attempt rolling 24-hour budget, single-flight claims,
-  unresolved-publication lockout, and stale-claim recovery to `uncertain`.
-- Allowed operators to reject pending or uncertain drafts (`reject ID` /
-  `--reject ID`), clearing the automatic-mode freeze without blind republish.
-- Raised a clean error when local or Gemini AI answers are empty or nil,
-  matching the OpenAI path.
+- Explicit `automatic` command (`--daemon --automatic`). `start` and every
+  other command stay review-first.
+- Auto-publish only a newly generated original or eligible public-mention
+  reply. Older queue items, owner text, quotes, and target/discovery commentary
+  stay review-only.
+- Stricter automatic-output screening: harassment, pile-ons, model-added
+  mentions, links, and common contact patterns.
+- Re-fetch the source and recheck content, content warning, handle, author,
+  visibility, injection, opt-out, and do-not-contact.
+- Five-attempt rolling 24-hour budget, single-flight claims, lockout, and
+  stale claims to `uncertain`.
+- `reject ID` / `--reject ID` clears a pending or uncertain draft without
+  republishing.
+- Empty or nil local/Gemini answers raise a clean error, matching OpenAI.
 
 ### Providers and Bluesky
 
-- Added ChatGPT through the OpenAI Responses API with `chatgpt` and `openai`
-  provider names, configurable API key/model, bounded output, sanitized errors,
-  and request-level response storage disabled.
-- Made Jetstream the default, non-disableable wake-up transport for Bluesky
-  listener and daemon modes. `--jetstream` remains a compatibility no-op.
-- Preserved canonical notification/API fetches and periodic catch-up; streamed
-  post bodies remain outside AI context, output, and persistent state.
+- ChatGPT through the OpenAI Responses API (`chatgpt` / `openai`), bounded
+  output, sanitized errors, `store: false`.
+- Jetstream is the wake-up transport for Bluesky listen and daemon.
+  `--jetstream` is a no-op.
+- Canonical notification fetches and periodic catch-up kept. Streamed post
+  bodies stay out of AI, output, and state.
 
 ## 0.51.3 — 2026-09-06
 
 ### Elixir runtime
 
-- Established Elixir as the sole supported ChorusDraft implementation.
-- Combined Bluesky and Mastodon in one executable with shared AI, safety, queue,
-  scheduling, and state behavior.
-- Added short commands alongside the complete advanced option interface;
-  command translation cannot add `--publish`.
-- Added explicit import of compatible older state into an empty account store.
+- Elixir is the supported implementation.
+- Bluesky and Mastodon in one executable.
+- Short commands plus the full option interface. Command translation cannot
+  add `--publish`.
+- Import compatible older state into an empty account store.
 
 ### Platforms and packaging
 
-- Added `.tar.gz` packages for Linux and macOS and a `.zip` package for Windows.
-  Every package contains both social-platform modes.
-- Added Unix and PowerShell setup, install, run, and verification scripts.
-- Added private Unix modes and protected Windows ACLs for configuration and
-  state, plus native cross-process locks and atomic state replacement.
-- Included application source, pinned dependency source and licenses, file
-  manifests, and SHA-256 sidecars while excluding credentials, state, logs, and
-  build caches.
-- Added native CI tests on Ubuntu 22.04, macOS 14, and Windows Server 2022.
+- `.tar.gz` for Linux and macOS, `.zip` for Windows. Both social modes in
+  every package.
+- Unix and PowerShell setup, install, run, and verification scripts.
+- Private Unix modes and Windows ACLs for config and state. Native locks and
+  atomic state replacement.
+- Application source, pinned dependency source and licenses, manifests, and
+  SHA-256 sidecars. No credentials, state, logs, or build caches.
+- CI on Ubuntu 22.04, macOS 14, and Windows Server 2022.
 
 ### Bluesky Jetstream
 
-- Added optional Jetstream wake-ups for Bluesky listeners and daemons while
-  retaining periodic notification API catch-up.
-- Added bounded frames, fragmented messages, handshake headers, fragment counts,
-  receive deadlines, reconnect backoff, and heartbeat handling.
-- Kept streamed post bodies outside AI context, terminal output, and persistent
-  state. Stream events cannot generate or publish directly.
+- Optional Jetstream wake-ups for Bluesky listeners and daemons, with
+  periodic notification catch-up.
+- Bounded frames, fragments, handshake headers, deadlines, reconnect backoff,
+  and heartbeats.
+- Streamed post bodies stay out of AI, the terminal, and state. Stream events
+  cannot generate or publish.
 
-### Safety and reliability
+### Safety
 
-- Preserved mandatory interactive review for AI drafts and explicit publication
-  only for owner-written text.
-- Preserved privacy filtering, opt-outs, do-not-contact enforcement, harassment
-  screening, interaction budgets, ownership checks, and disabled engagement
-  actions.
-- Added crash-released locks, strict state validation, idempotent publication
-  identifiers, and `uncertain` handling without automatic publication retries.
-- Disabled HTTP redirects and automatic retries and added request timeouts and
-  streaming response limits.
+- Interactive review for AI drafts. Owner text publishes only with an explicit
+  flag.
+- Privacy filtering, opt-outs, do-not-contact, harassment screening,
+  interaction budgets, ownership checks. No automatic likes/boosts/reposts.
+- Crash-released locks, strict state validation, idempotent publication IDs,
+  `uncertain` without automatic retries.
+- No HTTP redirects or automatic retries. Request timeouts and streaming
+  limits.
 
 ## 0.51.2 — 2026-09-06
 
-- Raised the earlier implementation requirement to Ruby 4.0.
-- Added short commands and cross-platform launchers.
-- Added credential-free setup that preserves existing configuration.
-- Preserved the complete advanced option interface and state format.
+- Earlier implementation required Ruby 4.0.
+- Short commands and cross-platform launchers.
+- Credential-free setup that leaves existing config alone.
+- Full option interface and state format kept.
 
 ## 0.51.1 — 2026-09-05
 
-- Recorded all fetched public opt-outs before reply generation or batch limits.
-- Expanded normalization for opt-out and harassment screening.
-- Extended do-not-contact checks to generated, manual, and queued mentions and
-  Mastodon content warnings.
-- Prevented new opt-outs from replacing earlier block-list entries.
-- Added complete validation of Mastodon content warnings.
+- Record fetched public opt-outs before reply generation or batch limits.
+- Broader normalization for opt-out and harassment screening.
+- Do-not-contact covers generated, manual, and queued mentions and Mastodon
+  content warnings.
+- New opt-outs no longer replace earlier block-list entries.
+- Full validation of Mastodon content warnings.
 
 ## 0.51 — 2026-09-05
 
-- Added the dry comic voice with sincere handling of serious subjects.
-- Added varied original posts and topic-focused reply, target, and discovery
-  prompts without personal attacks or unsupported allegations.
-- Preserved review, privacy, interaction limits, and provider safety controls.
+- Dry comic voice; sincere on serious subjects.
+- Varied originals and topic-focused reply, target, and discovery prompts.
+- Review, privacy, interaction limits, and provider safety kept.
 
 ## 0.50 — 2026-09-05
 
-- Began the ChorusDraft release line with Bluesky and Mastodon drafting,
-  interactive review, local AI and Gemini support, scheduling, account-scoped
-  state, opt-outs, privacy filtering, and cross-platform packages.
+- First ChorusDraft release: Bluesky and Mastodon drafting, interactive
+  review, local AI and Gemini, scheduling, account-scoped state, opt-outs,
+  privacy filtering, and cross-platform packages.

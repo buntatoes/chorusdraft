@@ -1,29 +1,23 @@
-# ChorusDraft — Elixir version for Linux, macOS, and Windows
+# ChorusDraft
 
-This directory contains ChorusDraft 0.51.4 for Linux, macOS, and Windows. One
-Elixir application and executable support both Bluesky and Mastodon.
+Elixir app for Linux, macOS, and Windows. One executable, Bluesky and Mastodon
+modes. Version 0.51.4; `main` has extra privacy and automatic-screening checks
+that are not in the v0.51.4 downloads. See [CHANGELOG.md](CHANGELOG.md).
 
-ChorusDraft writes comic social drafts for both platforms using a local
-OpenAI-compatible/Ollama model, Gemini, or ChatGPT through the OpenAI Responses
-API. Review is the default; explicit automatic mode may publish only newly
-generated originals and eligible public-mention replies after stricter
-safeguards pass.
+Review is the default. `automatic` may publish new originals and eligible
+public-mention replies after stricter checks.
 
 ## Requirements
 
-Current main includes unreleased privacy checks, stricter automatic screening of
-generated text and inherited content warnings, and content-warning opt-outs.
-See CHANGELOG.md; published v0.51.4 downloads do not include these later fixes.
-
-- Linux, macOS, or Windows with Erlang/OTP 25 or later
-- Elixir 1.15 or later, Mix, and the Erlang development headers to build or test
-- Linux: util-linux (`flock`); `tar` and `sha256sum` for package verification
-- macOS: Python 3; `tar` and `shasum` for package verification
+- Linux, macOS, or Windows with Erlang/OTP 25+
+- Elixir 1.15+, Mix, and Erlang development headers to build or test
+- Linux: util-linux (`flock`); `tar` and `sha256sum` to verify packages
+- macOS: Python 3; `tar` and `shasum`
 - Windows: Python 3 and PowerShell
 - A Bluesky app password or Mastodon access token
 - A local AI endpoint, Gemini credentials, or OpenAI API credentials and model
 
-## Build and inspect
+## Build
 
 ```sh
 mix deps.get
@@ -33,11 +27,11 @@ MIX_ENV=prod mix escript.build
 ./chorusdraft bluesky --setup
 ```
 
-On Windows, use `escript .\chorusdraft ...` from a source checkout. Edit
-`bluesky/.env` and/or `mastodon/.env`. Setup never starts a service or
-overwrites existing configuration. Run only one daemon per account.
+On Windows, from a source checkout: `escript .\chorusdraft ...`. Edit
+`bluesky/.env` and/or `mastodon/.env`. Setup does not start a service or
+overwrite existing config. Run one daemon per account.
 
-## Common workflows
+## Workflows
 
 ```sh
 ./chorusdraft bluesky draft
@@ -48,10 +42,9 @@ overwrites existing configuration. Run only one daemon per account.
 ./chorusdraft mastodon search "open source"
 ```
 
-`start` remains review-first; only `automatic` (`--daemon --automatic`) adds
-automatic AI-publication permission. Manual text, quotes, target/discovery
-commentary, safeguard-held drafts, and pre-existing queue items remain
-review-only.
+`start` is review-first. Only `automatic` (`--daemon --automatic`) may
+auto-publish AI output. Manual text, quotes, target/discovery commentary,
+held drafts, and items already in the queue stay review-only.
 
 ```sh
 ./chorusdraft bluesky --post-only
@@ -67,50 +60,42 @@ review-only.
 ./chorusdraft mastodon --daemon --automatic --poll-interval 60
 ```
 
-Only the exact original or eligible incoming public-mention reply created in
-that cycle can be claimed. Before an automatic reply, the source is re-fetched
-and its ID, text, content warning, handle, immutable author identity, and public
-visibility must match. Injection, opt-out, and do-not-contact checks run again.
-Output with model-added mentions, links, common personal-contact patterns,
-pile-ons, or expanded harassment is held for review.
+Only the original or eligible public-mention reply created in that cycle can
+be claimed. Before an automatic reply, the source is fetched again; ID, text,
+content warning, handle, author identity, and public visibility must match.
+Injection, opt-out, and do-not-contact run again. Output with extra mentions,
+links, contact patterns, pile-ons, or harassment is held for review.
 
-Each account gets at most five automatic publication attempts per rolling 24
-hours. Attempts are reserved atomically; failures count. Only one may be in
-flight, and any `publishing` or `uncertain` item blocks later automatic claims.
-A crash-stranded claim ages into `uncertain` and is never retried. After you
-inspect the account, `reject ID` / `--reject ID` clears a pending or uncertain
-draft so automatic mode can resume without a blind republish.
+Five automatic attempts per account per rolling 24 hours. Failures count. One
+in flight. `publishing` or `uncertain` blocks later claims. A stranded claim
+ages to `uncertain` and is not retried. `reject ID` clears it after you inspect
+the account.
 
 ## Bluesky Jetstream
 
-Jetstream starts automatically for Bluesky `listen` and daemon modes and cannot
-be disabled there. `--jetstream` is a compatibility no-op; `--no-jetstream` is
-rejected. Streamed bodies never enter AI context, output, or state. Matching
-events wake the ordinary notification fetch, where opt-out, deduplication,
-safety, and publication policy still apply. Mastodon continues to use polling.
+On for Bluesky `listen` and daemon. `--jetstream` does nothing;
+`--no-jetstream` is rejected. Stream bodies never go to AI, the terminal, or
+state. A match wakes the normal notification fetch. Mastodon polls.
 
-Default endpoint: `wss://jetstream.us-east.bsky.network`. Override with
-`BLUESKY_JETSTREAM_URL`. See [SECURITY.md](SECURITY.md) for frame and handshake
-bounds.
+Default: `wss://jetstream.us-east.bsky.network`. Override with
+`BLUESKY_JETSTREAM_URL`. Bounds: [SECURITY.md](SECURITY.md).
 
-## State and safeguards
+## State
 
-State lives under each platform `data/` directory, separated by platform,
-service origin, and account. Do-not-contact and public opt-outs block supplied
-interaction paths. Ambiguous publication results become `uncertain` and are not
-retried. Screening (including prompt-injection and automatic-output gates) is
-best-effort and deterministic; review mode remains the strongest control.
+Per platform `data/` directory, split by platform, origin, and account.
+Do-not-contact and public opt-outs apply. Ambiguous publishes become
+`uncertain`. Screening is deterministic regex; review is the real control.
 
 ## Providers
 
-| Provider value | Required settings | Destination |
+| Value | Settings | Destination |
 |---|---|---|
-| `local` or `ollama` | `LOCAL_LLM_URL`, `LOCAL_LLM_MODEL` | Configured loopback endpoint |
+| `local` or `ollama` | `LOCAL_LLM_URL`, `LOCAL_LLM_MODEL` | Loopback endpoint |
 | `gemini` | `GEMINI_API_KEY`, `GEMINI_MODEL` | Google Gemini |
 | `chatgpt` or `openai` | `OPENAI_API_KEY`, `OPENAI_MODEL` | OpenAI Responses API |
 
-Local AI URLs must be loopback. Remote endpoints require HTTPS. OpenAI requests
-use bearer auth, bounded output, and `store: false`.
+Local AI URLs must be loopback. Remote endpoints need HTTPS. OpenAI uses bearer
+auth, bounded output, and `store: false`.
 
 ## Packages
 
@@ -118,22 +103,21 @@ use bearer auth, bounded output, and `store: false`.
 - `ChorusDraft-elixir-0.51.4-macos.tar.gz`
 - `ChorusDraft-elixir-0.51.4-windows.zip`
 
-Build with `MIX_ENV=prod mix run scripts/build_release.exs` and verify with
-`./scripts/check_packages.sh` (or `.\scripts\check_packages.ps1` on Windows).
+Build: `MIX_ENV=prod mix run scripts/build_release.exs`  
+Verify: `./scripts/check_packages.sh` or `.\scripts\check_packages.ps1`
 
-## Upgrade or import older state
+## Upgrade
 
-Stop the old process, install into a new directory, copy `.env` and config, then:
+Stop the old process, install into a new directory, copy `.env` and config:
 
 ```sh
 ./run.sh bluesky --import-state /absolute/path/to/old/data/ACCOUNT_HASH/state.json
 ./run.sh bluesky --status
 ```
 
-`--reject ID` / `reject ID` discards a pending or uncertain draft and clears the
-automatic-mode freeze without republishing. Inspect the remote account before
-resolving uncertain publications; do not force an uncertain draft back to
-pending.
+`reject ID` drops a pending or uncertain draft and unfreezes automatic mode.
+Check the live account first. Do not force uncertain back to pending.
 
-Read [SECURITY.md](SECURITY.md) and
-[GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
+## License
+
+Apache 2.0. See LICENSE, [NOTICE](NOTICE), and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

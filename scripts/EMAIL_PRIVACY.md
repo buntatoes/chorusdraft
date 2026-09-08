@@ -1,44 +1,38 @@
 # Remove a personal email from Git history
 
-The GitHub connector cannot rewrite commit identities or release tags. Run this
-utility from a machine where Git already has push access to this repository.
-It uses Git and Python 3 only and prepares a separate private mirror; it does
-not modify your existing working directory.
+Run this from a machine that can push to the repository. Python 3 and Git.
+It prepares a private mirror; it does not change your working tree.
 
-First set the repository's identity for future local commits:
+Set the repo identity for later commits:
 
 ```sh
 git config user.email '324143321+buntatoes@users.noreply.github.com'
 ```
 
-In GitHub Settings → Emails, enable email privacy and blocking command-line
-pushes that expose your personal email. Changing settings does not change
-existing history.
+In GitHub Settings → Emails, enable email privacy and block command-line
+pushes that expose your personal email. That does not rewrite history.
 
-Prepare and verify the rewrite, substituting your exposed address locally:
+Prepare:
 
 ```sh
 python3 scripts/rewrite_email.py --old-email 'YOUR_EXPOSED_EMAIL'
 ```
 
-Apply it after inspecting the preparation result:
+Apply after you inspect the result:
 
 ```sh
 python3 scripts/rewrite_email.py --old-email 'YOUR_EXPOSED_EMAIL' --apply
 ```
 
-The script replaces the exact email in author, committer, tagger, and message
-metadata, preserving commit file trees and merge relationships. It verifies
-branch/tag trees and rewritten metadata before an atomic push, with explicit
-leases to refuse concurrent remote changes. Branch rules may reject rewriting.
-It never deletes remote branches and never pushes GitHub-owned pull-request refs.
+The script replaces that exact address in author, committer, tagger, and
+message metadata. Trees and merge structure stay. It checks trees and
+metadata, then pushes atomically with leases. It does not delete branches or
+push GitHub pull-request refs.
 
-Rewritten commits and tags have new IDs. Their old signatures cannot authenticate
-the new objects and are removed; re-sign releases separately if needed. Existing
-release binaries are not rebuilt or scrubbed by this operation. Other local
-clones should be re-cloned or carefully realigned so old history is not pushed back.
+New commits have new IDs. Old signatures are dropped. Re-sign tags if you
+need signatures. Other clones should be re-cloned so they do not push old
+history back.
 
-Old commits may remain accessible through GitHub pull requests, caches, forks,
-and other people's clones. Contact GitHub Support about any remaining hosted
-copies; ordinary force-push access cannot purge them. The private preparation
-directory also contains old objects and must not be uploaded or shared.
+Pull requests, caches, forks, and other clones can still hold the old
+commits. Ask GitHub Support to purge hosted copies. Do not upload the
+preparation directory.

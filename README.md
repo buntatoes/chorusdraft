@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/chorusdraft-logo.png" alt="ChorusDraft — conversation bubble and fountain pen banner" width="720">
+  <img src="assets/chorusdraft-logo.png" alt="ChorusDraft" width="720">
 </p>
 
 # ChorusDraft
@@ -7,57 +7,47 @@
 <p align="center">
   <a href="https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml"><img alt="Elixir checks" src="https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml/badge.svg?branch=main"></a>
   <a href="https://github.com/buntatoes/chorusdraft/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/buntatoes/chorusdraft?display_name=tag&sort=semver"></a>
-  <a href="LICENSE"><img alt="License: GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-blue.svg"></a>
+  <a href="LICENSE"><img alt="License: Apache 2.0" src="https://img.shields.io/badge/license-Apache%202.0-blue.svg"></a>
   <img alt="Top language" src="https://img.shields.io/github/languages/top/buntatoes/chorusdraft">
   <img alt="Platforms: Linux, macOS, Windows" src="https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20Windows-6f42c1">
   <img alt="Services: Bluesky and Mastodon" src="https://img.shields.io/badge/services-Bluesky%20%2B%20Mastodon-0ea5e9">
 </p>
 
-ChorusDraft is a social drafting and publishing assistant for Bluesky and
-Mastodon. Review-first operation remains the default; an explicit `automatic`
-mode (`automatic` / `--daemon --automatic`) may publish only newly generated
-originals and eligible public-mention replies after deterministic safeguards.
+Drafts and publishes Bluesky and Mastodon posts. Review is the default.
+`automatic` can post new originals and eligible public-mention replies after
+checks. Voice is dry wit; serious topics stay sincere.
 
-Writing style favors dry wit and playful observations, with a sincere tone for
-serious topics. Providers: local/Ollama, Gemini, or ChatGPT/OpenAI.
+Providers: local/Ollama, Gemini, or ChatGPT/OpenAI.
 
-## Latest updates
+## Latest
 
-**On `main` — not yet included in release downloads**
+**On `main`, not in the v0.51.4 downloads yet**
 
-- Redacts recognized personal information from context before sending it to an AI provider.
-- Rejects detected personal information and common credential formats in AI drafts, with another check before publication.
-- Expands automatic link screening while preserving public social mentions.
-- Screens inherited content warnings and honors content-warning opt-outs before
-  automatic replies; expands checks for threats and coordinated harassment.
+- Redacts recognized personal information before it goes to an AI provider.
+- Rejects those patterns (and common credentials) in drafts, then checks again
+  before publish.
+- Broader automatic link screening; public @mentions still work.
+- Screens inherited content warnings and honors CW opt-outs on automatic
+  replies; stronger threat and harassment checks.
 
-**Latest release: [v0.51.4](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.4)** — adds opt-in automatic publishing, ChatGPT/OpenAI support, and controls for uncertain publications. Review remains the default.
+**[v0.51.4](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.4)** —
+opt-in automatic publishing, ChatGPT, and controls for uncertain drafts.
 
-See the [changelog](CHANGELOG.md) for details and [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases) for downloads.
+[Changelog](CHANGELOG.md) · [Releases](https://github.com/buntatoes/chorusdraft/releases) · [Build](elixir/README.md) · [Security](SECURITY.md)
 
 ## What it does
 
-- Drafts originals, replies, quotes, target commentary, and discovery commentary
-- Owner-written posts, search, mentions, queue review, reject, and delete
-- Local queues and state, separated by service, origin, and account
-- Opt-outs, do-not-contact, budgets, and content screening (see SECURITY.md)
-- Bluesky Jetstream for listen/daemon; Mastodon uses polling
+- Originals, replies, quotes, target commentary, and discovery commentary
+- Owner posts, search, mentions, queue review, reject, and delete
+- Local queues, split by service, origin, and account
+- Opt-outs, do-not-contact, budgets, and screening
+- Bluesky Jetstream for listen/daemon; Mastodon polls
 - Explicit automatic daemon with attempt budget, source rechecks, and lockout
 
-Does **not** auto-like, favourite, boost, repost, publish manual text, or publish
-unsolicited target/discovery commentary.
+Does not auto-like, favourite, boost, or repost. Does not publish unsolicited
+target or discovery commentary. Owner text needs `--publish`.
 
-## How it works
-
-| Stage | What happens |
-|---|---|
-| Configure | Choose Bluesky or Mastodon and an AI provider in local `.env`. |
-| Discover or draft | Search public posts, collect mentions, or create a draft. |
-| Safety checks | Opt-outs, do-not-contact, budgets, visibility, screening. |
-| Review | Default: local queue for review, reject, or approval. |
-| Publish | Approval publishes the queued draft. Automatic mode may publish only a newly generated original or eligible mention reply after stricter checks. Owner text needs `--publish`. |
-
-## Everyday workflow
+## Everyday
 
 ```sh
 ./run.sh bluesky --help
@@ -68,45 +58,33 @@ unsolicited target/discovery commentary.
 ./run.sh mastodon post "Maintenance is complete." --publish
 ```
 
-## Command reference
-
 | Command | Purpose |
 |---|---|
-| `setup` | Create missing configuration files |
+| `setup` | Create missing config files |
 | `draft` | Stage one original AI draft |
-| `review` | Interactively review queued drafts |
+| `review` | Review queued drafts |
 | `start` | Foreground daemon (review-first) |
-| `automatic` | Daemon with safeguarded auto-publish for new originals/mention replies |
+| `automatic` | Daemon that may auto-post new originals and mention replies |
 | `listen` / `replies` | Mentions |
 | `post` / `reply` / `quote` | Owner-written text |
 | `search` / `random` / `discover` / `targets` | Read or stage commentary |
 | `status` | Queue counts and unresolved IDs |
-| `reject ID` | Reject one pending or uncertain draft without publishing |
-| `delete ID` | Interactively delete one of your posts |
+| `reject ID` | Drop one pending or uncertain draft |
+| `delete ID` | Delete one of your posts |
 
-## Automatic mode and uncertain drafts
+## Automatic mode
 
-Automatic mode is explicit opt-in. It may auto-post new originals and eligible
-mention replies only. Older queued, manual, discovery, target-commentary, and
-safeguard-held drafts stay review-only. Screening is residual best-effort.
+Opt-in. It may auto-post only a new original or an eligible public-mention
+reply from that cycle. Older queue items, manual text, quotes, and
+target/discovery commentary stay review-only.
 
-Ambiguous publishes become `uncertain` and block later automatic claims. After
-inspecting the account, `reject ID` / `--reject ID` clears pending or uncertain
-drafts so automatic mode can resume without blind republish. Never force an
+Ambiguous publishes become `uncertain` and freeze later automatic claims.
+After you check the account, `reject ID` clears the freeze. Do not force an
 uncertain draft back to pending.
 
-## Safety notes
+Screening is regex on normalized text. Run one daemon per account. Try a
+disposable account first. Details: [SECURITY.md](SECURITY.md).
 
-- Review is the default; automatic mode is opt-in and narrowly scoped
-- Injection and automatic-output screens are best-effort regex on normalized text
-- Run one daemon per account; use disposable accounts before production
+## License
 
-See [SECURITY.md](SECURITY.md), [CHANGELOG.md](CHANGELOG.md),
-[elixir/README.md](elixir/README.md), and
-[GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
-
-`SECURITY.md`, `CHANGELOG.md`, and `RELEASE_NOTES.md` are mirrored under
-`elixir/`; keep each pair identical when editing.
-
-ChorusDraft is licensed under the GNU General Public License, version 3. See
-[LICENSE](LICENSE) and [NOTICE](NOTICE).
+Copyright 2026 Buntos. [Apache License 2.0](LICENSE). See [NOTICE](NOTICE).

@@ -1,30 +1,11 @@
-ChorusDraft 0.51.4 for Linux, macOS, and Windows
-Copyright (C) 2026 ChorusDraft contributors
+ChorusDraft 0.51.4
+Copyright 2026 Buntos
 
-This package contains ChorusDraft's supported Elixir implementation. One
-application supports Bluesky and Mastodon through separate command modes and
-configuration directories.
+Licensed under the Apache License, Version 2.0.
+See LICENSE.
 
-ChorusDraft is free software licensed under the GNU General Public License,
-version 3. See LICENSE for the complete terms. The package contains corresponding
-application and dependency source. See THIRD_PARTY_NOTICES.md and the dependency
-license files under source/deps/ for attribution and terms.
+Dependency licenses: THIRD_PARTY_NOTICES.md and source/deps/.
 
-Safeguards include review-first defaults, narrowly scoped automatic publication,
-privacy exclusions, do-not-contact controls, strict automatic-output screening,
-publication-attempt budgets, source revalidation, credential-safe errors,
-ambiguous-publication lockout, and bounded default Bluesky Jetstream reception.
-Automatic likes, favourites, boosts, and reposts are disabled.
-
-Do not use ChorusDraft to harass, threaten, dox, impersonate, coordinate abuse,
-evade a request to stop contact, or publish private material. Operators remain
-responsible for credentials, configuration, published output, account conduct,
-and compliance with platform rules and applicable law.
-
-Bluesky, Mastodon, and OpenAI are third-party services or projects. ChorusDraft
-is not endorsed by or affiliated with Bluesky Social PBC, Mastodon gGmbH,
-OpenAI, or operators of independent Mastodon servers.
-
-Modified versions must follow GPLv3 and must not be represented as endorsed by
-the original contributors. The software is provided without warranty to the
-extent permitted by GPLv3 and applicable law.
+Bluesky, Mastodon, and OpenAI are third-party services. ChorusDraft is not
+endorsed by Bluesky Social PBC, Mastodon gGmbH, OpenAI, or operators of
+independent Mastodon servers.
