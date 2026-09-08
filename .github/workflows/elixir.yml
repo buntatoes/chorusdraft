@@ -2,8 +2,16 @@ name: Elixir checks
 
 on:
   push:
-    branches: [main, elixir-experimental]
-    paths: ['elixir/**', '.github/workflows/elixir.yml']
+    branches: [main, 0.51.4-testing]
+    paths:
+      - 'elixir/**'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - 'NOTICE'
+      - 'RELEASE_NOTES.md'
+      - 'SECURITY.md'
+      - 'VERSION'
+      - '.github/workflows/elixir.yml'
   pull_request:
     branches: [main]
     paths: ['elixir/**', '.github/workflows/elixir.yml']
@@ -98,6 +106,6 @@ jobs:
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: chorusdraft-elixir-${{ matrix.package_os }}
-          path: elixir/dist/ChorusDraft-elixir-0.51.3-${{ matrix.package_os }}.*
+          path: elixir/dist/ChorusDraft-elixir-0.51.4-${{ matrix.package_os }}.*
           if-no-files-found: error
           retention-days: 30

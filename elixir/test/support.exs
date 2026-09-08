@@ -48,7 +48,10 @@ defmodule ChorusDraft.TestClient do
   def search(client, _query, limit), do: Enum.take(client.posts, limit)
   def timeline(client, limit), do: Enum.take(client.posts, limit)
   def context(client, _post), do: client.posts
-  def get_post(client, id), do: Enum.find(client.posts, &(&1["id"] == id))
+
+  def get_post(client, id) do
+    Process.get({__MODULE__, :get_post}) || Enum.find(client.posts, &(&1["id"] == id))
+  end
 
   def publish(client, draft) do
     if client.published, do: Agent.update(client.published, &[draft | &1])

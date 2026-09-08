@@ -42,7 +42,7 @@ defmodule ChorusDraft.SafetyTest do
       assert_raise Error, fn -> Safety.validate_text!(text, 500) end
     end
 
-    safe = "This deployment is a family affair 👩‍👩‍👧‍👦."
+    safe = "This deployment is a family affair 👩‍👧‍👦."
     assert Safety.validate_text!(safe, 500)
     assert Safety.clean(safe) == safe
   end
@@ -50,6 +50,24 @@ defmodule ChorusDraft.SafetyTest do
   test "control characters and platform lengths fail closed" do
     assert_raise Error, fn -> Safety.validate_text!("Hidden\e[8mtext", 500) end
     assert_raise Error, fn -> Safety.validate_text!(String.duplicate("x", 301), 300) end
+  end
+
+  test "automatic publication applies stricter harassment, link, mention, and PII gates" do
+    assert Safety.validate_automatic_text!("A calm, original observation.", 500)
+
+    for text <- [
+          "You are a clown.",
+          "Everyone dogpile @alice",
+          "Alice is a worthless idiot.",
+          "Ask @alice@example.org about it",
+          "Details at https://example.org/private",
+          "Details at example.com/private",
+          "Email alice@example.org",
+          "Call +1 (312) 555-0199",
+          "Meet at 123 Example Street"
+        ] do
+      assert_raise Error, fn -> Safety.validate_automatic_text!(text, 500) end
+    end
   end
 
   test "remote HTTP credentials require HTTPS while local AI is loopback-only" do

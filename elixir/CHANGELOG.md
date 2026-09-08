@@ -3,6 +3,44 @@
 This file preserves the existing project history. Future updates and release
 notes are published in [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
+## 0.51.4 — 2026-09-07
+
+### Automatic mode
+
+- Added the explicit `automatic` command (`--daemon --automatic`) while keeping
+  `start` and every other command review-first by default.
+- Allowed only each newly generated original and eligible public-mention reply
+  to publish automatically. Older queued drafts, owner-written text, quotes,
+  target commentary, and discovery commentary remain review-only.
+- Added stricter automatic-output screening for harassment, pile-ons,
+  model-added mentions, links, and common personal-contact patterns.
+- Added immediate source re-fetch and exact content, content-warning, handle,
+  immutable-author, visibility, injection, opt-out, and do-not-contact checks.
+- Added an atomic five-attempt rolling 24-hour budget, single-flight claims,
+  unresolved-publication lockout, and stale-claim recovery to `uncertain`.
+- Allowed operators to reject pending or uncertain drafts (`reject ID` /
+  `--reject ID`), clearing the automatic-mode freeze without blind republish.
+- Raised a clean error when local or Gemini AI answers are empty or nil,
+  matching the OpenAI path.
+
+### Providers and Bluesky
+
+- Added ChatGPT through the OpenAI Responses API with `chatgpt` and `openai`
+  provider names, configurable API key/model, bounded output, sanitized errors,
+  and request-level response storage disabled.
+- Made Jetstream the default, non-disableable wake-up transport for Bluesky
+  listener and daemon modes. `--jetstream` remains a compatibility no-op.
+- Preserved canonical notification/API fetches and periodic catch-up; streamed
+  post bodies remain outside AI context, output, and persistent state.
+
+### Release and verification
+
+- Updated all version markers, configuration examples, user/security docs,
+  release notes, package paths, and testing-branch CI coverage for 0.51.4.
+- Expanded offline regression coverage to 83 tests, including automatic-mode
+  publication boundaries, source edits, budgets, crash recovery, and OpenAI
+  response validation.
+
 ## 0.51.3 — 2026-09-06
 
 ### Elixir runtime

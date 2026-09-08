@@ -139,6 +139,12 @@ defmodule ChorusDraft.JetstreamTest do
   end
 
   test "Jetstream CLI combinations are rejected before logging in" do
+    assert CLI.jetstream_enabled?("bluesky", %{listen: true})
+    assert CLI.jetstream_enabled?("bluesky", %{daemon: true})
+    refute CLI.jetstream_enabled?("bluesky", %{post_only: true})
+    refute CLI.jetstream_enabled?("mastodon", %{listen: true})
+    refute CLI.jetstream_enabled?("mastodon", %{daemon: true})
+
     assert capture_io(:stderr, fn ->
              assert CLI.run(["mastodon", "--listen", "--jetstream"]) == 1
            end) =~ "only for Bluesky"
@@ -147,7 +153,27 @@ defmodule ChorusDraft.JetstreamTest do
              assert CLI.run(["bluesky", "--post-only", "--jetstream"]) == 1
            end) =~ "requires --listen or --daemon"
 
-    assert capture_io(fn -> assert CLI.run(["bluesky", "--help"]) == 0 end) =~ "--jetstream"
+    assert capture_io(:stderr, fn ->
+             assert CLI.run(["bluesky", "--listen", "--no-jetstream"]) == 1
+           end) =~ "cannot be disabled"
+
+    assert capture_io(fn -> assert CLI.run(["bluesky", "--help"]) == 0 end) =~
+             "Bluesky listen/start always streams"
+  end
+
+  test "Bluesky listener validates its default Jetstream endpoint before login" do
+    dir = Path.join(System.tmp_dir!(), "jetstream-cli-#{System.unique_integer([:positive])}")
+    File.mkdir_p!(dir)
+    File.write!(Path.join(dir, ".env"), "BLUESKY_JETSTREAM_URL=https://example.org\n")
+    on_exit(fn -> File.rm_rf!(dir) end)
+
+    assert capture_io(:stderr, fn ->
+             assert CLI.run(["bluesky", "--listen", "--base", dir]) == 1
+           end) =~ "Jetstream requires a WSS origin"
+
+    assert capture_io(:stderr, fn ->
+             assert CLI.run(["bluesky", "start", "--base", dir]) == 1
+           end) =~ "Jetstream requires a WSS origin"
   end
 
   test "stream hints cannot supply AI context, bypass opt-outs, publish, or duplicate drafts" do

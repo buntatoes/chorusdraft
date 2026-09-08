@@ -65,6 +65,7 @@ defmodule ChorusDraft.CompatibilityTest do
     assert CLI.normalize_short_command(["draft"]) == ["--post-only"]
     assert CLI.normalize_short_command(["review"]) == ["--process-queue"]
     assert CLI.normalize_short_command(["start", "--poll", "30"]) == ["--daemon", "--poll", "30"]
+    assert CLI.normalize_short_command(["automatic"]) == ["--daemon", "--automatic"]
     assert CLI.normalize_short_command(["post", "hello"]) == ["--text", "hello"]
 
     assert CLI.normalize_short_command(["reply", "123", "hello"]) == [
@@ -121,6 +122,11 @@ defmodule ChorusDraft.CompatibilityTest do
 
     assert capture_io(:stderr, fn -> assert CLI.run(["bluesky", "draft", "--publish"]) == 1 end) =~
              "--publish requires --text"
+
+    assert capture_io(:stderr, fn ->
+             assert CLI.run(["mastodon", "--listen", "--automatic"]) == 1
+           end) =~
+             "--automatic requires --daemon"
   end
 
   test "short commands never inject direct publication" do
@@ -136,6 +142,9 @@ defmodule ChorusDraft.CompatibilityTest do
     Enum.each(commands, fn command ->
       refute "--publish" in CLI.normalize_short_command(command)
     end)
+
+    refute "--automatic" in CLI.normalize_short_command(["start"])
+    assert "--automatic" in CLI.normalize_short_command(["automatic"])
   end
 
   test "daemon schedules originals once per interval even after target failure", %{dir: dir} do
