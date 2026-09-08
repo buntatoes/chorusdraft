@@ -10,7 +10,7 @@ need Python 3 for account-state locking. Windows launchers use PowerShell.
 Building the bot from source requires Elixir 1.15+ and Mix.
 
 Connect with a Bluesky app password or Mastodon access token. AI drafting needs
-a local Ollama/OpenAI-compatible endpoint or a Gemini API key and model.
+a local Ollama/OpenAI-compatible endpoint, Gemini, or ChatGPT/OpenAI API key and model.
 
 ## Download and launch
 
@@ -36,7 +36,10 @@ Choose Bluesky or Mastodon, click **Set up**, then click **Open configuration** 
 account and AI settings. Click **Create a draft** to draft a post and
 **Open review** to approve or reject it. During review, use **Publish this draft**
 or **Reject draft**. You can also send `y`, `d`, or `q` through the response field.
-Every AI-generated post requires individual approval.
+Review mode requires individual approval. **Start automatic mode** explicitly
+permits only newly generated originals and eligible incoming mention replies,
+after source, privacy, harassment, opt-out, and publication-budget checks.
+Manual posts, existing drafts, quotes, targets and discovery still require review.
 
 Use **Start monitoring** for continuous drafting and **Stop session** to end a
 running session. Closing the window asks before stopping an active bot.
@@ -44,7 +47,7 @@ running session. Closing the window asks before stopping an active bot.
 ## Account credentials
 
 Settings provides masked fields for your Bluesky app password, Mastodon access
-token, and Gemini API key. Saved secrets are not shown again in the form.
+token, Gemini API key, and OpenAI API key. Saved secrets are not shown again in the form.
 **Save securely** encrypts settings using your operating system's protected
 storage. On Linux, a supported unlocked system keyring is required. If protected
 storage is unavailable, **Use for this session** keeps newly entered settings

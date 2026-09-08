@@ -1,31 +1,28 @@
-ChorusDraft 0.51.3 preview
-Modification notice — September 6, 2026
+ChorusDraft 0.51.4
+Copyright (C) 2026 ChorusDraft contributors
 
-Version 0.51.3 standardizes the application on Elixir and adds a React desktop
-launcher, protected credential storage, short commands, and local history with
-a 10-day retention limit. See elixir/NOTICE for the implementation notice and
-launcher/NOTICE for desktop component licenses.
+ChorusDraft is free software licensed under the GNU General Public License,
+version 3. See LICENSE for the complete terms and source-code obligations.
 
-This distribution is a modified work based on the feature sets of earlier
-Bluesky (version 1.0.3) and Mastodon (version 1.0.2) projects authored by
-Buntatoes and distributed under the GNU General Public License version 3.
+Version 0.51.4 uses the Elixir implementation under `elixir/`. One application
+supports Bluesky and Mastodon through separate modes and configuration
+directories. Dependency attribution and corresponding source are documented in
+`elixir/THIRD_PARTY_NOTICES.md` and included with release packages.
 
-For version 0.50, the programs were reimplemented as a shared Ruby codebase,
-renamed ChorusDraft, and given new publication review, privacy,
-harassment prevention, state isolation, and release packaging controls. The
-complete user-visible change list is in CHANGELOG.md.
+Safeguards are part of the program behavior. Review is the default; explicit
+automatic mode is limited to newly generated originals and eligible public
+mention replies, with stricter screening, source revalidation, a persistent
+attempt budget, and unresolved-publication lockout. Privacy exclusions,
+opt-outs, do-not-contact enforcement, ownership validation, and uncertain
+publication handling apply before publication. Automatic likes, favourites,
+boosts, and reposts are disabled.
 
-Version 0.51 adds a shared comic voice for original drafts, replies, and public
-commentary while retaining publication review and harassment prevention controls.
+Do not use ChorusDraft to harass, threaten, dox, impersonate, coordinate abuse,
+evade a request to stop contact, or publish private material. Operators remain
+responsible for credentials, configuration, published output, account conduct,
+and compliance with platform rules and applicable law.
 
-Version 0.51.1 hardens opt-out processing, do-not-contact checks for
-mentions, Unicode screening, and Mastodon content-warning validation.
-
-ChorusDraft, including these modifications, is distributed under
-the GNU General Public License version 3. See LICENSE for the complete terms.
-Copyright in the original and modified work remains with its respective
-copyright holders.
-
-Bluesky and Mastodon are names of third-party services and projects. This
-software is not endorsed by or affiliated with Bluesky Social PBC, Mastodon
-gGmbH, or operators of independent Mastodon servers.
+GPLv3 permits recipients to inspect and modify the program. Modified versions
+must not be represented as endorsed by the original contributors. The software
+is provided without warranty, to the extent permitted by GPLv3 and applicable
+law. See LICENSE sections 15–17.

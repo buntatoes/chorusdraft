@@ -99,6 +99,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: chorusdraft-testing-${{ matrix.os }}
-          path: dist/chorusdraft-v0.51.3-testing-*
+          path: dist/chorusdraft-v0.51.4-testing-*
           if-no-files-found: error
           retention-days: 14

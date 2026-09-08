@@ -1,6 +1,7 @@
 **/.env
 **/data/
 **/logs/
+.codex/
 dist/
 *.tmp
 __pycache__/

@@ -168,12 +168,19 @@ export function Settings({ selection, onClose, onSaved }) {
                 >
                   <option value="local">Local / OpenAI-compatible</option>
                   <option value="gemini">Google Gemini</option>
+                  <option value="chatgpt">ChatGPT / OpenAI</option>
+                  <option value="openai">OpenAI API</option>
                 </select>
               </label>
               {values.AI_PROVIDER === "gemini" ? (
                 <>
                   {field("GEMINI_MODEL", "Gemini model")}
                   {field("GEMINI_API_KEY", "Gemini API key", "password")}
+                </>
+              ) : ["chatgpt", "openai"].includes(values.AI_PROVIDER) ? (
+                <>
+                  {field("OPENAI_MODEL", "OpenAI model")}
+                  {field("OPENAI_API_KEY", "OpenAI API key", "password")}
                 </>
               ) : (
                 <>

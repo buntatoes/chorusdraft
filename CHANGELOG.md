@@ -1,184 +1,123 @@
 # Changelog
 
-This file records user-visible changes to ChorusDraft.
+This file preserves the existing project history. Future updates and release
+notes are published in [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
-## 0.51.3 — Unreleased
+## Unreleased
 
-### Added
+- Desktop preview 0.51.4-testing integrates current main safeguards, ChatGPT
+  credentials, automatic mode, and ten-day local history. Windows console
+  detection is verified in the terminal launcher before enabling queue review.
+- Replace the README project image with a new high-contrast ChorusDraft banner.
+- Screen inherited content warnings before automatic publication and honor
+  opt-outs in both source text and content warnings.
+- Expand automatic screening for direct threats, self-harm encouragement,
+  coordinated harassment, Unicode domains, and normalized injection patterns.
+- Redact recognized personal information from AI context before provider requests.
+- Reject detected personal information and common credential formats in AI output
+  and recheck saved AI drafts and content warnings before publication.
+- Expand automatic link screening beyond a small list of domain suffixes.
+- Add a verified email-history cleanup utility for authenticated local use.
 
-- A React desktop launcher for Bluesky and Mastodon on Linux, macOS, and Windows.
-- Account and AI settings with masked credential fields, encrypted local storage,
-  and session-only use when protected storage is unavailable.
-- A searchable History section for published posts and GUI activity, with a
-  copy action for recalling post text.
-- Automatic local history expiry after 10 days, with earlier activity rotation
-  when the 50 MB storage limit is reached.
-- Buttons for setup, drafting, individual draft approval, monitoring, search,
-  manual posts, and stopping a session.
-- Double-click launchers for macOS and Windows and desktop packages containing
-  the Elixir bot, GUI, and corresponding source.
-- Short Elixir commands, including local `history`, alongside existing flags.
+## 0.51.4 — 2026-09-07
 
-### Changed
+### Automatic mode
 
-- Standardized the active application on Elixir and removed the Ruby runtime,
-  launcher choices, and source from new preview packages.
-- Root commands now use `./bot bluesky COMMAND` or `./bot mastodon COMMAND`.
-- Securely saved GUI settings replace only the managed fields in the selected
-  platform's plaintext `.env`; advanced command-line settings remain supported.
+- Added the explicit `automatic` command (`--daemon --automatic`) while keeping
+  `start` and every other command review-first by default.
+- Allowed only each newly generated original and eligible public-mention reply
+  to publish automatically. Older queued drafts, owner-written text, quotes,
+  target commentary, and discovery commentary remain review-only.
+- Added stricter automatic-output screening for harassment, pile-ons,
+  model-added mentions, links, and common personal-contact patterns.
+- Added immediate source re-fetch and exact content, content-warning, handle,
+  immutable-author, visibility, injection, opt-out, and do-not-contact checks.
+- Added an atomic five-attempt rolling 24-hour budget, single-flight claims,
+  unresolved-publication lockout, and stale-claim recovery to `uncertain`.
+- Allowed operators to reject pending or uncertain drafts (`reject ID` /
+  `--reject ID`), clearing the automatic-mode freeze without blind republish.
+- Raised a clean error when local or Gemini AI answers are empty or nil,
+  matching the OpenAI path.
 
-### Compatibility
+### Providers and Bluesky
 
-- Compatible legacy account state can be imported explicitly into an empty store.
-- History expiry preserves pending drafts, uncertain publications, and account
-  safety records. Cleanup runs while the app is open and at its next launch.
-- Local history expiry does not remove published posts from social services.
-- AI-generated content continues to require individual approval before publication.
+- Added ChatGPT through the OpenAI Responses API with `chatgpt` and `openai`
+  provider names, configurable API key/model, bounded output, sanitized errors,
+  and request-level response storage disabled.
+- Made Jetstream the default, non-disableable wake-up transport for Bluesky
+  listener and daemon modes. `--jetstream` remains a compatibility no-op.
+- Preserved canonical notification/API fetches and periodic catch-up; streamed
+  post bodies remain outside AI context, output, and persistent state.
+
+## 0.51.3 — 2026-09-06
+
+### Elixir runtime
+
+- Established Elixir as the sole supported ChorusDraft implementation.
+- Combined Bluesky and Mastodon in one executable with shared AI, safety, queue,
+  scheduling, and state behavior.
+- Added short commands alongside the complete advanced option interface;
+  command translation cannot add `--publish`.
+- Added explicit import of compatible older state into an empty account store.
+
+### Platforms and packaging
+
+- Added `.tar.gz` packages for Linux and macOS and a `.zip` package for Windows.
+  Every package contains both social-platform modes.
+- Added Unix and PowerShell setup, install, run, and verification scripts.
+- Added private Unix modes and protected Windows ACLs for configuration and
+  state, plus native cross-process locks and atomic state replacement.
+- Included application source, pinned dependency source and licenses, file
+  manifests, and SHA-256 sidecars while excluding credentials, state, logs, and
+  build caches.
+- Added native CI tests on Ubuntu 22.04, macOS 14, and Windows Server 2022.
+
+### Bluesky Jetstream
+
+- Added optional Jetstream wake-ups for Bluesky listeners and daemons while
+  retaining periodic notification API catch-up.
+- Added bounded frames, fragmented messages, handshake headers, fragment counts,
+  receive deadlines, reconnect backoff, and heartbeat handling.
+- Kept streamed post bodies outside AI context, terminal output, and persistent
+  state. Stream events cannot generate or publish directly.
+
+### Safety and reliability
+
+- Preserved mandatory interactive review for AI drafts and explicit publication
+  only for owner-written text.
+- Preserved privacy filtering, opt-outs, do-not-contact enforcement, harassment
+  screening, interaction budgets, ownership checks, and disabled engagement
+  actions.
+- Added crash-released locks, strict state validation, idempotent publication
+  identifiers, and `uncertain` handling without automatic publication retries.
+- Disabled HTTP redirects and automatic retries and added request timeouts and
+  streaming response limits.
 
 ## 0.51.2 — 2026-09-06
 
-### Changed
-
-- Raised the minimum Ruby version from 3.2 to 4.0. Tested with Ruby 4.0.6.
-- Added short commands for setup, drafting, review, posts, replies, quotes,
-  search, discovery, account monitoring, and deletion.
-- Added `bot` launchers for Linux and macOS with automatic rbenv detection,
-  and `bot.bat` launchers for Windows.
-- Added `bot setup` to create missing configuration files without credentials
-  or network access. Existing configuration files are preserved.
-
-### Compatibility
-
-- Existing command-line flags and package `run.sh`/`run.bat` launchers remain
-  supported.
-- Configuration and state formats are unchanged. Existing drafts, opt-outs,
-  and interaction history are preserved when the `data` directory is retained.
-- AI-generated content continues to require individual review before publication.
+- Raised the earlier implementation requirement to Ruby 4.0.
+- Added short commands and cross-platform launchers.
+- Added credential-free setup that preserves existing configuration.
+- Preserved the complete advanced option interface and state format.
 
 ## 0.51.1 — 2026-09-05
 
-### Fixed
-
-- All opt-out requests in the fetched notification batch are recorded before
-  generating replies, including those after the five-reply limit or a failed AI request.
-- Opt-out and harassment screening recognize curly apostrophes, full-width text,
-  and inserted invisible formatting characters without rewriting approved text.
-- Do-not-contact checks cover explicit mentions in generated, manual, and queued
-  text and content warnings. Platform-specific mention boundaries are used, and
-  Mastodon local handles match their fully qualified equivalents on the configured instance.
-- Adding new opt-outs no longer removes older entries from the block list.
-- Mastodon content warnings receive length, control-character, and harassment
-  screening before staging, review, and publication. Invalid warnings cannot be
-  published behind a sanitized or truncated preview.
+- Recorded all fetched public opt-outs before reply generation or batch limits.
+- Expanded normalization for opt-out and harassment screening.
+- Extended do-not-contact checks to generated, manual, and queued mentions and
+  Mastodon content warnings.
+- Prevented new opt-outs from replacing earlier block-list entries.
+- Added complete validation of Mastodon content warnings.
 
 ## 0.51 — 2026-09-05
 
-### Changed
-
-- Original Bluesky and Mastodon drafts now request dry wit, playful exaggeration,
-  absurd comparisons, and varied punchlines about programming and open source.
-- Replies build on the conversation with gentle humor. Target and discovery
-  commentary can satirize products, claims, and situations without belittling
-  their authors.
-- Shared AI instructions include comic style examples and discourage generic
-  praise, lectures, repeated joke structures, and explanations of punchlines.
-- Serious help requests, grief, and distress call for sincere responses. Comic
-  exaggeration must be clearly fanciful; fabricated allegations, personal attacks,
-  and requests to harass someone remain prohibited.
-
-### Compatibility
-
-- The comic voice applies to new AI drafts with both local AI and Gemini. Existing
-  queued drafts and manually supplied text are not rewritten.
-- Configuration and account state are compatible with 0.50. Preserve the `data`
-  directory when upgrading to retain pending drafts, opt-outs, and interaction history.
-- Every AI draft still needs interactive approval. Output screening, privacy
-  controls, do-not-contact enforcement, interaction limits, and Gemini safety
-  settings remain in place.
+- Added the dry comic voice with sincere handling of serious subjects.
+- Added varied original posts and topic-focused reply, target, and discovery
+  prompts without personal attacks or unsupported allegations.
+- Preserved review, privacy, interaction limits, and provider safety controls.
 
 ## 0.50 — 2026-09-05
 
-Version 0.50 begins the ChorusDraft release line. Its Bluesky and Mastodon
-integrations share the same Ruby implementation and command-line interface on
-Linux, macOS, and Windows.
-
-### Bluesky integration
-
-- Added original post drafting, mention replies, public search, random-post
-  selection, account targets, discovery, and foreground
-  monitoring for Bluesky.
-- Added native Bluesky reply references and quote-post embeds using freshly fetched
-  records.
-- Added rich-text facets for HTTPS links, account mentions, and hashtags, including
-  UTF-8 byte offsets for non-ASCII text.
-- Added custom PDS support through `BLUESKY_PDS_URL`.
-- Added deletion of posts owned by the authenticated account.
-
-### Mastodon integration
-
-- Added original post drafting, mention replies, public search, random-post
-  selection, account targets, discovery, and foreground
-  monitoring for Mastodon.
-- Added public, unlisted, followers-only, and mentioned-users visibility options.
-- Added content warnings, language selection, and link-based quote commentary.
-- Added deletion of statuses owned by the authenticated account.
-- Public replies to unlisted posts are automatically narrowed to unlisted.
-
-### Shared features
-
-- Added local Ollama and OpenAI-compatible AI support as the default provider.
-- Added optional Google Gemini support with an explicitly configured model.
-- Added recent-post context to original drafts to reduce repeated topics.
-- Added eligible public thread context to reply drafts.
-- Added an interactive queue showing the exact draft, visibility, reply or quote
-  target, and content warning before publication.
-- Added active-hour windows, overnight schedules, configurable poll and draft
-  intervals, and randomized posting jitter.
-- Added per-server/account state, duplicate history, a 100-draft queue limit, a
-  five-per-day unsolicited draft limit, and a 30-day per-author cooldown.
-- Added Linux/macOS shell launchers and a Windows batch launcher. All launchers
-  forward command-line arguments and display help when run without arguments.
-- Added a setup command that creates missing configuration files while preserving
-  existing files.
-
-### Privacy and security
-
-- AI-generated content always enters the review queue. Direct publishing is
-  available only for text explicitly supplied by the account owner.
-- Private, direct, and unknown-visibility Mastodon message bodies are discarded
-  before AI processing, logging, or state storage. Restricted-message replies are
-  disabled in this release.
-- Reply and quote visibility is checked again immediately before publication.
-- Suspected prompt-injection posts are skipped rather than answered.
-- Removed dedicated critical targeting. Target and discovery workflows request
-  respectful topic-focused commentary without personal judgment or provocation.
-- Added persistent do-not-contact state and a configurable do-not-contact file.
-  Clear public requests to stop replying are honored automatically; blocked
-  accounts cannot receive queued or manual replies, quotes, or target commentary.
-- Expanded output screening for threats, doxxing, pile-on requests, self-harm
-  encouragement, and common direct personal attacks.
-- Automatic likes, favourites, boosts, and reposts are disabled.
-- Gemini keys are sent in request headers. Remote error bodies and credential-bearing
-  network details are excluded from logs.
-- Publishing requests are not automatically retried. Ambiguous results are marked
-  `uncertain` for manual account inspection.
-- Queue updates are locked and atomically replaced. Corrupt state stops processing
-  instead of silently resetting duplicate history.
-- Draft ownership includes the server origin and account identity. A draft changed
-  after display must be reviewed again.
-- Release builds reject unexpected files and symbolic links before packaging.
-- Added a GPLv3 modification and attribution notice. Replaced the dated audit
-  report with a maintainable security policy and disclosure instructions.
-
-### Compatibility and migration
-
-- The project, commands, source namespace, and archive filenames use the
-  ChorusDraft name.
-- Ruby 3.2 or later is required for syntax compatibility; a currently supported,
-  security-patched Ruby release is recommended for production.
-- Earlier draft and interaction files are not imported automatically. Install into
-  a new directory and stop previous listeners or scheduled services before use.
-- `--reply-cid` and `--quote-cid` remain accepted for command compatibility, but
-  the current Bluesky record is fetched instead of trusting a supplied CID.
-- Bluesky feed posts are public and do not accept Mastodon visibility or content
-  warning options.
+- Began the ChorusDraft release line with Bluesky and Mastodon drafting,
+  interactive review, local AI and Gemini support, scheduling, account-scoped
+  state, opt-outs, privacy filtering, and cross-platform packages.

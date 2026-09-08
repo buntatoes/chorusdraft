@@ -49,12 +49,12 @@ defmodule ChorusDraft.HTTPTest do
     server("HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\n{\"ok\":true}", fn url ->
       assert HTTP.request(:post, url <> "/api",
                local: true,
-               query: %{q: "elixir & ruby"},
+               query: %{q: "elixir & bots"},
                body: %{text: "hello"}
              ) == %{"ok" => true}
 
       assert_received {:request, request}
-      assert request =~ "POST /api?q=elixir+%26+ruby HTTP/1.1"
+      assert request =~ "POST /api?q=elixir+%26+bots HTTP/1.1"
       assert String.downcase(request) =~ "content-type: application/json"
     end)
   end

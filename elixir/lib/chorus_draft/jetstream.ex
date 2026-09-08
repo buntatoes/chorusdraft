@@ -3,7 +3,7 @@ defmodule ChorusDraft.Jetstream do
   Jetstream live-tail signals for the existing Bluesky notification workflow.
 
   Stream records are untrusted wake-up hints, never AI input. Fetching through
-  Runner.mentions/1 retains current opt-out, deduplication and review behavior.
+  Runner.mentions/1 retains opt-out, deduplication, safety, and publication-policy behavior.
   Initial and periodic notification checks cover disconnects and AppView lag.
   """
   alias ChorusDraft.Error

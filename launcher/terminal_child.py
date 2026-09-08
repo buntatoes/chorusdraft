@@ -1,5 +1,6 @@
 """Set the Windows terminal encoding before starting a bot without a shell."""
 import ctypes
+import os
 import subprocess
 import sys
 
@@ -12,7 +13,17 @@ def main(command):
         raise SystemExit('Unable to configure the bot terminal for UTF-8.')
     # Frozen Python must not redirect a bot's DLL lookup into its own runtime.
     kernel.SetDllDirectoryW(None)
-    child = subprocess.Popen(command)
+    # OTP 25 cannot always report columns on ConPTY. Verify both console
+    # handles here before declaring this inherited session interactive.
+    kernel.GetStdHandle.restype = ctypes.c_void_p
+    mode = ctypes.c_ulong()
+    interactive = all(kernel.GetConsoleMode(kernel.GetStdHandle(handle), ctypes.byref(mode))
+                      for handle in (-10, -11))
+    environment = os.environ.copy()
+    environment.pop('CHORUSDRAFT_WINDOWS_CONSOLE', None)
+    if interactive:
+        environment['CHORUSDRAFT_WINDOWS_CONSOLE'] = '1'
+    child = subprocess.Popen(command, env=environment)
     try:
         code = child.wait()
     except KeyboardInterrupt:

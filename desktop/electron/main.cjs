@@ -212,6 +212,7 @@ app
         "draft",
         "review",
         "start",
+        "automatic",
         "listen",
         "replies",
         "search",

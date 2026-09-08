@@ -108,6 +108,7 @@ const titles = {
   draft: "Draft a post",
   review: "Review drafts",
   start: "Monitor",
+  automatic: "Automatic",
   listen: "Listen for mentions",
   replies: "Draft replies",
   search: "Search posts",
@@ -124,7 +125,7 @@ function App() {
   const [notice, setNotice] = useState("");
   const activityParts = useRef([]);
   const [platform, setPlatform] = useState("bluesky");
-  const [version, setVersion] = useState("0.51.3-testing");
+  const [version, setVersion] = useState("0.51.4-testing");
   const [running, setRunning] = useState(false);
   const [action, setAction] = useState(null);
   const [activity, setActivity] = useState("");
@@ -316,7 +317,7 @@ function App() {
             <Icon name="check" size={16} />
           </span>
           <h4>You have the final say.</h4>
-          <p>AI drafts stay in your queue until you choose to publish them.</p>
+          <p>Review drafts yourself, or explicitly start safeguarded automatic mode.</p>
         </div>
         <button
           className="nav-button help-link"
@@ -339,7 +340,7 @@ function App() {
             Workspace <span>/</span>{" "}
             {page === "history" ? "History" : "Overview"}
           </div>
-          <span className="preview-tag">0.51.3 PREVIEW</span>
+          <span className="preview-tag">0.51.4 PREVIEW</span>
         </header>
         <div className="workspace">
           {notice && (
@@ -455,6 +456,13 @@ function App() {
                     "Keep things moving",
                     "Monitor mentions and prepare new drafts.",
                     "Start monitoring",
+                  ],
+                  [
+                    "automatic",
+                    "monitor",
+                    "Automatic mode",
+                    "Publish new originals and eligible mention replies after safeguards. Up to five attempts per day.",
+                    "Start automatic mode",
                   ],
                 ].map(([key, icon, title, description, label]) => (
                   <article

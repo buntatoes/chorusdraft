@@ -1,7 +1,18 @@
 defmodule ChorusDraft.Runner do
-  alias ChorusDraft.{AI, Error, Safety, Store}
+  alias ChorusDraft.{AI, Error, PII, Safety, Store}
 
-  defstruct [:client, :store, :platform, :env, :input, :output, :interactive, :ai, :ai_opts]
+  defstruct [
+    :client,
+    :store,
+    :platform,
+    :env,
+    :input,
+    :output,
+    :interactive,
+    :automatic,
+    :ai,
+    :ai_opts
+  ]
 
   def new(client, store, platform, env, opts \\ []) do
     %__MODULE__{
@@ -12,6 +23,7 @@ defmodule ChorusDraft.Runner do
       input: Keyword.get(opts, :input, :stdio),
       output: Keyword.get(opts, :output, :stdio),
       interactive: Keyword.get(opts, :interactive, terminal?()),
+      automatic: Keyword.get(opts, :automatic, false),
       ai: Keyword.get(opts, :ai, AI),
       ai_opts: Keyword.get(opts, :ai_opts, [])
     }
@@ -19,7 +31,7 @@ defmodule ChorusDraft.Runner do
 
   def eligible?(runner, post) do
     Safety.eligible?(post) and post["author_id"] != client_call(runner, :identity) and
-      not blocked?(runner, post["author"])
+      not blocked_post?(runner, post)
   end
 
   def blocked?(runner, actor) do
@@ -46,6 +58,7 @@ defmodule ChorusDraft.Runner do
       "reply_to" => if(post && not quote?, do: post["id"]),
       "quote_to" => if(post && quote?, do: post["id"]),
       "author" => if(post, do: post["author"]),
+      "author_id" => if(post, do: post["author_id"]),
       "cw" => if(post && runner.platform == "mastodon", do: post["cw"])
     }
   end
@@ -104,12 +117,12 @@ defmodule ChorusDraft.Runner do
       puts(
         runner,
         if(item,
-          do: "Staged draft #{item["id"]}; use --process-queue to review.",
+          do: staged_message(runner, item),
           else: "Skipped duplicate or queue/interaction limit reached."
         )
       )
 
-      item
+      maybe_publish_automatic(runner, item, generated, post, quote?, unsolicited?)
     end
   end
 
@@ -118,10 +131,8 @@ defmodule ChorusDraft.Runner do
 
     Enum.each(notifications, fn post ->
       if Safety.public?(post) and post["author_id"] != client_call(runner, :identity) and
-           Safety.opt_out?(post["text"]) do
-        runner
-        |> client_call(:actor_aliases, [post["author"]])
-        |> Enum.each(&Store.block(runner.store, &1))
+           (Safety.opt_out?(post["text"]) or Safety.opt_out?(post["cw"])) do
+        block_post(runner, post)
       end
     end)
 
@@ -184,7 +195,7 @@ defmodule ChorusDraft.Runner do
     if post && not Safety.public?(post),
       do: raise(Error, "Restricted messages are not supported for replies or quotes.")
 
-    if post && blocked?(runner, post["author"]),
+    if post && blocked_post?(runner, post),
       do: raise(Error, "This account is on the do-not-contact list.")
 
     text =
@@ -214,6 +225,11 @@ defmodule ChorusDraft.Runner do
     Store.validate_draft!(item)
     Safety.validate_text!(Map.fetch!(item, "text"), client_call(runner, :limit))
 
+    if item["action"] == "ai_generated" do
+      PII.validate!(item["text"])
+      PII.validate!(item["cw"])
+    end
+
     if runner.platform == "bluesky" do
       unless item["visibility"] == "public",
         do: raise(Error, "Bluesky supports public feed posts only.")
@@ -229,7 +245,7 @@ defmodule ChorusDraft.Runner do
     end
 
     actors =
-      [item["author"]] ++
+      [item["author"], item["author_id"]] ++
         client_call(runner, :mentioned_actors, [item["text"]]) ++
         client_call(runner, :mentioned_actors, [item["cw"]])
 
@@ -243,18 +259,23 @@ defmodule ChorusDraft.Runner do
   def publish_draft(runner, item) do
     validate_draft!(runner, item)
     claimed = Store.transition(runner.store, item["id"], "pending", "publishing", expected: item)
+    publish_claimed(runner, claimed)
+  end
 
+  defp publish_claimed(runner, claimed) do
     try do
       client_call(runner, :publish, [claimed])
-      Store.transition(runner.store, item["id"], "publishing", "published")
-      puts(runner, "Published draft #{item["id"]}.")
     rescue
       _ ->
-        Store.transition(runner.store, item["id"], "publishing", "uncertain")
+        Store.transition(runner.store, claimed["id"], "publishing", "uncertain")
 
         raise Error,
               "Publish did not complete cleanly. Draft marked uncertain; check the account before attempting anything again."
     end
+
+    published = Store.transition(runner.store, claimed["id"], "publishing", "published")
+    puts(runner, "Published draft #{claimed["id"]}.")
+    published
   end
 
   def review(runner) do
@@ -333,6 +354,108 @@ defmodule ChorusDraft.Runner do
     )
   end
 
+  defp maybe_publish_automatic(runner, item, generated, post, quote?, unsolicited?) do
+    if runner.automatic and item && not quote? and not unsolicited? do
+      preflight =
+        try do
+          Safety.validate_automatic_text!(generated, client_call(runner, :limit))
+
+          unless empty?(item["cw"]),
+            do: Safety.validate_automatic_text!(item["cw"], client_call(runner, :limit))
+
+          validate_draft!(runner, item)
+          actors = automatic_source_actors!(runner, item, post)
+
+          case Store.claim_automatic(runner.store, item, actors: actors) do
+            {:ok, claimed} -> {:publish, claimed}
+            {:error, reason} -> {:hold, reason}
+          end
+        rescue
+          _ -> {:hold, :safety}
+        end
+
+      case preflight do
+        {:publish, claimed} ->
+          publish_claimed(runner, claimed)
+
+        {:hold, reason} ->
+          puts(
+            runner,
+            "Automatic publication held for review (#{automatic_hold_reason(reason)})."
+          )
+
+          item
+      end
+    else
+      item
+    end
+  end
+
+  defp automatic_source_actors!(_runner, _item, nil), do: []
+
+  defp automatic_source_actors!(runner, item, post) do
+    current = client_call(runner, :get_post, [post["id"]])
+
+    same_author? =
+      Safety.actor_key(current["author_id"]) != "" and
+        Safety.actor_key(current["author_id"]) == Safety.actor_key(item["author_id"])
+
+    unless current["id"] == post["id"] and Safety.public?(current) and same_author? do
+      raise Error, "Source changed or is no longer eligible for automatic publication."
+    end
+
+    if Safety.opt_out?(current["text"]) or Safety.opt_out?(current["cw"]) do
+      block_post(runner, current)
+      block_post(runner, post)
+      raise Error, "Source account opted out of replies."
+    end
+
+    same_source? =
+      Safety.actor_key(current["author"]) == Safety.actor_key(item["author"]) and
+        current["text"] == post["text"] and current["cw"] == post["cw"]
+
+    unless Safety.eligible?(current) and same_source? do
+      raise Error, "Source changed or is no longer eligible for automatic publication."
+    end
+
+    actors = post_actor_aliases(runner, current)
+
+    if Enum.any?(actors, &Store.blocked?(runner.store, &1)) do
+      raise Error, "Source account is on the do-not-contact list."
+    end
+
+    actors
+  end
+
+  defp blocked_post?(runner, post) do
+    runner |> post_actor_aliases(post) |> Enum.any?(&Store.blocked?(runner.store, &1))
+  end
+
+  defp block_post(runner, post) do
+    runner |> post_actor_aliases(post) |> Enum.each(&Store.block(runner.store, &1))
+  end
+
+  defp post_actor_aliases(runner, post) do
+    [post["author"], post["author_id"]]
+    |> Enum.reject(&is_nil/1)
+    |> Enum.flat_map(&client_call(runner, :actor_aliases, [&1]))
+    |> Enum.map(&Safety.actor_key/1)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.uniq()
+  end
+
+  defp staged_message(%{automatic: true}, item),
+    do: "Staged draft #{item["id"]}; checking automatic-publication safeguards."
+
+  defp staged_message(_runner, item),
+    do: "Staged draft #{item["id"]}; use --process-queue to review."
+
+  defp automatic_hold_reason(:unresolved), do: "another publication is unresolved"
+  defp automatic_hold_reason(:blocked), do: "the source account is blocked"
+  defp automatic_hold_reason(:limit), do: "the five-attempt daily limit was reached"
+  defp automatic_hold_reason(:unavailable), do: "the draft was already claimed or changed"
+  defp automatic_hold_reason(_reason), do: "a safety or source check did not pass"
+
   defp client_call(runner, function, args \\ []) do
     apply(runner.client.__struct__, function, [runner.client | args])
   end
@@ -344,6 +467,8 @@ defmodule ChorusDraft.Runner do
   defp write(runner, text), do: IO.write(runner.output, text)
 
   defp terminal? do
-    match?({:ok, _}, :io.columns(:standard_io))
+    match?({:ok, _}, :io.columns(:standard_io)) or
+      (match?({:win32, _}, :os.type()) and
+         System.get_env("CHORUSDRAFT_WINDOWS_CONSOLE") == "1")
   end
 end

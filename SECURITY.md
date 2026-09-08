@@ -1,116 +1,137 @@
 # Security policy
 
-## Supported version
+Current main also screens inherited content warnings before automatic publication,
+honors content-warning opt-outs, and expands deterministic threat and harassment
+screening. These unreleased changes are listed in CHANGELOG.md.
 
-The latest stable release is
-[0.51.2](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.2).
-Version 0.51.3 is an Elixir desktop preview. Use a supported, security-patched
-Erlang/OTP runtime that meets its minimum requirements. See
-[Elixir security](elixir/SECURITY.md) for transport, state, and platform safeguards.
+## Supported versions
 
-## Reporting a vulnerability
+| Version | Runtime | Security support |
+|---|---|---|
+| 0.51.4 | Elixir | Current |
+| 0.51.3 and earlier | Earlier releases | Unsupported; upgrade recommended |
 
-Use GitHub's private vulnerability reporting feature when it is available for
-this repository. Otherwise, contact the maintainer privately through the GitHub
-profile. Do not put credentials, tokens, private messages, or exploit details in
-a public issue.
+Report vulnerabilities through GitHub private vulnerability reporting when
+available, or contact the maintainer privately through the GitHub profile. Do
+not put credentials, private posts, tokens, personal information, or exploit
+details in a public issue.
 
-Include the affected product, operating system, exact version, reproduction
-steps, and the security impact. Revoke any credential that may have been exposed.
+## Publication boundary
 
-## Desktop credentials
+Review-first behavior is the default. `start`, one-shot AI commands, manual
+text, quotes, target commentary, discovery commentary, and existing queue items
+cannot acquire automatic AI publication permission. Owner-written text requires
+an explicit `--publish`; otherwise it enters the queue.
 
-The desktop encrypts saved account and AI settings with Electron's `safeStorage`,
-backed by operating-system protected storage. Linux requires a supported system
-keyring; the plaintext fallback backend is refused. When protected storage is
-unavailable, users can choose session-only settings. Newly entered session
-credentials are not written to disk, though existing configuration files remain
-unchanged.
+The explicit `automatic` command may publish only the exact original or eligible
+incoming public-mention reply generated in that daemon cycle. It cannot sweep
+older pending drafts. Automatic output is screened again for the baseline content
+rules plus harassment, pile-ons, model-added mentions, links, and common email,
+phone, and street-address patterns. A held draft remains pending for review.
 
-Password and token fields are masked. Saved secrets are not returned to the
-settings form. Settings use a restricted desktop bridge and are supplied to the
-selected local bot process for its session. Known configured secrets are redacted
-from GUI activity before display and storage. Credentials still exist in process
-memory while in use; operating-system protection does not protect against a
-compromised user account, malware, or an administrator inspecting that process.
+Before an automatic reply is claimed, the source is re-fetched from the platform
+API. Its ID, text, content warning, handle, immutable author identity, and public
+visibility must still match the context used for generation. Prompt-injection,
+opt-out, and do-not-contact checks run again. Public opt-outs record both handle
+and immutable identity aliases.
 
-Secure saving removes only fields managed by the form from the selected platform's
-`.env`. Advanced `.env` settings and separately launched command-line environment
-variables remain supported and are the user's responsibility. Saved GUI settings
-are not automatically passed to separately launched CLI processes. Forgetting
-settings does not revoke credentials or erase external copies.
+The state lock atomically reserves both the exact draft and one of five automatic
+attempts allowed per rolling 24 hours per account. Failed and ambiguous attempts
+count. Only one automatic publication may be in flight. Any `publishing` or
+`uncertain` draft blocks later automatic claims. A publishing claim older than
+five minutes becomes `uncertain`; it is never retried automatically.
 
-The renderer runs with context isolation and sandboxing, without Node.js access.
-Navigation and new windows are blocked. The bridge permits specific bot operations
-and validates platform selection and input; it does not accept arbitrary shell
-commands.
+These controls reduce risk but are deterministic and can miss harmful context or
+hold benign text. Review mode provides the strongest operator control. Operators
+must not weaken safeguards to target people.
 
-## Local history and retention
+Clear public requests to stop contact are also processed before reply generation.
+Do-not-contact checks cover source handles, immutable IDs, and mentioned
+accounts. Baseline harassment, threats, doxxing, coordinated pile-ons, self-harm
+encouragement, and common direct personal attacks are rejected before staging
+and checked before publication.
 
-ChorusDraft stores account state and desktop activity on the user's computer and
-does not upload history or activity logs. Publishing and configured AI requests
-still send their necessary content to the selected service. Local history can
-contain post text and account identifiers; treat it as private account data.
+Mastodon private, direct, and unknown-visibility bodies are discarded before AI,
+logging, or persistent state. Automatic likes, favourites, boosts, and reposts
+are disabled.
 
-Published and rejected draft records expire after 10 days from completion, or
-creation for legacy records without a completion time. Desktop activity is grouped
-into hourly files; each event expires 10 days after its timestamp. Oldest activity
-files may be removed sooner to keep storage within 50 MB. The desktop also removes
-expired bot log files under the installation's `logs/` directories.
+## Credentials, providers, and network behavior
 
-Cleanup runs while the app is open and at its next launch. CLI state access also
-prunes completed records. Cleanup requires the bot runtime and writable storage;
-errors are reported in the GUI. The application cannot remove files while it is
-closed or the computer is off. Operating-system backups, synced folders, user
-exports, and external terminal or service-manager logs remain outside its control.
-Deletion is ordinary file removal, not forensic secure erasure.
+Credentials belong only in local `.env` files or process environment variables.
+Setup never overwrites an existing `.env`, executes its contents, starts a
+service, or contacts a provider. Release packages exclude `.env`, state, logs,
+and build caches.
 
-Pending drafts, uncertain publications, do-not-contact entries, duplicate
-identifiers, and interaction safety records remain retained separately. These
-records prevent lost work, duplicate publication, and renewed unwanted contact.
-Local expiry does not delete posts from social services. Storage locations are
-listed in the [README](docs/DESKTOP.md#local-history).
+Local/Ollama uses the configured loopback endpoint. Gemini and ChatGPT/OpenAI
+are remote privacy boundaries: the drafting task and selected cleaned public
+context are sent to the chosen provider. The OpenAI adapter uses the Responses
+API with an authorization header, bounded output, and `store: false`. Review
+provider terms and account data controls before enabling a remote provider.
 
-## Enforced safety boundaries
+Remote social, Gemini, and OpenAI endpoints require HTTPS. When `AI_PROVIDER`
+is `local` or `ollama`, `LOCAL_LLM_URL` must use a loopback host (`localhost`,
+`127.0.0.1`, or `::1`) over HTTP or HTTPS — remote HTTPS hosts are rejected for
+local AI. Redirects and automatic retries are disabled, request times and
+response sizes are bounded, and remote bodies or credential-bearing details are
+omitted from errors. Publication requests are never automatically retried.
 
-- Every AI-generated post enters an interactive review queue. AI output has no
-  unattended publishing path.
-- The built-in critical-targeting mode has been removed. Target and discovery
-  drafts are limited to five per rolling 24 hours and may
-  involve a given author at most once every 30 days.
-- AI instructions allow satire of software, products, public claims, and situations
-  while prohibiting personal humiliation, threats, private-information disclosure,
-  and harassment. These are model instructions, not a guarantee about generated
-  text. Comic framing does not bypass screening or publication review.
-- Public requests such as “stop replying to me” permanently add that account to
-  local do-not-contact state. Operators can preconfigure additional accounts in
-  `config/do_not_contact.txt`. Queued and manual interactions with those accounts
-  are refused.
-- The fetched notification batch is checked for opt-outs before reply generation
-  or limits. Older opt-outs are retained when new ones are added. Do-not-contact
-  checks include explicit mentions in draft text and content warnings, with
-  Mastodon local-handle aliases on the configured instance recognized.
-- Output screening rejects direct self-harm encouragement, threats, doxxing,
-  pile-on requests, and common direct personal attacks. Human review remains
-  responsible for context, factual accuracy, and language that filters cannot
-  reliably classify.
-- Mastodon content warnings are screened before staging, review, and publication;
-  the reviewer sees the same accepted text that will be sent. Unicode normalization
-  is used only for matching opt-out and abuse patterns, never to rewrite a draft.
-- Mastodon private, direct, and unknown-visibility message bodies are discarded
-  before AI processing, logging, or state storage.
-- Credentials come from protected GUI settings or the command-line environment
-  and `.env`. Runtime credentials are excluded from release packages, sent only
-  to validated endpoints, and omitted from network errors.
-- Publishing requests are not automatically retried. An ambiguous result is
-  marked `uncertain` for manual account inspection.
+Ambiguous publication results become `uncertain`. Inspect the account manually,
+then reject a pending or uncertain draft with `reject ID` / `--reject ID` when it
+should not publish. Rejection clears the automatic-mode freeze without
+republishing; do not replay or force an uncertain draft back to pending until
+the outcome is known.
 
-These controls cover the supplied AI workflows. An operator remains responsible
-for manually written posts, account configuration, platform rules, and applicable
-law.
+## Personal information
 
-The block list tracks handles, not a permanent identity across handle changes.
-Update configured entries after a rename. Only the fetched notification batch can
-be checked for new opt-outs; unavailable or older notifications may not be observed.
-Keyword matching cannot classify all harassment or prompt injection. Human review
-remains required, including for drafts that pass automated checks.
+AI context is screened and matching personal information is replaced with
+`[REDACTED]` before any local or remote model request. Screening recognizes
+ordinary and common obfuscated email addresses, Unicode numeric contact details,
+long numeric identifiers, street/PO-box addresses, labeled identity details,
+precise coordinate pairs, and common credential formats.
+
+AI output is rejected if these patterns are detected, including in review mode.
+Saved AI drafts and content warnings are checked again before publication.
+The bot does not silently edit reviewed text. Public social mentions remain
+supported, and explicitly owner-written manual text remains under owner control.
+
+This is conservative pattern matching: it can hold harmless numbers and cannot
+identify every name, address, identifier, language, or obfuscation. Public source
+posts can still contain personal information that these rules miss. Human review
+remains necessary for sensitive material; this feature does not promise anonymity.
+
+## State and process safety
+
+State is separated by platform, service origin, and account. Native locks
+serialize writers and release after crashes. Unix files use private modes;
+Windows uses protected ACLs. State replacement is atomic, symlinks and special
+files are refused, and malformed state fails closed.
+
+Run only one daemon per account. State import accepts compatible data only into
+an empty account store, adds new state fields conservatively, converts imported
+in-flight publications to `uncertain`, and never alters the source file.
+
+## Jetstream
+
+Jetstream starts automatically for Bluesky `listen` and daemon workflows and
+cannot be disabled in those modes. `--jetstream` remains a compatibility no-op.
+Streamed bodies do not enter AI context, terminal output, or state. Matching
+events only wake the canonical notification fetch, where opt-out,
+deduplication, safety, and publication policy still apply.
+
+Frame size, handshake headers, fragment counts, receive deadlines, heartbeats,
+and reconnect backoff are bounded. Invalid handshakes and unsolicited
+compression are refused. Periodic API checks reduce missed notifications after
+disconnects but cannot guarantee complete delivery. Mastodon uses polling.
+
+## Known limits
+
+Inbound prompt-injection screening and the stricter automatic-output gates are
+best-effort, deterministic regex checks on normalized text (NFKC and
+format-character stripping, matching opt-out and harassment). They can still miss
+novel phrasing or hold benign text; interactive review before publish remains the
+primary control outside explicit automatic mode.
+
+Live Bluesky, Mastodon, and AI-provider acceptance and a sustained daemon soak
+remain operator checks. Use disposable accounts first and exercise login,
+read-only search, staging, exact review, automatic publication, deletion,
+opt-outs, and network reconnection before production use.

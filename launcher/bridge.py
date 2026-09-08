@@ -10,6 +10,7 @@ import time
 from process import Session, bot_command
 
 ENV_KEYS = {'AI_PROVIDER', 'LOCAL_LLM_URL', 'LOCAL_LLM_MODEL', 'GEMINI_API_KEY', 'GEMINI_MODEL', 'STATUS_LANGUAGE', 'BLUESKY_PDS_URL', 'BLUESKY_HANDLE', 'BLUESKY_APP_PASSWORD', 'MASTODON_API_BASE_URL', 'MASTODON_ACCESS_TOKEN', 'STATUS_VISIBILITY'}
+ENV_KEYS.update({'OPENAI_API_KEY', 'OPENAI_MODEL'})
 
 
 def settings(request):
@@ -20,6 +21,7 @@ def settings(request):
 
 
 ACTIONS = {'setup', 'draft', 'review', 'start', 'listen', 'replies', 'search', 'post', 'help', 'version'}
+ACTIONS.add('automatic')
 
 
 def arguments(request):

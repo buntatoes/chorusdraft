@@ -2,10 +2,18 @@ name: Elixir checks
 
 on:
   push:
-    branches: [elixir-experimental]
-    paths: ['elixir/**', '.github/workflows/elixir.yml']
+    branches: [main, 0.51.4-testing]
+    paths:
+      - 'elixir/**'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - 'NOTICE'
+      - 'RELEASE_NOTES.md'
+      - 'SECURITY.md'
+      - 'VERSION'
+      - '.github/workflows/elixir.yml'
   pull_request:
-    branches: [elixir-experimental]
+    branches: [main]
     paths: ['elixir/**', '.github/workflows/elixir.yml']
 
 permissions:
@@ -33,7 +41,7 @@ jobs:
       run:
         working-directory: elixir
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           persist-credentials: false
       - uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124
@@ -47,7 +55,7 @@ jobs:
           mix local.rebar --force
           mix deps.get
           git diff --exit-code -- mix.lock
-      - name: Offline regression tests
+      - name: Tests
         shell: bash
         run: mix test --warnings-as-errors
       - name: Build and inspect the escript
@@ -95,9 +103,9 @@ jobs:
         shell: bash
         run: mix format --check-formatted
       - name: Save verified package
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: chorusdraft-elixir-${{ matrix.package_os }}
-          path: elixir/dist/ChorusDraft-elixir-*-${{ matrix.package_os }}.*
+          path: elixir/dist/ChorusDraft-elixir-0.51.4-${{ matrix.package_os }}.*
           if-no-files-found: error
           retention-days: 30

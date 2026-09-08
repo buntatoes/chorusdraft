@@ -1,321 +1,139 @@
 # ChorusDraft — Elixir version for Linux, macOS, and Windows
 
-This directory contains the Elixir version of ChorusDraft for Linux, macOS, and
-Windows. One application and executable support both Bluesky and Mastodon.
-The 0.51.3 preview uses Elixir for all bot workflows. Use the root desktop
-launcher to choose Bluesky or Mastodon, enter credentials, and open local History.
-The build identifier is `0.51.3-testing`.
+This directory contains ChorusDraft 0.51.4 for Linux, macOS, and Windows. One
+Elixir application and executable support both Bluesky and Mastodon.
 
-Both platforms produce comic social drafts using a local OpenAI-compatible/Ollama
-model or Gemini. The style favors dry wit, light sarcasm, playful exaggeration,
-and absurd comparisons. Serious or sensitive posts receive a sincere response.
-Every AI draft must be reviewed interactively before publication.
+ChorusDraft writes comic social drafts for both platforms using a local
+OpenAI-compatible/Ollama model, Gemini, or ChatGPT through the OpenAI Responses
+API. Review is the default; explicit automatic mode may publish only newly
+generated originals and eligible public-mention replies after stricter
+safeguards pass.
 
 ## Requirements
 
+Current main includes unreleased privacy checks, stricter automatic screening of
+generated text and inherited content warnings, and content-warning opt-outs.
+See CHANGELOG.md; published v0.51.4 downloads do not include these later fixes.
+
 - Linux, macOS, or Windows with Erlang/OTP 25 or later
-- Elixir 1.15 or later and Mix to build or test
+- Elixir 1.15 or later, Mix, and the Erlang development headers to build or test
 - Linux: util-linux (`flock`); `tar` and `sha256sum` for package verification
 - macOS: Python 3; `tar` and `shasum` for package verification
 - Windows: Python 3 and PowerShell
 - A Bluesky app password or Mastodon access token
-- A local AI endpoint or Gemini API key and model
+- A local AI endpoint, Gemini credentials, or OpenAI API credentials and model
 
 ## Build and inspect
-
-From this `elixir` directory:
 
 ```sh
 mix deps.get
 MIX_ENV=prod mix escript.build
-```
-
-Check the command interface before adding credentials:
-
-```sh
 ./chorusdraft bluesky --help
 ./chorusdraft mastodon --help
-```
-
-On Windows, use `escript .\chorusdraft ...` from a source checkout. Extracted
-Windows packages provide `run.ps1` and `setup.ps1` launchers.
-
-For command-line use, create local configuration files:
-
-```sh
 ./chorusdraft bluesky --setup
-./chorusdraft mastodon --setup
 ```
 
-Edit `bluesky/.env` and/or `mastodon/.env`. The setup script creates private files
-only when they do not already exist. It never starts a service or overwrites an
-existing configuration.
-
-Run only one bot process per social account.
-
-For desktop use, open **Settings** in the root launcher instead. Masked credential
-fields support encrypted saving through operating-system protected storage or
-session-only use. Secure saving removes only the fields managed by the form from
-that platform's plaintext `.env`; other settings remain there. GUI credentials
-apply only to GUI launches, so a separate CLI process needs its own environment
-configuration. Session-only use leaves existing `.env` files unchanged. See the
-[desktop credential guide](https://github.com/buntatoes/chorusdraft/blob/bot-testing/docs/DESKTOP.md#account-credentials).
+On Windows, use `escript .\chorusdraft ...` from a source checkout. Edit
+`bluesky/.env` and/or `mastodon/.env`. Setup never starts a service or
+overwrites existing configuration. Run only one daemon per account.
 
 ## Common workflows
 
 ```sh
-# Stage one AI draft. This cannot publish directly.
 ./chorusdraft bluesky draft
-
-# Fetch public mentions and stage up to five eligible replies.
-./chorusdraft mastodon replies
-
-# Review pending drafts in an interactive terminal.
 ./chorusdraft bluesky review
-
-# Stage manual text, or explicitly publish manual text.
-./chorusdraft mastodon post "The server has entered its artisanal latency era."
-./chorusdraft mastodon post "Maintenance is complete." --publish
-
-# Inspect public posts without generating or publishing anything.
-./chorusdraft bluesky search "elixir linux"
+./chorusdraft bluesky start
+./chorusdraft bluesky automatic
+./chorusdraft mastodon reply STATUS_ID "Thanks for the context."
+./chorusdraft mastodon search "open source"
 ```
 
-Additional commands cover target commentary, discovery, public-post
-inspection, interactive deletion, active hours, polling, and daemon operation.
-AI-generated text is designed to stay in the queue regardless of compatibility
-flags or environment values. The same review requirement applies to daemon and
-Jetstream workflows.
+`start` remains review-first; only `automatic` (`--daemon --automatic`) adds
+automatic AI-publication permission. Manual text, quotes, target/discovery
+commentary, safeguard-held drafts, and pre-existing queue items remain
+review-only.
+
+```sh
+./chorusdraft bluesky --post-only
+./chorusdraft mastodon --replies-only
+./chorusdraft bluesky --process-queue
+./chorusdraft mastodon --text "Maintenance is complete." --publish
+```
+
+## Automatic mode
+
+```sh
+./chorusdraft bluesky automatic --active-hours 08:30-22:00
+./chorusdraft mastodon --daemon --automatic --poll-interval 60
+```
+
+Only the exact original or eligible incoming public-mention reply created in
+that cycle can be claimed. Before an automatic reply, the source is re-fetched
+and its ID, text, content warning, handle, immutable author identity, and public
+visibility must match. Injection, opt-out, and do-not-contact checks run again.
+Output with model-added mentions, links, common personal-contact patterns,
+pile-ons, or expanded harassment is held for review.
+
+Each account gets at most five automatic publication attempts per rolling 24
+hours. Attempts are reserved atomically; failures count. Only one may be in
+flight, and any `publishing` or `uncertain` item blocks later automatic claims.
+A crash-stranded claim ages into `uncertain` and is never retried. After you
+inspect the account, `reject ID` / `--reject ID` clears a pending or uncertain
+draft so automatic mode can resume without a blind republish.
 
 ## Bluesky Jetstream
 
-Jetstream is optional for Bluesky:
+Jetstream starts automatically for Bluesky `listen` and daemon modes and cannot
+be disabled there. `--jetstream` is a compatibility no-op; `--no-jetstream` is
+rejected. Streamed bodies never enter AI context, output, or state. Matching
+events wake the ordinary notification fetch, where opt-out, deduplication,
+safety, and publication policy still apply. Mastodon continues to use polling.
 
-```sh
-./chorusdraft bluesky --listen --jetstream
-./chorusdraft bluesky --daemon --jetstream
-```
-
-The client uses the current `network.bsky.jetstream.subscribeEvents` API with the
-`xrpc.v1.json` WebSocket subprotocol. It connects to
-`wss://jetstream.us-east.bsky.network` by default. Set `BLUESKY_JETSTREAM_URL` in
-`bluesky/.env` to another compatible WSS origin or full subscribeEvents URL.
-The old `/subscribe` protocol is not supported by this mode.
-
-Only post commits are requested. The client checks mention facets and direct
-reply parents for the logged-in account's DID, including updated posts. It does
-not filter by the bot's DID on the server: that would select posts *written by*
-the bot and miss incoming mentions. This means the connection receives the
-network-wide post stream and uses more bandwidth than notification polling.
-
-Matching events wake the existing notification workflow. Raw streamed bodies
-never enter AI context, terminal output, or state. The API remains the source of
-posts, handles, and thread context; all existing opt-out checks, deduplication,
-active hours, queue limits, and exact interactive approval still apply. Bursts
-coalesce into one pending wake-up, with at least five seconds between the start
-of notification cycles. Jetstream does not directly generate or publish posts.
-
-The socket reconnects with bounded exponential backoff and a heartbeat.
-An oversized frame is rejected from its declared length before the payload is read.
-Complete and fragmented messages are limited to 1 MiB; handshake headers,
-fragment counts, and receive deadlines are bounded as described in
-[SECURITY.md](SECURITY.md).
-
-An initial notification check, checks after reconnect, and periodic checks at
-`--poll-interval` (60 seconds by default) cover disconnects and API indexing lag.
-This is live-tail notification acceleration, not a historical replay consumer:
-there is no persisted Jetstream cursor or guarantee of complete delivery. The
-existing 30-notification fetch window and five-reply batch limit still apply.
-
-The Mastodon mode continues to use polling; Jetstream is a Bluesky service.
-Omitting `--jetstream` preserves Bluesky polling behavior too.
-
-Protocol reference: [Bluesky Jetstream documentation](https://bsky.network/docs/jetstream/).
+Default endpoint: `wss://jetstream.us-east.bsky.network`. Override with
+`BLUESKY_JETSTREAM_URL`. See [SECURITY.md](SECURITY.md) for frame and handshake
+bounds.
 
 ## State and safeguards
 
-State is stored under each product's `data/` directory and separated again by
-platform, service origin, and account. Credentials are not written to state.
-Compatible legacy state can be imported explicitly as described below. Kernel locks
-serialize writers, and malformed state fails closed. Run one daemon per account.
+State lives under each platform `data/` directory, separated by platform,
+service origin, and account. Do-not-contact and public opt-outs block supplied
+interaction paths. Ambiguous publication results become `uncertain` and are not
+retried. Screening (including prompt-injection and automatic-output gates) is
+best-effort and deterministic; review mode remains the strongest control.
 
-Add handles to `config/do_not_contact.txt` to refuse all supplied interaction
-paths for those accounts. Clear public requests to stop contact are also recorded
-before reply generation. `config/target_accounts.txt` is empty by default.
-Unsolicited target and discovery drafts are capped at five per rolling 24 hours and
-one per author every 30 days.
+## Providers
 
-The Mastodon mode processes only public and unlisted source statuses; restricted
-bodies are discarded immediately. The Bluesky mode supports public feed posts only. Automatic likes,
-favourites, boosts, and reposts are not implemented.
+| Provider value | Required settings | Destination |
+|---|---|---|
+| `local` or `ollama` | `LOCAL_LLM_URL`, `LOCAL_LLM_MODEL` | Configured loopback endpoint |
+| `gemini` | `GEMINI_API_KEY`, `GEMINI_MODEL` | Google Gemini |
+| `chatgpt` or `openai` | `OPENAI_API_KEY`, `OPENAI_MODEL` | OpenAI Responses API |
 
-If a publication request has an ambiguous result, the draft is marked `uncertain`.
-Inspect the account manually before doing anything else with it. The program will
-not retry that draft automatically.
+Local AI URLs must be loopback. Remote endpoints require HTTPS. OpenAI requests
+use bearer auth, bounded output, and `store: false`.
 
-## Local history and retention
+## Packages
 
-The desktop **History** section lists successful publications recorded by
-ChorusDraft and activity from GUI sessions. Search by text or account, and use
-**Copy post** to recall published text. It does not download a complete posting
-history from your social account. For local command-line history:
+- `ChorusDraft-elixir-0.51.4-linux.tar.gz`
+- `ChorusDraft-elixir-0.51.4-macos.tar.gz`
+- `ChorusDraft-elixir-0.51.4-windows.zip`
 
-```sh
-./chorusdraft bluesky history
-./chorusdraft mastodon history
-```
+Build with `MIX_ENV=prod mix run scripts/build_release.exs` and verify with
+`./scripts/check_packages.sh` (or `.\scripts\check_packages.ps1` on Windows).
 
-Completed published and rejected draft records expire after 10 days, measured from
-the completion time or the creation time for legacy records without one. Cleanup
-runs when state is accessed and through desktop maintenance while the app is open
-and at its next launch. Pending drafts, uncertain publications, opt-outs,
-duplicate identifiers, and interaction safety records remain separately retained.
-Do not delete account state to clear activity logs.
+## Upgrade or import older state
 
-The desktop keeps activity locally in hourly files. Each event expires after
-10 days; a 50 MB limit can remove older files sooner. It also removes
-expired files from the installation's bot `logs/` directories. The CLI does not
-create a separate activity archive. Logs captured by your shell, service manager,
-backups, or sync software are outside these controls.
-
-ChorusDraft does not upload local history. Account state remains in each platform's
-`data/` directory; the desktop's credential and activity locations are listed in
-the [desktop history guide](https://github.com/buntatoes/chorusdraft/blob/bot-testing/docs/DESKTOP.md#local-history). Expiry does not remove remote
-posts. Files cannot be removed while the application is closed or the computer is
-off; cleanup resumes at the next launch and requires writable storage and a
-working bot runtime.
-
-## HTTP and dependencies
-
-Mint 1.10.0 handles Bluesky, Mastodon, and AI-provider HTTP requests with explicit
-timeouts and response limits, without redirect following or automatic retries.
-WebSockex 0.5.1 supplies connection/frame helpers for the custom bounded
-Jetstream transport. Jason handles JSON; Telemetry and HPAX are transitive dependencies. Exact versions are pinned
-in `mix.lock`; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-
-## Tests
-
-```sh
-mix format --check-formatted
-mix test --warnings-as-errors
-```
-
-Migration fixtures cover compatible legacy state, including unresolved
-publications and account identity. See [PARITY.md](PARITY.md) for the inherited
-behavioral baseline.
-
-## Packages and installation
-
-Preview downloads are available from successful
-[desktop checks](https://github.com/buntatoes/chorusdraft/actions/workflows/bot-testing.yml)
-runs. Each desktop package includes the Elixir bot, both social platforms,
-and the React launcher. The following commands build standalone command-line
-packages without the desktop interface.
-
-Build and check a package for the current operating system:
-
-```sh
-MIX_ENV=prod mix run scripts/build_release.exs
-./scripts/check_packages.sh
-```
-
-On Windows, replace the second command with:
-
-```powershell
-.\scripts\check_packages.ps1
-```
-
-The archive and SHA-256 file are written to `dist/`. The archive includes the
-escript, native run/setup/install scripts, configuration examples, a complete
-file checksum manifest, GPL source, locked dependency source and original licenses.
-Runtime configuration, state, logs and build caches are excluded. The escript
-needs Erlang/OTP; it does not need an installed Elixir compiler to run.
-
-Package names identify their operating system:
-
-- `ChorusDraft-elixir-0.51.3-testing-linux.tar.gz`
-- `ChorusDraft-elixir-0.51.3-testing-macos.tar.gz`
-- `ChorusDraft-elixir-0.51.3-testing-windows.zip`
-
-Each has an adjacent `.sha256` file. On Linux, in the directory containing both
-files:
-
-```sh
-sha256sum --check ChorusDraft-elixir-0.51.3-testing-linux.tar.gz.sha256
-tar -xzf ChorusDraft-elixir-0.51.3-testing-linux.tar.gz
-cd ChorusDraft-elixir-0.51.3-testing-linux
-```
-
-On macOS, use `shasum -a 256 --check` and the macOS archive name. On Windows,
-use `Get-FileHash` or the CI-verified checksum sidecar, then `Expand-Archive`.
-
-Every extracted package supports both social platforms. Install Linux/macOS into
-a new location:
-
-```sh
-./install.sh /absolute/path/to/chorusdraft-elixir
-/absolute/path/to/chorusdraft-elixir/run.sh bluesky --help
-/absolute/path/to/chorusdraft-elixir/run.sh mastodon --help
-```
-
-Install and run on Windows:
-
-```powershell
-.\install.ps1 C:\Apps\ChorusDraft-Elixir
-C:\Apps\ChorusDraft-Elixir\run.ps1 bluesky --help
-C:\Apps\ChorusDraft-Elixir\run.ps1 mastodon --help
-```
-
-The destination must not exist. Setup creates missing files with private
-permissions and never executes `.env` contents. Edit the new `.env` before use.
-For an already extracted archive, `setup.sh` or `setup.ps1` configures it in
-place. Launchers resolve their own directory, so they work from any current
-working directory. Windows setup applies private ACLs to configuration and state.
-
-To rebuild a shipped source bundle with Elixir/Mix available:
-
-```sh
-cd source
-HEX_OFFLINE=1 MIX_ENV=prod mix escript.build
-```
-
-The package's implementation history is included in `source/CHANGELOG.md`.
-
-## Upgrade or import legacy state
-
-1. Stop the old process. Keep its directory as your rollback copy.
-2. Install into a different directory. Configure the account through desktop
-   Settings, or copy the old `.env` for command-line use. Copy desired
-   `config/*.txt` files, keeping permissions private.
-3. Use the same platform, service origin and account credentials. Import that
-   account's old `data/<account-hash>/state.json`:
+Stop the old process, install into a new directory, copy `.env` and config, then:
 
 ```sh
 ./run.sh bluesky --import-state /absolute/path/to/old/data/ACCOUNT_HASH/state.json
 ./run.sh bluesky --status
 ```
 
-Choose the matching platform in every package command. From a source checkout use
-`./chorusdraft bluesky --import-state FILE` (or `mastodon`). Import logs in to identify the destination account but never posts.
-It refuses nonempty destination state, malformed data and drafts belonging to a
-different account. If a source has no drafts, select its matching account hash
-carefully: history-only files do not contain account identity. The source is read
-only; IDs, record keys, blocks, seen posts and interaction history are preserved.
-Interrupted `publishing` drafts become `uncertain`; they are never made pending.
-Existing statuses stay unchanged; completed `published` and `rejected` records
-are subject to the 10-day retention limit. Preserve a private rollback copy if you
-need older records, and manage that copy's retention yourself.
+`--reject ID` / `reject ID` discards a pending or uncertain draft and clears the
+automatic-mode freeze without republishing. Inspect the remote account before
+resolving uncertain publications; do not force an uncertain draft back to
+pending.
 
-`--status` lists unresolved IDs and counts. `--reject ID` can discard a pending
-draft, including one whose author has since opted out. Inspect the remote account
-before resolving any uncertain publication; no automatic reset/retry is provided.
-Do not resume the old process after using the new one without reconciling the
-new posting history. Do not share a live state directory with an older installation.
-
-Schedules use the operating system's local timezone, including its `TZ` setting.
-`--active-hours 22-6` supports overnight operation; equal endpoints mean all day.
-The daemon isolates job failures and uses monotonic intervals. It runs in the
-foreground so a service manager can supervise it; no service is started by setup.
-
-Read [SECURITY.md](SECURITY.md) for safeguards and known limits, and
-[RELEASE_NOTES.md](RELEASE_NOTES.md) for this preview.
+Read [SECURITY.md](SECURITY.md) and
+[GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).

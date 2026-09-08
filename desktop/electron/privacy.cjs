@@ -6,6 +6,7 @@ const SECRET = [
   "BLUESKY_APP_PASSWORD",
   "MASTODON_ACCESS_TOKEN",
   "GEMINI_API_KEY",
+  "OPENAI_API_KEY",
 ];
 const common = {
   AI_PROVIDER: "local",
@@ -13,6 +14,8 @@ const common = {
   LOCAL_LLM_MODEL: "llama3.2:3b",
   GEMINI_API_KEY: "",
   GEMINI_MODEL: "",
+  OPENAI_API_KEY: "",
+  OPENAI_MODEL: "",
   STATUS_LANGUAGE: "en",
 };
 const sites = {
@@ -228,7 +231,7 @@ class Vault {
         throw Error("Invalid credential field.");
       values[key] = "";
     }
-    if (!["local", "ollama", "gemini"].includes(values.AI_PROVIDER))
+    if (!["local", "ollama", "gemini", "chatgpt", "openai"].includes(values.AI_PROVIDER))
       throw Error("Choose a supported AI provider.");
     if (
       site === "mastodon" &&

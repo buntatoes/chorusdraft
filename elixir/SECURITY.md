@@ -1,93 +1,137 @@
-# Security policy for the Elixir bot
+# Security policy
 
-This policy covers the Elixir implementation in the ChorusDraft 0.51.3 preview.
-Report vulnerabilities using GitHub private
-vulnerability reporting when available, or contact the maintainer privately
-through the GitHub profile. Never include credentials, private posts, or exploit
+Current main also screens inherited content warnings before automatic publication,
+honors content-warning opt-outs, and expands deterministic threat and harassment
+screening. These unreleased changes are listed in CHANGELOG.md.
+
+## Supported versions
+
+| Version | Runtime | Security support |
+|---|---|---|
+| 0.51.4 | Elixir | Current |
+| 0.51.3 and earlier | Earlier releases | Unsupported; upgrade recommended |
+
+Report vulnerabilities through GitHub private vulnerability reporting when
+available, or contact the maintainer privately through the GitHub profile. Do
+not put credentials, private posts, tokens, personal information, or exploit
 details in a public issue.
 
-The Elixir implementation enforces these boundaries:
+## Publication boundary
 
-- AI output enters a review queue and requires explicit approval for the exact
-  queued text. The `--publish` option applies only to manually supplied text.
-- Mastodon private, direct, and unknown-visibility bodies are discarded before
-  they can enter AI context, state, or terminal output.
-- Do-not-contact requests and configured entries block replies, quotes, target
-  commentary, manual interactions, explicit mentions, and queued publication.
-- Output screening rejects direct self-harm encouragement, threats, doxxing,
-  pile-on requests, common personal attacks, control characters, and over-limit
-  text. Mastodon content warnings receive the same validation.
-- Prompt-like instructions in public source posts are excluded from AI workflows.
-  Source content is serialized as untrusted data under a separate system prompt.
-- Unsolicited target and discovery drafts are limited to five per rolling day and
-  one per author every 30 days. Automatic likes, favourites, boosts, and reposts
-  are absent.
-- Remote endpoints require HTTPS and credential-bearing redirects are not
-  followed. Mint HTTP/1 connections issue one request without automatic retries,
-  including on 503 responses. Loopback HTTP is permitted only for a local AI
-  service. Streaming response size/header limits and generic errors reduce accidental disclosure.
-- State is isolated by platform and account, stored with private permissions,
-  and replaced atomically. Linux uses a kernel `flock`; macOS uses `fcntl`, and
-  Windows uses `msvcrt` plus atomic Python `os.replace`. The helper locks release
-  when their owning VM exits. Windows configuration and state use ACLs
-  limited to the current user and SYSTEM. Corrupt state fails closed. Publishing
-  requests are not automatically retried; uncertain results require manual
-  account inspection.
-- Import reads the old state without modifying it, requires an empty destination,
-  and preserves publication IDs and interaction history. Interrupted publications
-  become uncertain; import never makes them eligible for automatic replay.
+Review-first behavior is the default. `start`, one-shot AI commands, manual
+text, quotes, target commentary, discovery commentary, and existing queue items
+cannot acquire automatic AI publication permission. Owner-written text requires
+an explicit `--publish`; otherwise it enters the queue.
 
-The block list tracks handles rather than permanent identities across handle
-changes. Update configured entries after a rename. Only fetched notifications can
-be checked for new opt-outs. Keyword and pattern matching cannot understand every
-form of harassment or prompt injection. Human review remains required for context,
-accuracy, platform rules, and applicable law.
+The explicit `automatic` command may publish only the exact original or eligible
+incoming public-mention reply generated in that daemon cycle. It cannot sweep
+older pending drafts. Automatic output is screened again for the baseline content
+rules plus harassment, pile-ons, model-added mentions, links, and common email,
+phone, and street-address patterns. A held draft remains pending for review.
 
-## Credentials and local retention
+Before an automatic reply is claimed, the source is re-fetched from the platform
+API. Its ID, text, content warning, handle, immutable author identity, and public
+visibility must still match the context used for generation. Prompt-injection,
+opt-out, and do-not-contact checks run again. Public opt-outs record both handle
+and immutable identity aliases.
 
-GUI launches receive account settings through the desktop's restricted bridge.
-Persistent settings use operating-system protected storage; session-only use is
-available when secure storage cannot be used. Secure saving removes only the
-form's managed fields from that platform's `.env`. Separate CLI launches still
-read the environment and `.env`; plaintext files must be kept private.
-See the [desktop security policy](https://github.com/buntatoes/chorusdraft/blob/bot-testing/SECURITY.md#desktop-credentials).
+The state lock atomically reserves both the exact draft and one of five automatic
+attempts allowed per rolling 24 hours per account. Failed and ambiguous attempts
+count. Only one automatic publication may be in flight. Any `publishing` or
+`uncertain` draft blocks later automatic claims. A publishing claim older than
+five minutes becomes `uncertain`; it is never retried automatically.
 
-The account store keeps successful post text for up to 10 days. Completed
-published and rejected records are pruned during state access and desktop
-maintenance; legacy records without a completion time use their creation time.
-Pending drafts, uncertain publications, opt-outs, duplicate identifiers, and
-interaction safety records remain separately retained. History expiry never
-resets an uncertain draft for publication.
+These controls reduce risk but are deterministic and can miss harmful context or
+hold benign text. Review mode provides the strongest operator control. Operators
+must not weaken safeguards to target people.
 
-The desktop records local GUI activity for up to 10 days, with a 50 MB limit that
-can remove older activity sooner. Hourly files expire from the beginning of their
-hour. Desktop maintenance also removes expired bot log files in the installation.
-The bot does not create a separate persistent terminal-output archive; logs captured
-by external launchers or service managers require their own retention policy.
+Clear public requests to stop contact are also processed before reply generation.
+Do-not-contact checks cover source handles, immutable IDs, and mentioned
+accounts. Baseline harassment, threats, doxxing, coordinated pile-ons, self-harm
+encouragement, and common direct personal attacks are rejected before staging
+and checked before publication.
 
-History and activity are not uploaded by ChorusDraft. Normal posting and AI calls
-still send necessary content to the selected provider. Cleanup runs while the app
-is open and at its next launch; it cannot run on a powered-off computer and depends
-on writable storage and an available runtime. Backups, sync software, exports, and
-external log capture are outside these controls. Local expiry does not delete
-remote posts or provide forensic secure erasure.
+Mastodon private, direct, and unknown-visibility bodies are discarded before AI,
+logging, or persistent state. Automatic likes, favourites, boosts, and reposts
+are disabled.
 
-## Jetstream boundary
+## Credentials, providers, and network behavior
 
-The optional Bluesky Jetstream client connects with TLS certificate and hostname
-verification. It sends no Bluesky app password, session token, or AI credentials.
-The current JSON subprotocol is required. Post bodies are decoded only to
-identify relevant activity. Passive reads check declared frame lengths before
-reading payloads: complete and fragmented messages are limited to 1 MiB, with
-at most 1,024 fragments. Each handshake header line and the aggregate header
-fields are limited to 16 KiB. Handshakes and individual frame reads have a
-10-second deadline; assembling a fragmented message has a 90-second deadline.
-Unrequested compression and malformed handshakes are refused. These limits bound
-application message assembly; they are not an operating-system memory quota.
+Credentials belong only in local `.env` files or process environment variables.
+Setup never overwrites an existing `.env`, executes its contents, starts a
+service, or contacts a provider. Release packages exclude `.env`, state, logs,
+and build caches.
 
-Stream content is an untrusted signal to fetch the account's notifications, never
-a direct source of AI context or publication. A single coalesced wake-up prevents
-network bursts from filling the consumer's mailbox. Startup, reconnect and
-periodic notification checks remain active, subject to the existing fetch window.
-Jetstream cursors and historical replay are not implemented, so outages or heavy
-notification traffic can still cause missed events.
+Local/Ollama uses the configured loopback endpoint. Gemini and ChatGPT/OpenAI
+are remote privacy boundaries: the drafting task and selected cleaned public
+context are sent to the chosen provider. The OpenAI adapter uses the Responses
+API with an authorization header, bounded output, and `store: false`. Review
+provider terms and account data controls before enabling a remote provider.
+
+Remote social, Gemini, and OpenAI endpoints require HTTPS. When `AI_PROVIDER`
+is `local` or `ollama`, `LOCAL_LLM_URL` must use a loopback host (`localhost`,
+`127.0.0.1`, or `::1`) over HTTP or HTTPS — remote HTTPS hosts are rejected for
+local AI. Redirects and automatic retries are disabled, request times and
+response sizes are bounded, and remote bodies or credential-bearing details are
+omitted from errors. Publication requests are never automatically retried.
+
+Ambiguous publication results become `uncertain`. Inspect the account manually,
+then reject a pending or uncertain draft with `reject ID` / `--reject ID` when it
+should not publish. Rejection clears the automatic-mode freeze without
+republishing; do not replay or force an uncertain draft back to pending until
+the outcome is known.
+
+## Personal information
+
+AI context is screened and matching personal information is replaced with
+`[REDACTED]` before any local or remote model request. Screening recognizes
+ordinary and common obfuscated email addresses, Unicode numeric contact details,
+long numeric identifiers, street/PO-box addresses, labeled identity details,
+precise coordinate pairs, and common credential formats.
+
+AI output is rejected if these patterns are detected, including in review mode.
+Saved AI drafts and content warnings are checked again before publication.
+The bot does not silently edit reviewed text. Public social mentions remain
+supported, and explicitly owner-written manual text remains under owner control.
+
+This is conservative pattern matching: it can hold harmless numbers and cannot
+identify every name, address, identifier, language, or obfuscation. Public source
+posts can still contain personal information that these rules miss. Human review
+remains necessary for sensitive material; this feature does not promise anonymity.
+
+## State and process safety
+
+State is separated by platform, service origin, and account. Native locks
+serialize writers and release after crashes. Unix files use private modes;
+Windows uses protected ACLs. State replacement is atomic, symlinks and special
+files are refused, and malformed state fails closed.
+
+Run only one daemon per account. State import accepts compatible data only into
+an empty account store, adds new state fields conservatively, converts imported
+in-flight publications to `uncertain`, and never alters the source file.
+
+## Jetstream
+
+Jetstream starts automatically for Bluesky `listen` and daemon workflows and
+cannot be disabled in those modes. `--jetstream` remains a compatibility no-op.
+Streamed bodies do not enter AI context, terminal output, or state. Matching
+events only wake the canonical notification fetch, where opt-out,
+deduplication, safety, and publication policy still apply.
+
+Frame size, handshake headers, fragment counts, receive deadlines, heartbeats,
+and reconnect backoff are bounded. Invalid handshakes and unsolicited
+compression are refused. Periodic API checks reduce missed notifications after
+disconnects but cannot guarantee complete delivery. Mastodon uses polling.
+
+## Known limits
+
+Inbound prompt-injection screening and the stricter automatic-output gates are
+best-effort, deterministic regex checks on normalized text (NFKC and
+format-character stripping, matching opt-out and harassment). They can still miss
+novel phrasing or hold benign text; interactive review before publish remains the
+primary control outside explicit automatic mode.
+
+Live Bluesky, Mastodon, and AI-provider acceptance and a sustained daemon soak
+remain operator checks. Use disposable accounts first and exercise login,
+read-only search, staging, exact review, automatic publication, deletion,
+opt-outs, and network reconnection before production use.

@@ -41,6 +41,18 @@ function protectedStorage(backend = "gnome_libsecret") {
   };
 }
 const input = (values) => ({ values, clear: [] });
+test("OpenAI credentials use protected storage and remain masked", (t) => {
+  const root = fixture(t);
+  const vault = new Vault(root, path.join(root, "credentials"), protectedStorage(), "linux");
+  vault.save("bluesky", input({
+    AI_PROVIDER: "chatgpt", OPENAI_MODEL: "fixture-model",
+    OPENAI_API_KEY: "synthetic-openai-secret"
+  }), true);
+  assert.equal(vault.values("bluesky").OPENAI_API_KEY, "synthetic-openai-secret");
+  const info = vault.view("bluesky");
+  assert.equal(info.values.OPENAI_API_KEY, undefined);
+  assert.equal(info.saved.OPENAI_API_KEY, true);
+});
 test("secure persistence migrates all supported plaintext assignments and never returns credentials", (t) => {
   const root = fixture(t),
     dir = path.join(root, "credentials"),

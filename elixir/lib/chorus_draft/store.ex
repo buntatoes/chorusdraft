@@ -2,6 +2,8 @@ defmodule ChorusDraft.Store do
   alias ChorusDraft.{Error, Lock, Platform, Safety}
 
   @active_statuses ["pending", "publishing", "uncertain"]
+  @automatic_limit 5
+  @publication_lease_seconds 300
 
   def new(dir) do
     storage_path!(dir)
@@ -34,10 +36,11 @@ defmodule ChorusDraft.Store do
     lock = acquire_lock(Path.join(dir, "state.lock"))
 
     try do
-      original = read_state(Path.join(dir, "state.json"))
+      stored = read_state(Path.join(dir, "state.json"))
+      original = recover_stale_publications(stored, System.system_time(:second))
       {result, state} = fun.(prune_history(original))
       validate_state!(state)
-      if state != original, do: write_state(Path.join(dir, "state.json"), state)
+      if state != stored, do: write_state(Path.join(dir, "state.json"), state)
       result
     after
       if Port.info(lock), do: Port.close(lock)
@@ -52,7 +55,13 @@ defmodule ChorusDraft.Store do
 
     regular_file!(source, false)
     raw = File.read!(source)
-    state = raw |> Jason.decode!() |> Map.put_new("blocked", []) |> validate_state!()
+
+    state =
+      raw
+      |> Jason.decode!()
+      |> Map.put_new("blocked", [])
+      |> Map.put_new("automatic", [])
+      |> validate_state!()
 
     Enum.each(state["drafts"], fn draft ->
       validate_draft!(draft)
@@ -81,12 +90,12 @@ defmodule ChorusDraft.Store do
     end)
   rescue
     error in Error -> raise error
-    _ -> raise Error, "Could not import state; source must be a valid Ruby or Elixir state.json."
+    _ -> raise Error, "Could not import state; source must be a valid ChorusDraft state.json."
   end
 
   def validate_draft!(draft) do
     required = ["platform", "account", "text", "action", "visibility", "language"]
-    optional = ["reply_to", "quote_to", "author", "cw"]
+    optional = ["reply_to", "quote_to", "author", "author_id", "cw", "publication_mode"]
 
     valid =
       is_map(draft) and Enum.all?(required, &is_binary(draft[&1])) and
@@ -188,7 +197,8 @@ defmodule ChorusDraft.Store do
       {"pending", "publishing"},
       {"pending", "rejected"},
       {"publishing", "published"},
-      {"publishing", "uncertain"}
+      {"publishing", "uncertain"},
+      {"uncertain", "rejected"}
     ]
 
     unless Enum.all?(from, &({&1, to} in allowed)), do: raise(Error, "Invalid draft transition.")
@@ -205,7 +215,7 @@ defmodule ChorusDraft.Store do
         raise Error, "Draft changed after review; review the new content before publishing."
       end
 
-      changed = Map.put(draft, "status", to)
+      changed = draft |> Map.put("status", to) |> maybe_record_claim(to)
 
       changed =
         if to in ["published", "rejected"],
@@ -213,6 +223,59 @@ defmodule ChorusDraft.Store do
           else: changed
 
       {changed, put_in(state, ["drafts", Access.at(index)], changed)}
+    end)
+  end
+
+  def claim_automatic(dir, expected, opts \\ []) do
+    actors =
+      opts
+      |> Keyword.get(:actors, [])
+      |> Enum.map(&Safety.actor_key/1)
+      |> Enum.reject(&(&1 == ""))
+      |> Enum.uniq()
+
+    transaction(dir, fn state ->
+      now = System.system_time(:second)
+      state = prune_automatic(state, now)
+
+      index =
+        Enum.find_index(
+          state["drafts"],
+          &(&1["id"] == expected["id"] and &1["status"] == "pending")
+        )
+
+      cond do
+        is_nil(index) ->
+          {{:error, :unavailable}, state}
+
+        Enum.at(state["drafts"], index) != expected ->
+          {{:error, :unavailable}, state}
+
+        Enum.any?(state["drafts"], &(&1["status"] in ["publishing", "uncertain"])) ->
+          {{:error, :unresolved}, state}
+
+        Enum.any?(actors, &(&1 in state["blocked"])) ->
+          {{:error, :blocked}, state}
+
+        length(state["automatic"]) >= @automatic_limit ->
+          {{:error, :limit}, state}
+
+        true ->
+          draft = Enum.at(state["drafts"], index)
+
+          claimed =
+            draft
+            |> Map.put("status", "publishing")
+            |> Map.put("publication_mode", "automatic")
+            |> Map.put("claimed_at", now)
+
+          state =
+            state
+            |> put_in(["drafts", Access.at(index)], claimed)
+            |> Map.update!("automatic", &(&1 ++ [now]))
+
+          {{:ok, claimed}, state}
+      end
     end)
   end
 
@@ -316,7 +379,14 @@ defmodule ChorusDraft.Store do
   end
 
   defp default_state do
-    %{"drafts" => [], "seen" => [], "authors" => %{}, "daily" => [], "blocked" => []}
+    %{
+      "drafts" => [],
+      "seen" => [],
+      "authors" => %{},
+      "daily" => [],
+      "blocked" => [],
+      "automatic" => []
+    }
   end
 
   defp read_state(path) do
@@ -326,7 +396,7 @@ defmodule ChorusDraft.Store do
 
       :ok ->
         case File.read!(path) |> Jason.decode() do
-          {:ok, state} -> validate_state!(state)
+          {:ok, state} -> state |> Map.put_new("automatic", []) |> validate_state!()
           {:error, _} -> raise Error, "State JSON is corrupt; refusing to reset posting history."
         end
     end
@@ -335,13 +405,14 @@ defmodule ChorusDraft.Store do
   defp validate_state!(state) do
     valid? =
       is_map(state) and is_list(state["drafts"]) and is_list(state["seen"]) and
-        is_map(state["authors"]) and is_list(state["daily"]) and is_list(state["blocked"])
+        is_map(state["authors"]) and is_list(state["daily"]) and is_list(state["blocked"]) and
+        is_list(state["automatic"])
 
     unless valid?, do: raise(Error, "State is invalid; restore a backup before continuing.")
 
     valid? =
       Enum.all?(state["seen"] ++ state["blocked"], &is_binary/1) and
-        Enum.all?(state["daily"], &(is_integer(&1) and &1 >= 0)) and
+        Enum.all?(state["daily"] ++ state["automatic"], &(is_integer(&1) and &1 >= 0)) and
         Enum.all?(state["authors"], fn {key, time} ->
           is_binary(key) and is_integer(time) and time >= 0
         end) and
@@ -372,10 +443,14 @@ defmodule ChorusDraft.Store do
           "reply_to",
           "quote_to",
           "author",
+          "author_id",
+          "publication_mode",
           "cw"
         ],
         fn key -> is_nil(draft[key]) or is_binary(draft[key]) end
-      )
+      ) and
+      (is_nil(draft["claimed_at"]) or
+         (is_integer(draft["claimed_at"]) and draft["claimed_at"] >= 0))
   end
 
   defp valid_saved_draft?(_), do: false
@@ -401,6 +476,28 @@ defmodule ChorusDraft.Store do
     after
       File.rm(temporary)
     end
+  end
+
+  defp maybe_record_claim(draft, "publishing"),
+    do: Map.put(draft, "claimed_at", System.system_time(:second))
+
+  defp maybe_record_claim(draft, _status), do: draft
+
+  defp prune_automatic(state, now) do
+    Map.put(state, "automatic", Enum.filter(state["automatic"], &(&1 > now - 86_400)))
+  end
+
+  defp recover_stale_publications(state, now) do
+    Map.update!(state, "drafts", fn drafts ->
+      Enum.map(drafts, fn draft ->
+        stale? =
+          draft["status"] == "publishing" and
+            (is_nil(draft["claimed_at"]) or
+               draft["claimed_at"] <= now - @publication_lease_seconds)
+
+        if stale?, do: Map.put(draft, "status", "uncertain"), else: draft
+      end)
+    end)
   end
 
   # Keep a persistent lock file; unlinking it could split concurrent owners.
