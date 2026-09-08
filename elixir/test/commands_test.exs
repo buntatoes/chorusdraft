@@ -15,6 +15,12 @@ defmodule ChorusDraft.CommandsTest do
            ]
 
     assert Commands.normalize(["quote", "123", text]) == ["--text=" <> text, "--quote-uri=123"]
+
+    assert Commands.normalize(["edit", "draft-id", text]) == [
+             "--edit=draft-id",
+             "--text=" <> text
+           ]
+
     assert Commands.normalize(["start", "--jetstream"]) == ["--daemon", "--jetstream"]
     assert Commands.normalize(["random", "--limit", "3"]) == ["--random-post=", "--limit", "3"]
     assert Commands.normalize(["discover", "ruby"]) == ["--discover", "--query=ruby"]
@@ -28,7 +34,15 @@ defmodule ChorusDraft.CommandsTest do
   end
 
   test "incomplete commands cannot become other actions" do
-    for args <- [["post"], ["reply", "123"], ["quote", "--publish"], ["search", ""], ["delete"]] do
+    for args <- [
+          ["post"],
+          ["reply", "123"],
+          ["quote", "--publish"],
+          ["search", ""],
+          ["delete"],
+          ["edit"],
+          ["edit", "draft-id"]
+        ] do
       assert_raise Error, ~r/requires an argument/, fn -> Commands.normalize(args) end
     end
 
@@ -41,6 +55,38 @@ defmodule ChorusDraft.CommandsTest do
         capture_io(:stderr, fn -> assert CLI.run(["bluesky", command, "--publish"]) == 1 end)
 
       assert message =~ "--publish requires --text"
+    end
+  end
+
+  test "packaged version strings stay aligned with the VERSION file" do
+    version = String.trim(File.read!("VERSION"))
+    assert version == ChorusDraft.version()
+    assert version == String.trim(File.read!("../VERSION"))
+    assert File.read!("../desktop/package.json") =~ ~s("version": "#{version}")
+  end
+
+  test "edit cannot skip review by adding --publish" do
+    message =
+      capture_io(:stderr, fn ->
+        assert CLI.run(["bluesky", "edit", "draft-id", "hello", "--publish"]) == 1
+      end)
+
+    assert message =~ "--publish cannot be combined with --edit"
+  end
+
+  test "edit cannot be combined with reply or quote targets" do
+    for extra <- [
+          ["--reply-to", "1"],
+          ["--quote-uri", "1"],
+          ["--queue"],
+          ["--random-reply", "query"]
+        ] do
+      message =
+        capture_io(:stderr, fn ->
+          assert CLI.run(["bluesky", "edit", "draft-id", "hello" | extra]) == 1
+        end)
+
+      assert message =~ "--edit cannot be combined with reply, quote, or queue options."
     end
   end
 

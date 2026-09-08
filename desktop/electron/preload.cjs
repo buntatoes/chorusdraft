@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld("chorus", {
     ipcRenderer.invoke("bot:forget-settings", selection),
   history: (selection, filter) =>
     ipcRenderer.invoke("bot:history", selection, filter),
+  queue: (selection) => ipcRenderer.invoke("bot:queue", selection),
   copy: (text) => ipcRenderer.invoke("bot:copy", text),
   onEvent: (callback) => {
     const listener = (_event, message) => callback(message);

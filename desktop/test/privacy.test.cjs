@@ -320,6 +320,139 @@ test("history exposes only recent published drafts and never edits pending, unce
   assert.throws(() => history.prune(), /preserved for recovery/);
   assert.equal(fs.readFileSync(activity, "utf8"), "{broken activity\n");
 });
+test("queue lists unresolved drafts and automatic budget without writing state", (t) => {
+  const root = fixture(t),
+    now = Date.UTC(2026, 8, 8, 12),
+    dir = path.join(root, "elixir", "bluesky", "data", "b".repeat(24));
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, "state.json");
+  const original = JSON.stringify({
+    drafts: [
+      {
+        id: "pending-id",
+        status: "pending",
+        text: "hold for review",
+        action: "manual",
+        created_at: new Date(now - 1000).toISOString(),
+      },
+      {
+        id: "uncertain-id",
+        status: "uncertain",
+        text: "check the account",
+        created_at: new Date(now - 2000).toISOString(),
+      },
+      {
+        id: "published-id",
+        status: "published",
+        text: "already live",
+        finished_at: new Date(now - 1000).toISOString(),
+      },
+    ],
+    automatic: [Math.floor(now / 1000) - 60, Math.floor(now / 1000) - 90000],
+  });
+  fs.writeFileSync(file, original);
+  const history = new History(root, path.join(root, "activity"), () => now);
+  const queue = history.queue("bluesky");
+  assert.deepEqual(
+    queue.items.map((row) => row.id),
+    ["uncertain-id", "pending-id"],
+  );
+  assert.equal(queue.automatic.limit, 5);
+  assert.equal(queue.automatic.used, 1);
+  assert.equal(queue.automatic.remaining, 4);
+  assert.equal(queue.automatic.frozen, true);
+  assert.equal(fs.readFileSync(file, "utf8"), original);
+});
+test("queue shows expired publication leases as uncertain without writing state", (t) => {
+  const root = fixture(t),
+    now = Date.UTC(2026, 8, 8, 12),
+    current = Math.floor(now / 1000),
+    dir = path.join(root, "elixir", "bluesky", "data", "c".repeat(24));
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, "state.json");
+  const original = JSON.stringify({
+    drafts: [
+      {
+        id: "stale-id",
+        status: "publishing",
+        text: "lease expired",
+        claimed_at: current - 301,
+        created_at: new Date(now - 400000).toISOString(),
+      },
+      {
+        id: "live-id",
+        status: "publishing",
+        text: "lease held",
+        claimed_at: current - 10,
+        created_at: new Date(now - 5000).toISOString(),
+      },
+    ],
+    automatic: [],
+  });
+  fs.writeFileSync(file, original);
+  const history = new History(root, path.join(root, "activity"), () => now);
+  const queue = history.queue("bluesky");
+  assert.deepEqual(
+    queue.items.map((row) => [row.id, row.status]),
+    [
+      ["stale-id", "uncertain"],
+      ["live-id", "publishing"],
+    ],
+  );
+  assert.equal(queue.automatic.frozen, true);
+  assert.equal(fs.readFileSync(file, "utf8"), original);
+});
+test("queue uses the most recently written account store only", (t) => {
+  const root = fixture(t),
+    now = Date.UTC(2026, 8, 8, 12),
+    older = path.join(root, "elixir", "bluesky", "data", "a".repeat(24)),
+    newer = path.join(root, "elixir", "bluesky", "data", "b".repeat(24));
+  fs.mkdirSync(older, { recursive: true });
+  fs.mkdirSync(newer, { recursive: true });
+  const olderFile = path.join(older, "state.json");
+  const newerFile = path.join(newer, "state.json");
+  fs.writeFileSync(
+    olderFile,
+    JSON.stringify({
+      drafts: [
+        {
+          id: "other-account",
+          status: "pending",
+          text: "belongs to the other account",
+          created_at: new Date(now - 2000).toISOString(),
+        },
+      ],
+      automatic: [Math.floor(now / 1000) - 60],
+    }),
+  );
+  fs.writeFileSync(
+    newerFile,
+    JSON.stringify({
+      drafts: [
+        {
+          id: "signed-in",
+          status: "pending",
+          text: "belongs to the last used account",
+          created_at: new Date(now - 1000).toISOString(),
+        },
+      ],
+      automatic: [],
+    }),
+  );
+  const past = new Date(now - 3600000);
+  const current = new Date(now);
+  fs.utimesSync(olderFile, past, past);
+  fs.utimesSync(newerFile, current, current);
+  const history = new History(root, path.join(root, "activity"), () => now);
+  const queue = history.queue("bluesky");
+  assert.deepEqual(
+    queue.items.map((row) => row.id),
+    ["signed-in"],
+  );
+  assert.equal(queue.automatic.used, 0);
+  assert.equal(queue.automatic.remaining, 5);
+  assert.equal(queue.automatic.frozen, false);
+});
 test(
   "filesystem links cannot redirect credentials, activity, or legacy cleanup outside their boundaries",
   {

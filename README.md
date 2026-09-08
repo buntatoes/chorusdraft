@@ -21,18 +21,13 @@ Providers: local/Ollama, Gemini, or ChatGPT/OpenAI.
 
 ## Latest
 
-**[v0.51.4](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.4)**
+**[v0.51.5](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.5)**
 
-- Desktop: encrypted account settings, ten-day searchable local history,
-  ChatGPT/OpenAI setup, and an explicit automatic-mode action. See
-  [the desktop guide](docs/DESKTOP.md).
-- Redacts recognized personal information before it goes to an AI provider.
-- Rejects those patterns (and common credentials) in drafts, then checks again
-  before publish.
-- Broader automatic link screening; public @mentions still work.
-- Screens inherited content warnings and honors CW opt-outs on automatic
-  replies; stronger threat and harassment checks.
-- Opt-in automatic publishing, ChatGPT, and controls for uncertain drafts.
+- Desktop Queue for pending and uncertain drafts from the last-used account
+  store, with automatic-attempt remaining count.
+- Edit a pending draft (`edit ID TEXT`, or `e` during review). The replacement
+  is screened, keeps line breaks, and still needs review before publish.
+- CI packages use the `VERSION` file instead of a hardcoded version string.
 
 [Changelog](CHANGELOG.md) · [Releases](https://github.com/buntatoes/chorusdraft/releases) · [Build](elixir/README.md) · [Security](SECURITY.md)
 
@@ -43,7 +38,7 @@ Providers: local/Ollama, Gemini, or ChatGPT/OpenAI.
 - Local queues, split by service, origin, and account
 - Opt-outs, do-not-contact, budgets, and screening
 - Bluesky Jetstream for listen/daemon; Mastodon polls
-- Explicit automatic daemon with attempt budget, source rechecks, and lockout
+- `automatic` daemon: attempt budget, source recheck, lockout
 
 Does not auto-like, favourite, boost, or repost. Does not publish unsolicited
 target or discovery commentary. Owner text needs `--publish`.
@@ -69,8 +64,9 @@ target or discovery commentary. Owner text needs `--publish`.
 | `listen` / `replies` | Mentions |
 | `post` / `reply` / `quote` | Owner-written text |
 | `search` / `random` / `discover` / `targets` | Read or stage commentary |
-| `status` | Queue counts and unresolved IDs |
+| `status` | Queue counts, unresolved IDs, automatic budget, freeze |
 | `reject ID` | Drop one pending or uncertain draft |
+| `edit ID TEXT` | Replace pending draft text; still review before publish |
 | `delete ID` | Delete one of your posts |
 
 ## Automatic mode

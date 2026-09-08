@@ -1,4 +1,4 @@
-import { Settings, History } from "./Privacy.jsx";
+import { Settings, History, Queue } from "./Privacy.jsx";
 import { TerminalText } from "./terminal.mjs";
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -113,10 +113,22 @@ const titles = {
   replies: "Draft replies",
   search: "Search posts",
   post: "Write a post",
+  edit: "Edit draft",
+  reject: "Reject draft",
+  status: "Queue status",
   help: "Command help",
   version: "Version",
 };
 const api = window.chorus;
+
+function reviewDraftIdFrom(buffer) {
+  const matches = [
+    ...String(buffer).matchAll(
+      /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}) \| (?:manual|ai_generated) \|/g,
+    ),
+  ];
+  return matches.length ? matches[matches.length - 1][1] : "";
+}
 
 function App() {
   const runtime = "elixir";
@@ -125,7 +137,7 @@ function App() {
   const [notice, setNotice] = useState("");
   const activityParts = useRef([]);
   const [platform, setPlatform] = useState("bluesky");
-  const [version, setVersion] = useState("0.51.4");
+  const [version, setVersion] = useState("0.51.5");
   const [running, setRunning] = useState(false);
   const [action, setAction] = useState(null);
   const [activity, setActivity] = useState("");
@@ -139,6 +151,12 @@ function App() {
   const promptBuffer = useRef("");
   const approvalAvailable = useRef(false);
   const [reviewPrompt, setReviewPrompt] = useState(false);
+  const [editingReview, setEditingReview] = useState(false);
+  const [reviewEdit, setReviewEdit] = useState("");
+  const [savingReview, setSavingReview] = useState(false);
+  const reviewDraftId = useRef("");
+  const savingReviewLock = useRef(false);
+  const runningLock = useRef(false);
   useEffect(() => {
     if (!api) {
       setError("Open ChorusDraft in the desktop app to use the bot controls.");
@@ -158,6 +176,10 @@ function App() {
           );
           approvalAvailable.current = ready;
           setReviewPrompt(ready);
+          if (ready) {
+            const id = reviewDraftIdFrom(promptBuffer.current);
+            if (id) reviewDraftId.current = id;
+          }
           const now = Date.now();
           activityParts.current = activityParts.current.filter(
             (p) => p.time > now - 10 * 86400000,
@@ -219,26 +241,38 @@ function App() {
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
   }, []);
-  const invoke = async (operation) => {
+  useEffect(() => {
+    if (!running) runningLock.current = false;
+  }, [running]);
+  const invoke = async (operation, opts = {}) => {
     try {
       setError("");
       await operation();
+      return true;
     } catch (e) {
-      setError(
-        e.message.replace(/^Error invoking remote method '[^']+': Error: /, ""),
+      const message = e.message.replace(
+        /^Error invoking remote method '[^']+': Error: /,
+        "",
       );
-      setRunning(false);
+      setError(message);
+      if (
+        !opts.keepRunning &&
+        message !== "Choose an action after the current session ends."
+      )
+        setRunning(false);
+      return false;
     }
   };
-  const run = async (nextAction, suppliedText) => {
-    if (!api || running) return;
+  const run = async (nextAction, suppliedText, target, opts = {}) => {
+    if (!api || running || runningLock.current) return;
     if (["search", "post"].includes(nextAction) && suppliedText === undefined) {
       setText("");
       setCompose(nextAction);
       return;
     }
+    runningLock.current = true;
     setCompose(null);
-    setPage("overview");
+    if (!opts.stay) setPage("overview");
     activityParts.current = [];
     setAction(nextAction);
     setRunning(true);
@@ -249,23 +283,46 @@ function App() {
     promptBuffer.current = "";
     approvalAvailable.current = false;
     setReviewPrompt(false);
+    setEditingReview(false);
+    setReviewEdit("");
+    setSavingReview(false);
+    savingReviewLock.current = false;
+    reviewDraftId.current = "";
     await invoke(() =>
-      api.run({ runtime, platform, action: nextAction, text: suppliedText }),
+      api.run({
+        runtime,
+        platform,
+        action: nextAction,
+        text: suppliedText,
+        target,
+      }),
     );
   };
-  const send = async (value) => {
-    if (!api || !running) return;
-    if (action === "review" && !approvalAvailable.current) return;
+  const send = async (value, opts = {}) => {
+    if (!api || !running) return false;
+    if ((editingReview || savingReview || savingReviewLock.current) && !opts.force)
+      return false;
+    if (action === "review" && !opts.force && !approvalAvailable.current)
+      return false;
     approvalAvailable.current = false;
-    promptBuffer.current = "";
-    setReviewPrompt(false);
-    setResponse("");
-    // Prevent repeated approval clicks before the next prompt arrives.
-    setActivity((previous) => previous + "\n");
-    await invoke(() => api.respond(value));
+    const ok = await invoke(() => api.respond(value), { keepRunning: true });
+    if (ok) {
+      promptBuffer.current = "";
+      setReviewPrompt(false);
+      setResponse("");
+      // Prevent repeated approval clicks before the next prompt arrives.
+      setActivity((previous) => previous + "\n");
+    } else if (action === "review") {
+      approvalAvailable.current = true;
+    }
+    return ok;
   };
   const reviewReady = running && action === "review" && reviewPrompt;
-  const canRespond = running && (action !== "review" || reviewReady);
+  const canRespond =
+    running &&
+    !editingReview &&
+    !savingReview &&
+    (action !== "review" || reviewReady);
   const selected = `${platform === "bluesky" ? "Bluesky" : "Mastodon"}`;
   const configure = () => api && setSettingsTarget({ runtime, platform });
   return (
@@ -304,6 +361,14 @@ function App() {
             Configuration
           </button>
           <button
+            className={`nav-button ${page === "queue" ? "selected" : ""}`}
+            disabled={!api}
+            onClick={() => setPage("queue")}
+          >
+            <Icon name="review" />
+            Queue
+          </button>
+          <button
             className={`nav-button ${page === "history" ? "selected" : ""}`}
             disabled={!api}
             onClick={() => setPage("history")}
@@ -317,7 +382,7 @@ function App() {
             <Icon name="check" size={16} />
           </span>
           <h4>You have the final say.</h4>
-          <p>Review drafts yourself, or explicitly start safeguarded automatic mode.</p>
+          <p>Review drafts, or start automatic mode when you mean to.</p>
         </div>
         <button
           className="nav-button help-link"
@@ -338,7 +403,11 @@ function App() {
         <header className="topbar">
           <div>
             Workspace <span>/</span>{" "}
-            {page === "history" ? "History" : "Overview"}
+            {page === "history"
+              ? "History"
+              : page === "queue"
+                ? "Queue"
+                : "Overview"}
           </div>
           <span className="version-tag">{version}</span>
         </header>
@@ -351,6 +420,17 @@ function App() {
                 onClick={() => setNotice("")}
               >
                 ×
+              </button>
+            </div>
+          )}
+          {error && page !== "overview" && (
+            <div className="error-banner" role="alert">
+              <span>{error}</span>
+              <button
+                aria-label="Dismiss error"
+                onClick={() => setError("")}
+              >
+                <Icon name="close" size={16} />
               </button>
             </div>
           )}
@@ -369,6 +449,28 @@ function App() {
                 </select>
               </label>
               <History selection={{ runtime, platform }} />
+            </>
+          ) : page === "queue" ? (
+            <>
+              <label className="history-selection">
+                Platform
+                <select
+                  aria-label="Queue platform"
+                  disabled={running}
+                  value={platform}
+                  onChange={(e) => setPlatform(e.target.value)}
+                >
+                  <option value="bluesky">Bluesky</option>
+                  <option value="mastodon">Mastodon</option>
+                </select>
+              </label>
+              <Queue
+                selection={{ runtime, platform }}
+                running={running}
+                onRun={(action, text, target) =>
+                  run(action, text, target, { stay: true })
+                }
+              />
             </>
           ) : (
             <>
@@ -461,7 +563,7 @@ function App() {
                     "automatic",
                     "monitor",
                     "Automatic mode",
-                    "Publish new originals and eligible mention replies after safeguards. Up to five attempts per day.",
+                    "May publish new originals and eligible mention replies. Five attempts per day.",
                     "Start automatic mode",
                   ],
                 ].map(([key, icon, title, description, label]) => (
@@ -553,19 +655,112 @@ function App() {
                 </div>
                 {reviewReady && (
                   <div className="review-actions">
-                    <span>Publish the exact draft displayed above?</span>
-                    <button
-                      className="button secondary"
-                      onClick={() => send("d")}
-                    >
-                      Reject draft
-                    </button>
-                    <button
-                      className="button primary"
-                      onClick={() => send("y")}
-                    >
-                      Publish this draft
-                    </button>
+                    {editingReview ? (
+                      <>
+                        <label className="settings-field">
+                          Replacement text
+                          <textarea
+                            aria-label="Replacement draft text"
+                            maxLength={10000}
+                            value={reviewEdit}
+                            onChange={(e) => setReviewEdit(e.target.value)}
+                          />
+                        </label>
+                        <button
+                          className="button secondary"
+                          disabled={savingReview}
+                          onClick={() => {
+                            setEditingReview(false);
+                            setReviewEdit("");
+                            setSavingReview(false);
+                          }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          className="button primary"
+                          disabled={savingReview || !reviewEdit.trim()}
+                          onClick={async () => {
+                            const next = reviewEdit.trim();
+                            if (!next || savingReviewLock.current) return;
+                            savingReviewLock.current = true;
+                            setSavingReview(true);
+                            try {
+                              if (!(await send("e", { force: true }))) return;
+                              if (
+                                !(await send(
+                                  "<<JSON>>" + JSON.stringify(next),
+                                  { force: true },
+                                ))
+                              ) {
+                                await send("", { force: true });
+                                return;
+                              }
+                              setEditingReview(false);
+                              setReviewEdit("");
+                            } finally {
+                              savingReviewLock.current = false;
+                              setSavingReview(false);
+                              setEditingReview(false);
+                            }
+                          }}
+                        >
+                          Save edit
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <span>Publish the exact draft displayed above?</span>
+                        <button
+                          className="button secondary"
+                          disabled={savingReview}
+                          onClick={() => send("d")}
+                        >
+                          Reject draft
+                        </button>
+                        <button
+                          className="button secondary"
+                          disabled={savingReview}
+                          onClick={async () => {
+                            if (savingReviewLock.current) return;
+                            savingReviewLock.current = true;
+                            setSavingReview(true);
+                            setResponse("");
+                            let next = "";
+                            try {
+                              const id =
+                                reviewDraftId.current ||
+                                reviewDraftIdFrom(promptBuffer.current);
+                              if (id) reviewDraftId.current = id;
+                              const queue = await api.queue({
+                                runtime,
+                                platform,
+                              });
+                              const item = queue.items.find(
+                                (row) => row.id === id,
+                              );
+                              if (item) next = item.text;
+                            } catch {
+                              next = "";
+                            } finally {
+                              savingReviewLock.current = false;
+                              setSavingReview(false);
+                            }
+                            setReviewEdit(next);
+                            setEditingReview(true);
+                          }}
+                        >
+                          Edit text
+                        </button>
+                        <button
+                          className="button primary"
+                          disabled={savingReview}
+                          onClick={() => send("y")}
+                        >
+                          Publish this draft
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
                 <form

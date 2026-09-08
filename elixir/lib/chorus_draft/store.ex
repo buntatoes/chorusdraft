@@ -115,6 +115,53 @@ defmodule ChorusDraft.Store do
   def drafts(dir),
     do: transaction(dir, fn state -> {Enum.map(state["drafts"], &Map.new/1), state} end)
 
+  def automatic_budget(dir) do
+    transaction(dir, fn state ->
+      now = System.system_time(:second)
+      pruned = prune_automatic(state, now)
+      used = length(pruned["automatic"])
+
+      {%{
+         limit: @automatic_limit,
+         used: used,
+         remaining: max(@automatic_limit - used, 0),
+         frozen: Enum.any?(pruned["drafts"], &(&1["status"] in ["publishing", "uncertain"]))
+       }, pruned}
+    end)
+  end
+
+  def replace_pending(dir, id, attrs) when is_map(attrs) do
+    unless is_binary(attrs["text"]) and String.trim(attrs["text"]) != "",
+      do: raise(Error, "Replacement text is required.")
+
+    replace_pending(dir, id, fn draft ->
+      changed = Map.put(draft, "text", attrs["text"])
+      if Map.has_key?(attrs, "cw"), do: Map.put(changed, "cw", attrs["cw"]), else: changed
+    end)
+  end
+
+  def replace_pending(dir, id, updater) when is_function(updater, 1) do
+    replace_pending(dir, id, fn draft, _state -> updater.(draft) end)
+  end
+
+  def replace_pending(dir, id, updater) when is_function(updater, 2) do
+    transaction(dir, fn state ->
+      index = Enum.find_index(state["drafts"], &(&1["id"] == id and &1["status"] == "pending"))
+
+      if is_nil(index),
+        do: raise(Error, "Draft is unavailable or not pending.")
+
+      changed = updater.(Enum.at(state["drafts"], index), state)
+
+      unless is_map(changed) and is_binary(changed["text"]) and
+               String.trim(changed["text"]) != "",
+             do: raise(Error, "Replacement text is required.")
+
+      validate_draft!(changed)
+      {changed, put_in(state, ["drafts", Access.at(index)], changed)}
+    end)
+  end
+
   def seen?(dir, id),
     do: transaction(dir, fn state -> {id in state["seen"], state} end)
 

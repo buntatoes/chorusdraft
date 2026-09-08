@@ -2,7 +2,7 @@ name: Elixir checks
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'v0.*']
     paths:
       - 'elixir/**'
       - 'README.md'
@@ -15,9 +15,14 @@ on:
   pull_request:
     branches: [main]
     paths: ['elixir/**', '.github/workflows/elixir.yml']
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: elixir-checks-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -102,10 +107,15 @@ jobs:
         if: always()
         shell: bash
         run: mix format --check-formatted
+      - name: Read package version
+        id: version
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: echo "version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
       - name: Save verified package
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: chorusdraft-elixir-${{ matrix.package_os }}
-          path: elixir/dist/ChorusDraft-elixir-0.51.4-${{ matrix.package_os }}.*
+          path: elixir/dist/ChorusDraft-elixir-${{ steps.version.outputs.version }}-${{ matrix.package_os }}.*
           if-no-files-found: error
           retention-days: 30

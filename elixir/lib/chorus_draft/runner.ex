@@ -34,10 +34,17 @@ defmodule ChorusDraft.Runner do
       not blocked_post?(runner, post)
   end
 
-  def blocked?(runner, actor) do
+  def blocked?(runner, actor, state \\ nil) do
     runner
     |> client_call(:actor_aliases, [actor])
-    |> Enum.any?(&Store.blocked?(runner.store, &1))
+    |> Enum.any?(fn alias ->
+      if is_map(state) do
+        key = Safety.actor_key(alias)
+        key != "" and key in (state["blocked"] || [])
+      else
+        Store.blocked?(runner.store, alias)
+      end
+    end)
   end
 
   def draft(runner, text, action, post \\ nil, quote? \\ false) do
@@ -216,7 +223,7 @@ defmodule ChorusDraft.Runner do
     saved
   end
 
-  def validate_draft!(runner, item) do
+  def validate_draft!(runner, item, state \\ nil) do
     unless item["account"] == client_call(runner, :account_key) and
              item["platform"] == runner.platform do
       raise Error, "Draft belongs to a different account or platform."
@@ -249,7 +256,7 @@ defmodule ChorusDraft.Runner do
         client_call(runner, :mentioned_actors, [item["text"]]) ++
         client_call(runner, :mentioned_actors, [item["cw"]])
 
-    if actors |> Enum.reject(&is_nil/1) |> Enum.any?(&blocked?(runner, &1)) do
+    if actors |> Enum.reject(&is_nil/1) |> Enum.any?(&blocked?(runner, &1, state)) do
       raise Error, "Draft contacts an account on the do-not-contact list."
     end
 
@@ -284,31 +291,86 @@ defmodule ChorusDraft.Runner do
     runner.store
     |> Store.drafts()
     |> Enum.filter(&(&1["status"] == "pending"))
-    |> Enum.reduce_while(:ok, fn item, _ ->
-      Store.validate_draft!(item)
-      puts(runner, "\n#{item["id"]} | #{item["action"]} | #{item["visibility"]}")
-      if item["reply_to"], do: puts(runner, "Reply: #{Safety.clean(item["reply_to"])}")
-      if item["quote_to"], do: puts(runner, "Quote: #{Safety.clean(item["quote_to"])}")
-      if item["cw"], do: puts(runner, "Content warning: #{Safety.clean(item["cw"])}")
-      puts(runner, item["text"])
-      write(runner, "Publish this exact draft? [y/N/d=reject/q=quit]: ")
+    |> Enum.reduce_while(:ok, fn item, _ -> review_item(runner, item) end)
+  end
 
-      case runner.input |> IO.gets("") |> to_string() |> String.trim() |> String.downcase() do
-        answer when answer in ["y", "yes"] ->
-          publish_draft(runner, item)
-          {:cont, :ok}
+  def replace_pending(runner, id, text, opts \\ []) do
+    Store.replace_pending(runner.store, id, fn item, state ->
+      changed = Map.put(item, "text", text)
 
-        "d" ->
-          Store.transition(runner.store, item["id"], "pending", "rejected")
-          {:cont, :ok}
+      changed =
+        if Keyword.has_key?(opts, :cw),
+          do: Map.put(changed, "cw", Keyword.get(opts, :cw)),
+          else: changed
 
-        "q" ->
-          {:halt, :ok}
-
-        _ ->
-          {:cont, :ok}
-      end
+      validate_draft!(runner, changed, state)
+      changed
     end)
+  end
+
+  defp review_item(runner, item) do
+    Store.validate_draft!(item)
+    puts(runner, "\n#{item["id"]} | #{item["action"]} | #{item["visibility"]}")
+    if item["reply_to"], do: puts(runner, "Reply: #{Safety.clean(item["reply_to"])}")
+    if item["quote_to"], do: puts(runner, "Quote: #{Safety.clean(item["quote_to"])}")
+    if item["cw"], do: puts(runner, "Content warning: #{Safety.clean(item["cw"])}")
+    puts(runner, item["text"])
+    write(runner, "Publish this exact draft? [y/N/e=edit/d=reject/q=quit]: ")
+
+    case runner.input |> IO.gets("") |> to_string() |> String.trim() |> String.downcase() do
+      answer when answer in ["y", "yes"] ->
+        publish_draft(runner, item)
+        {:cont, :ok}
+
+      "e" ->
+        try do
+          case review_replacement(runner) do
+            :cancel ->
+              review_item(runner, item)
+
+            {:ok, replacement} ->
+              updated = replace_pending(runner, item["id"], replacement)
+              puts(runner, "Draft updated. Review the new text before publishing.")
+              review_item(runner, updated)
+          end
+        rescue
+          error in [Error] ->
+            puts(runner, error.message)
+            review_item(runner, item)
+        end
+
+      "d" ->
+        Store.transition(runner.store, item["id"], "pending", "rejected")
+        {:cont, :ok}
+
+      "q" ->
+        {:halt, :ok}
+
+      _ ->
+        {:cont, :ok}
+    end
+  end
+
+  defp review_replacement(runner) do
+    write(runner, "Replacement text (empty cancels): ")
+    raw = runner.input |> IO.gets("") |> to_string() |> String.trim()
+
+    cond do
+      raw == "" ->
+        :cancel
+
+      String.starts_with?(raw, "<<JSON>>") ->
+        case Jason.decode(String.replace_prefix(raw, "<<JSON>>", "")) do
+          {:ok, text} when is_binary(text) ->
+            if String.trim(text) == "", do: :cancel, else: {:ok, text}
+
+          _ ->
+            raise Error, "Replacement text is invalid."
+        end
+
+      true ->
+        {:ok, raw}
+    end
   end
 
   def inspect_posts(runner, query, opts \\ []) do
@@ -445,7 +507,7 @@ defmodule ChorusDraft.Runner do
   end
 
   defp staged_message(%{automatic: true}, item),
-    do: "Staged draft #{item["id"]}; checking automatic-publication safeguards."
+    do: "Staged draft #{item["id"]}; checking before automatic publication."
 
   defp staged_message(_runner, item),
     do: "Staged draft #{item["id"]}; use --process-queue to review."

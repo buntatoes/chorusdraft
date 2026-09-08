@@ -37,7 +37,7 @@ const path = require("node:path");
     platform: process.platform,
     arch: process.arch,
     appBundleId: "org.chorusdraft.desktop",
-    appVersion: "0.51.4",
+    appVersion: (await fs.readFile(path.join(root, "VERSION"), "utf8")).trim(),
     appCopyright: "ChorusDraft contributors",
   });
   const native =

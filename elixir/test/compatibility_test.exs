@@ -82,6 +82,13 @@ defmodule ChorusDraft.CompatibilityTest do
              "123"
            ]
 
+    assert CLI.normalize_short_command(["edit", "draft-id", "hello"]) == [
+             "--edit",
+             "draft-id",
+             "--text",
+             "hello"
+           ]
+
     assert CLI.normalize_short_command(["search", "open source", "--limit", "2"]) == [
              "--search",
              "open source",

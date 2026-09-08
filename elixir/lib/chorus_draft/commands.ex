@@ -27,6 +27,11 @@ defmodule ChorusDraft.Commands do
         flag = %{"post" => "text", "import" => "import-state"} |> Map.get(command, command)
         ["--#{flag}=#{value}" | rest]
 
+      command == "edit" ->
+        {id, args} = required(args, command)
+        {text, rest} = required(args, command)
+        ["--edit=#{id}", "--text=#{text}" | rest]
+
       command in ["reply", "quote"] ->
         {id, args} = required(args, command)
         {text, rest} = required(args, command)

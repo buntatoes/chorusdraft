@@ -256,4 +256,142 @@ defmodule ChorusDraft.RunnerTest do
     assert Store.drafts(dir) == []
     assert Agent.get(published, & &1) == []
   end
+
+  test "review can edit pending text then publish the replacement", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    Runner.manual(runner(client, dir), "original wording")
+    {:ok, input} = StringIO.open("e\nedited wording\nyes\n")
+    Runner.review(runner(client, dir, interactive: true, input: input))
+    assert hd(Agent.get(published, & &1))["text"] == "edited wording"
+    assert hd(Store.drafts(dir))["status"] == "published"
+    assert hd(Store.drafts(dir))["text"] == "edited wording"
+  end
+
+  test "review can edit pending text with preserved line breaks", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    Runner.manual(runner(client, dir), "original wording")
+    replacement = "first line\n\nsecond line"
+    {:ok, input} = StringIO.open("e\n<<JSON>>#{Jason.encode!(replacement)}\nyes\n")
+    Runner.review(runner(client, dir, interactive: true, input: input))
+    assert hd(Agent.get(published, & &1))["text"] == replacement
+    assert hd(Store.drafts(dir))["text"] == replacement
+  end
+
+  test "invalid review replacement encoding leaves the original pending", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    Runner.manual(runner(client, dir), "original wording")
+    {:ok, input} = StringIO.open("e\n<<JSON>>{not-json}\nq\n")
+    Runner.review(runner(client, dir, interactive: true, input: input))
+    assert Agent.get(published, & &1) == []
+    [draft] = Store.drafts(dir)
+    assert draft["status"] == "pending"
+    assert draft["text"] == "original wording"
+  end
+
+  test "rejected review edits leave the original pending", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    Process.put({ChorusDraft.TestAI, :text}, "A safe original joke")
+    Runner.original(runner(client, dir))
+    {:ok, input} = StringIO.open("e\nMeet at 123 Example Street\nq\n")
+    Runner.review(runner(client, dir, interactive: true, input: input))
+    assert Agent.get(published, & &1) == []
+    [draft] = Store.drafts(dir)
+    assert draft["status"] == "pending"
+    assert draft["text"] == "A safe original joke"
+  end
+
+  test "replace_pending re-screens and leaves the draft pending", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    Process.put({ChorusDraft.TestAI, :text}, "A safe original joke")
+    saved = Runner.original(runner(client, dir))
+
+    updated =
+      Runner.replace_pending(runner(client, dir), saved["id"], "replacement wording")
+
+    assert updated["text"] == "replacement wording"
+    assert updated["status"] == "pending"
+    assert Agent.get(published, & &1) == []
+    assert hd(Store.drafts(dir))["text"] == "replacement wording"
+
+    assert_raise Error, fn ->
+      Runner.replace_pending(
+        runner(client, dir),
+        saved["id"],
+        "Meet at 123 Example Street"
+      )
+    end
+
+    assert hd(Store.drafts(dir))["text"] == "replacement wording"
+    assert hd(Store.drafts(dir))["status"] == "pending"
+    assert Agent.get(published, & &1) == []
+  end
+
+  test "replace_pending edits a reply draft without taking the store lock twice", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    source = post("reply-source")
+    client = %{client | posts: [source]}
+    saved = Runner.manual(runner(client, dir), "reply wording", reply_to: "reply-source")
+    assert saved["author"] == source["author"]
+    assert saved["author_id"] == source["author_id"]
+
+    updated =
+      Runner.replace_pending(runner(client, dir), saved["id"], "replacement reply")
+
+    assert updated["text"] == "replacement reply"
+    assert updated["status"] == "pending"
+    assert updated["author"] == source["author"]
+    assert Agent.get(published, & &1) == []
+  end
+
+  test "replace_pending edits mention text without taking the store lock twice", %{
+    dir: dir,
+    client: client
+  } do
+    saved = Runner.manual(runner(client, dir), "hello there")
+
+    updated =
+      Runner.replace_pending(
+        runner(client, dir),
+        saved["id"],
+        "hello @someone@example.org"
+      )
+
+    assert updated["text"] == "hello @someone@example.org"
+    assert hd(Store.drafts(dir))["status"] == "pending"
+  end
+
+  test "replace_pending refuses a reply after the source account is blocked", %{
+    dir: dir,
+    client: client
+  } do
+    source = post("reply-source")
+    client = %{client | posts: [source]}
+    saved = Runner.manual(runner(client, dir), "reply wording", reply_to: "reply-source")
+    Store.block(dir, source["author_id"])
+
+    assert_raise Error, ~r/do-not-contact/, fn ->
+      Runner.replace_pending(runner(client, dir), saved["id"], "still a reply")
+    end
+
+    assert hd(Store.drafts(dir))["text"] == "reply wording"
+    assert hd(Store.drafts(dir))["status"] == "pending"
+  end
 end

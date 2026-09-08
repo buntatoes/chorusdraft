@@ -1,10 +1,10 @@
 # ChorusDraft
 
 Elixir app for Linux, macOS, and Windows. One executable, Bluesky and Mastodon
-modes. Version 0.51.4. See [CHANGELOG.md](CHANGELOG.md).
+modes. Version 0.51.5. See [CHANGELOG.md](CHANGELOG.md).
 
 Review is the default. `automatic` may publish new originals and eligible
-public-mention replies after stricter checks.
+public-mention replies after screening and a source recheck.
 
 ## Requirements
 
@@ -35,6 +35,8 @@ overwrite existing config. Run one daemon per account.
 ```sh
 ./chorusdraft bluesky draft
 ./chorusdraft bluesky review
+./chorusdraft bluesky edit DRAFT_ID "replacement text"
+./chorusdraft bluesky status
 ./chorusdraft bluesky start
 ./chorusdraft bluesky automatic
 ./chorusdraft mastodon reply STATUS_ID "Thanks for the context."
@@ -83,7 +85,7 @@ Default: `wss://jetstream.us-east.bsky.network`. Override with
 
 Per platform `data/` directory, split by platform, origin, and account.
 Do-not-contact and public opt-outs apply. Ambiguous publishes become
-`uncertain`. Screening is deterministic regex; review is the real control.
+`uncertain`. Screens are regex. They miss things. Review is what matters.
 
 ## Providers
 
@@ -98,9 +100,9 @@ auth, bounded output, and `store: false`.
 
 ## Packages
 
-- `ChorusDraft-elixir-0.51.4-linux.tar.gz`
-- `ChorusDraft-elixir-0.51.4-macos.tar.gz`
-- `ChorusDraft-elixir-0.51.4-windows.zip`
+- `ChorusDraft-elixir-0.51.5-linux.tar.gz`
+- `ChorusDraft-elixir-0.51.5-macos.tar.gz`
+- `ChorusDraft-elixir-0.51.5-windows.zip`
 
 Build: `MIX_ENV=prod mix run scripts/build_release.exs`  
 Verify: `./scripts/check_packages.sh` or `.\scripts\check_packages.ps1`

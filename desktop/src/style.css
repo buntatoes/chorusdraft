@@ -635,6 +635,7 @@ h1 {
 .review-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   padding: 12px 18px;
   background: #faf8ff;
@@ -644,6 +645,19 @@ h1 {
   font-size: 11px;
   color: #867498;
   margin-right: auto;
+}
+.review-actions .settings-field {
+  flex: 1 1 100%;
+}
+.review-actions textarea,
+.history-card textarea {
+  min-height: 90px;
+  resize: vertical;
+  border: 1px solid #d7dce7;
+  border-radius: 7px;
+  padding: 10px;
+  background: #fafbfe;
+  color: #252938;
 }
 .error-banner {
   display: flex;
@@ -1039,6 +1053,39 @@ h1 {
   color: #687285;
   line-height: 1.7;
   margin-top: 25px;
+}
+.queue-budget {
+  font-size: 13px;
+  color: #414a5c;
+  background: #f5f2fc;
+  border: 1px solid #e4ddf4;
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+.queue-budget.frozen {
+  background: #fff4f2;
+  border-color: #f0d9d6;
+  color: #986965;
+}
+.queue-status {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 650;
+}
+.queue-status.pending {
+  color: #634cb1;
+}
+.queue-status.uncertain,
+.queue-status.publishing {
+  color: #986965;
+}
+.queue-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.history-card .settings-field {
+  margin: 8px 0 12px;
 }
 @media (max-width: 1120px) {
   .settings-actions,

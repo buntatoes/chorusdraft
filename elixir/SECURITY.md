@@ -4,8 +4,8 @@
 
 | Version | Runtime | Support |
 |---|---|---|
-| 0.51.4 | Elixir | Current |
-| 0.51.3 and earlier | Earlier releases | Unsupported |
+| 0.51.5 | Elixir | Current |
+| 0.51.4 and earlier | Earlier releases | Unsupported |
 
 Report vulnerabilities through GitHub private reporting when it is available,
 or contact the maintainer privately. Do not put credentials, private posts,
@@ -33,8 +33,14 @@ publish in flight. `publishing` or `uncertain` blocks later claims. A
 publishing claim older than five minutes becomes `uncertain` and is never
 retried automatically.
 
-These checks are deterministic. They can miss harm or hold benign text. Review
-is the real control. Do not weaken them to target people.
+`edit ID` and review `e` replace pending text after the same screens, then
+leave the draft pending. They cannot publish. `--edit` cannot be combined with
+`--publish`, reply, quote, or queue flags. Desktop review Edit prefills the
+current text, keeps line breaks, and disables the response field until the
+replacement is saved and review asks again.
+
+These are regex checks. They miss some bad text and block some fine text.
+Do not loosen them to chase people.
 
 Public stop-contact requests are handled before reply generation. Do-not-contact
 covers source handles, IDs, and mentioned accounts. Harassment, threats,
@@ -84,12 +90,12 @@ for sensitive material.
 
 Split by platform, service origin, and account. Native locks serialize writers
 and release after crashes. Unix files use private modes; Windows uses protected
-ACLs. Replaces are atomic. Symlinks and special files are refused. Bad state
-fails closed.
+ACLs. Replaces are atomic. Symlinks and special files are refused. Corrupt or
+unexpected state is rejected.
 
-One daemon per account. Import only into an empty account store. New fields are
-added conservatively. In-flight imports become `uncertain`. The source file is
-not modified.
+One daemon per account. Import only into an empty account store. Unknown fields
+are ignored or rejected. In-flight imports become `uncertain`. The source file
+is not modified.
 
 ## Jetstream
 
@@ -97,10 +103,9 @@ Always on for Bluesky `listen` and daemon. `--jetstream` is a no-op. Stream
 bodies never enter AI, the terminal, or state. Matches wake the normal
 notification fetch.
 
-Frame size, handshake headers, fragments, deadlines, heartbeats, and reconnect
-backoff are bounded. Invalid handshakes and unsolicited compression are
-refused. Periodic API checks help after disconnects; they do not guarantee
-delivery. Mastodon polls.
+Jetstream frames, handshakes, and reconnects have hard size and time limits.
+Invalid handshakes and unsolicited compression are refused. Periodic API checks
+help after disconnects; they do not guarantee delivery. Mastodon polls.
 
 ## Limits
 

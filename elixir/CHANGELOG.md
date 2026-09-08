@@ -2,9 +2,35 @@
 
 Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
-## Unreleased
+## 0.51.5 — 2026-09-08
 
-- README banner uses the desktop speech-bubble and voices mark.
+### Queue and review
+
+- Desktop Queue lists pending, publishing, and uncertain drafts from the
+  account store last used on the selected platform, with remaining automatic
+  attempts and freeze state.
+- `edit ID TEXT` replaces pending draft text. The new text is screened, then
+  stays pending for review. `--publish` cannot be combined with `--edit`, and
+  `--edit` cannot be combined with reply, quote, or queue options.
+- Interactive review accepts `e` to replace the current draft, then asks again
+  before publish. Desktop review Edit prefills the current text after it is
+  loaded, keeps line breaks, and disables the response field so `y` cannot
+  publish the original while a replacement is being entered.
+- `status` prints the automatic attempt budget and whether automatic mode is
+  frozen.
+- Queue stays on the Queue page after edit or reject, and expired publication
+  leases display as uncertain so Reject is available.
+- Editing a pending reply or mention no longer times out on the store lock.
+  Queue Save ignores a second click, and a failed review Save does not leave
+  the response field disabled.
+
+### Packaging
+
+- CI artifact paths are taken from `VERSION`, so a testing suffix cannot fail
+  the upload step after tests pass.
+- Elixir checks can be started by hand and cancel overlapping runs on the same
+  branch.
+- README uses the desktop banner.
 
 ## 0.51.4 — 2026-09-08
 
@@ -14,20 +40,18 @@ Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/r
 - Desktop launcher with ChatGPT credentials, automatic mode, and ten-day
   local history. Windows console detection is verified in the terminal
   launcher before enabling queue review.
-- Replace the README project image with a high-contrast ChorusDraft banner.
+- Swap README image for the ChorusDraft banner.
 
 ### Privacy and screening
 
 - Screen inherited content warnings before automatic publication and honor
   opt-outs in source text and content warnings.
-- Expand automatic screening for direct threats, self-harm encouragement,
-  coordinated harassment, Unicode domains, and normalized injection patterns.
-- Redact recognized personal information from AI context before provider
-  requests.
-- Reject detected personal information and common credential formats in AI
-  output and recheck saved AI drafts and content warnings before publication.
-- Expand automatic link screening beyond a small list of domain suffixes.
-- Add a verified email-history cleanup utility for authenticated local use.
+- Screen threats, self-harm encouragement, pile-ons, Unicode domains, and
+  injection-shaped text.
+- Redact PII in model context; reject PII and obvious credentials in drafts;
+  widen link checks.
+- Add local `scripts/rewrite_email.py` for rewriting a personal email out of
+  git history.
 
 ### Automatic mode
 
@@ -36,8 +60,6 @@ Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/r
 - Auto-publish only a newly generated original or eligible public-mention
   reply. Older queue items, owner text, quotes, and target/discovery commentary
   stay review-only.
-- Stricter automatic-output screening: harassment, pile-ons, model-added
-  mentions, links, and common contact patterns.
 - Re-fetch the source and recheck content, content warning, handle, author,
   visibility, injection, opt-out, and do-not-contact.
 - Five-attempt rolling 24-hour budget, single-flight claims, lockout, and
@@ -52,8 +74,8 @@ Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/r
   output, sanitized errors, `store: false`.
 - Jetstream is the wake-up transport for Bluesky listen and daemon.
   `--jetstream` is a no-op.
-- Canonical notification fetches and periodic catch-up kept. Streamed post
-  bodies stay out of AI, output, and state.
+- Still fetch notifications the normal way, with periodic catch-up. Streamed
+  post bodies stay out of AI, output, and state.
 
 ## 0.51.3 — 2026-09-06
 
@@ -63,7 +85,7 @@ Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/r
 - Bluesky and Mastodon in one executable.
 - Short commands plus the full option interface. Command translation cannot
   add `--publish`.
-- Import compatible older state into an empty account store.
+- Import older state into an empty account store.
 
 ### Platforms and packaging
 
@@ -100,7 +122,7 @@ Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/r
 
 - Earlier implementation required Ruby 4.0.
 - Short commands and cross-platform launchers.
-- Credential-free setup that leaves existing config alone.
+- Setup creates missing files only; never overwrites.
 - Full option interface and state format kept.
 
 ## 0.51.1 — 2026-09-05

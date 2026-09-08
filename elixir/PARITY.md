@@ -1,38 +1,32 @@
 # Ruby → Elixir parity
 
-The Elixir implementation inherits the command workflows and safety controls of
-ChorusDraft's historical Ruby 0.51.1 reference commit
-`68b83694ec34b1161839b5ff62a857a774415ece`. Ruby is no longer part of the active
-0.51.3 application. Compatible legacy JSON state remains importable.
+Elixir matches the Ruby 0.51.1 workflows and safety rules (commit
+`68b83694ec34b1161839b5ff62a857a774415ece`). Ruby is not in 0.51.3+.
+Old JSON state still imports.
 
-Version 0.51.4 includes short commands, the React desktop interface, protected GUI
-credential entry, and local history retention. The table below describes the
-inherited behavioral baseline.
+0.51.5 adds Queue, pending-draft edit, and automatic budget in `status`.
 
-| Inherited behavior | Elixir implementation | Verification |
+| From Ruby 0.51.1 | Elixir | Tests |
 |---|---|---|
-| Bluesky and Mastodon login, feed, search, replies, quotes and deletion | Platform clients in one ChorusDraft escript | Client fixtures; live credentials still needed |
-| Original comic drafts, contextual replies, target and discovery commentary | Shared runner; continues past seen/ineligible candidates | Runner and parity tests |
-| Local OpenAI, Ollama and Gemini | Shared AI adapter; provider credentials stay out of errors | AI adapter fixtures |
+| Bluesky and Mastodon login, feed, search, replies, quotes, deletion | Platform clients in one escript | Client fixtures; live credentials still needed |
+| Original comic drafts, contextual replies, target and discovery commentary | Shared runner; skips seen or ineligible candidates | Runner and parity tests |
+| Local OpenAI, Ollama, and Gemini | Shared AI adapter; credentials stay out of errors | AI adapter fixtures |
 | Manual staging and explicit manual publication | `--text`, `--publish`, reply/quote/CW options | Runner and client tests |
-| Exact interactive approval; rejection; no automatic AI posting | `--process-queue`; `--reject`; claim before publish | Approval, concurrency and failure tests |
-| Search, timeline inspection and random reply targets | `--search`, `--random-post [QUERY]`, `--random-reply QUERY` | CLI/runner implementation; parser tests |
-| CLI compatibility aliases | `--reply-uri`, `--quote-only`, `--staging`, `--poll`, CID arguments | Parity tests; supplied CIDs are deliberately re-fetched |
-| Polling, daemon, local active hours and jitter | Foreground loops, monotonic scheduling and isolated job failures | Schedule and HTTP-error regression tests |
-| Privacy exclusions, opt-outs and interaction budgets | Restricted bodies discarded; persistent blocks; daily/author limits | Safety, client, runner and store tests |
-| Account-scoped atomic state and idempotency | Native kernel locks, private modes/Windows ACLs, stable IDs/record keys, uncertain outcomes | Concurrency, crash recovery, native CI and transport tests |
-| Existing state and configuration | Read-only import into an empty account store; non-overwriting setup | Legacy migration fixtures |
-| Linux, macOS, and Windows packaging and install/upgrade | One native archive per OS with both platform modes, source/dependency source, manifest, and new-directory installer | Native CI extraction, installation, overwrite refusal and offline rebuild |
-| Jetstream | Optional Bluesky notification wake-up with periodic API catch-up and bounded passive reception | Protocol, reconnect, coalescing, oversized/fragmented message, handshake, heartbeat, and timeout tests |
+| Interactive approval and rejection; review is the default | `--process-queue`; `--edit`; `--reject`; claim before publish. Opt-in `automatic` can post a new original or eligible mention reply | Approval, concurrency, and failure tests |
+| Search, timeline inspection, random reply targets | `--search`, `--random-post [QUERY]`, `--random-reply QUERY` | CLI/runner; parser tests |
+| CLI compatibility aliases | `--reply-uri`, `--quote-only`, `--staging`, `--poll`, CID arguments | Parity tests; supplied CIDs are re-fetched |
+| Polling, daemon, local active hours, jitter | Foreground loops; one failed job does not kill the loop | Schedule and HTTP-error tests |
+| Privacy exclusions, opt-outs, interaction budgets | Restricted bodies discarded; persistent blocks; daily/author limits | Safety, client, runner, and store tests |
+| Account-scoped atomic state and idempotency | Native locks, private modes/Windows ACLs, stable IDs, `uncertain` outcomes | Concurrency, crash recovery, native CI, transport tests |
+| Existing state and configuration | Read-only import into an empty account store; setup never overwrites | Legacy migration fixtures |
+| Linux, macOS, and Windows packaging | One archive per OS with both modes, source, manifest, new-directory installer | Native CI extraction, install, overwrite refusal, offline rebuild |
+| Jetstream | Bluesky notification wake-up only; periodic API catch-up; no history replay | Protocol, reconnect, coalescing, oversized/fragment, handshake, heartbeat, timeout tests |
 
-The bot requires Erlang/OTP; desktop downloads include the GUI runtime. Upgrade installation always
-uses a new directory; state is copied explicitly after stopping the old process.
-HTTP redirects and automatic retries are disabled, including 503 Retry-After.
-The existing disabled likes/reposts/favourites remain disabled.
+The bot needs Erlang/OTP. Desktop downloads include the GUI runtime. Install
+into a new directory; copy state after stopping the old process. HTTP
+redirects and automatic retries are off, including 503 Retry-After. Still no
+auto likes, boosts, or reposts.
 
-Jetstream provides live notification acceleration with the same finite
-notification window as polling; it does not provide historical replay.
-Completed post records now expire after 10 days, while pending drafts, uncertain
-publications, and account safety state remain separately retained. Desktop
-credential storage applies to GUI launches; advanced CLI configuration remains
-available through the environment and `.env`.
+Published post records expire after 10 days. Pending drafts, uncertain
+publications, and account safety state stay. Desktop credential storage
+applies to GUI launches; CLI still uses the environment and `.env`.

@@ -21,7 +21,7 @@ def settings(request):
 
 
 ACTIONS = {'setup', 'draft', 'review', 'start', 'listen', 'replies', 'search', 'post', 'help', 'version'}
-ACTIONS.add('automatic')
+ACTIONS.update({'automatic', 'reject', 'edit', 'status'})
 
 
 def arguments(request):
@@ -34,6 +34,19 @@ def arguments(request):
         if not isinstance(text, str) or not text.strip() or len(text) > 10000 or '\x00' in text:
             raise ValueError('Enter text for this action (maximum 10,000 characters).')
         args.append(text)
+    if action == 'reject':
+        text = request.get('text')
+        if not isinstance(text, str) or not text.strip() or len(text) > 80 or any(c in text for c in '\r\n\x00'):
+            raise ValueError('Choose a pending or uncertain draft to reject.')
+        args.append(text)
+    if action == 'edit':
+        target = request.get('target')
+        text = request.get('text')
+        if not isinstance(target, str) or not target.strip() or len(target) > 80 or any(c in target for c in '\r\n\x00'):
+            raise ValueError('Choose a pending draft to edit.')
+        if not isinstance(text, str) or not text.strip() or len(text) > 10000 or '\x00' in text:
+            raise ValueError('Enter replacement text (maximum 10,000 characters).')
+        args.extend([target, text])
     return runtime, platform, args
 
 
@@ -126,7 +139,7 @@ def serve(root):
                 emit('started', action=args[0], runtime=runtime, platform=platform)
             elif kind == 'input':
                 text = request.get('text')
-                if not isinstance(text, str) or len(text) > 10000 or any(c in text for c in '\r\n\x00'):
+                if not isinstance(text, str) or len(text) > 20000 or any(c in text for c in '\r\n\x00'):
                     raise ValueError('Enter one response at a time.')
                 if session and not session.finished:
                     session.send(text)

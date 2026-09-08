@@ -185,6 +185,37 @@ test(
           /Staged manual draft /,
         );
       }
+      await page.getByRole("button", { name: "Queue", exact: true }).click();
+      await page.getByRole("heading", { name: "Queue", exact: true }).waitFor();
+      await page.getByText(texts[0], { exact: true }).waitFor();
+      await page.getByText(texts[1], { exact: true }).waitFor();
+      await page
+        .getByText(/Automatic attempts remaining: 5\/5/)
+        .waitFor();
+      const edited = "Edited from the queue for later review.";
+      await page
+        .locator("article")
+        .filter({ hasText: texts[0] })
+        .getByRole("button", { name: "Edit text", exact: true })
+        .click();
+      await page.getByLabel("Edited draft text").fill(edited);
+      const queueSave = page.getByRole("button", {
+        name: "Save edit",
+        exact: true,
+      });
+      await queueSave.evaluate((b) => {
+        b.click();
+        b.click();
+      });
+      await page.getByText(edited, { exact: true }).waitFor();
+      assert.equal(await page.getByText(texts[0], { exact: true }).count(), 0);
+      await page
+        .locator("article")
+        .filter({ hasText: texts[1] })
+        .getByRole("button", { name: "Reject", exact: true })
+        .click();
+      await page.getByText(texts[1], { exact: true }).waitFor({ state: "hidden" });
+      await page.getByRole("button", { name: "Overview", exact: true }).click();
       await assert.rejects(fs.access(path.join(root, "published.txt")));
       await page
         .getByRole("button", { name: "Open review", exact: true })
@@ -193,32 +224,64 @@ test(
         .getByRole("button", { name: "Publish this draft", exact: true })
         .waitFor();
       const log = await page.getByRole("log").innerText();
-      assert.ok(log.includes(texts[0]));
+      assert.ok(log.includes(edited));
+      assert.ok(!log.includes(texts[0]));
       assert.ok(!log.includes("desktop-fixture-password"));
       assert.ok(log.includes("[redacted]"));
+      await page.getByRole("button", { name: "Edit text", exact: true }).click();
+      const editor = page.getByLabel("Replacement draft text");
+      await editor.waitFor();
+      await page.waitForFunction(
+        (expected) => {
+          const field = document.querySelector(
+            '[aria-label="Replacement draft text"]',
+          );
+          return field && field.value === expected;
+        },
+        edited,
+      );
+      assert.equal(
+        await page.getByLabel("Review response").isDisabled(),
+        true,
+      );
+      assert.equal(
+        await page
+          .getByRole("button", { name: "Publish this draft", exact: true })
+          .count(),
+        0,
+      );
+      assert.equal(await editor.inputValue(), edited);
+      const reviewed = "Edited during review.\nSecond line.";
+      await editor.fill(reviewed);
+      const saveEdit = page.getByRole("button", {
+        name: "Save edit",
+        exact: true,
+      });
+      await saveEdit.evaluate((b) => {
+        b.click();
+        b.click();
+      });
+      await page
+        .getByRole("button", { name: "Publish this draft", exact: true })
+        .waitFor();
+      assert.ok((await page.getByRole("log").innerText()).includes(reviewed));
       await page
         .getByRole("button", { name: "Publish this draft", exact: true })
         .evaluate((b) => {
           b.click();
           b.click();
         });
-      await page
-        .getByRole("button", { name: "Reject draft", exact: true })
-        .waitFor();
-      assert.ok((await page.getByRole("log").innerText()).includes(texts[1]));
+      await page.getByText("Session complete", { exact: true }).waitFor();
       assert.equal(
         await fs.readFile(path.join(root, "published.txt"), "utf8"),
-        texts[0],
+        reviewed,
       );
-      await page
-        .getByRole("button", { name: "Reject draft", exact: true })
-        .click();
-      await page.getByText("Session complete", { exact: true }).waitFor();
       await page.getByRole("button", { name: "History", exact: true }).click();
       await page
         .getByRole("heading", { name: "History", exact: true })
         .waitFor();
-      await page.getByText(texts[0], { exact: true }).waitFor();
+      await page.getByText(reviewed, { exact: true }).waitFor();
+      assert.equal(await page.getByText(texts[0], { exact: true }).count(), 0);
       assert.equal(await page.getByText(texts[1], { exact: true }).count(), 0);
       await page
         .getByRole("button", { name: "Bot activity", exact: true })
