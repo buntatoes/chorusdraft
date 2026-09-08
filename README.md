@@ -21,13 +21,17 @@ Providers: local/Ollama, Gemini, or ChatGPT/OpenAI.
 
 ## Latest
 
-**[v0.51.5](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.5)**
+**[v0.51.6](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.6)**
 
-- Desktop Queue for pending and uncertain drafts from the last-used account
-  store, with automatic-attempt remaining count.
-- Edit a pending draft (`edit ID TEXT`, or `e` during review). The replacement
-  is screened, keeps line breaks, and still needs review before publish.
-- CI packages use the `VERSION` file instead of a hardcoded version string.
+Bug-fix and security release.
+
+- The `automatic` command works again; it had failed with "Unknown command"
+  since 0.51.4 unless spelled `--daemon --automatic`.
+- Long desktop edits are no longer cut by the terminal.
+- Review output and the desktop approval prompt are hardened against draft
+  text that imitates them; the automatic screens catch mixed-script words,
+  C1 controls, and more credential formats. Details in
+  [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
 [Changelog](CHANGELOG.md) · [Releases](https://github.com/buntatoes/chorusdraft/releases) · [Build](elixir/README.md) · [Security](SECURITY.md)
 
