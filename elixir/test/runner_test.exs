@@ -123,38 +123,12 @@ defmodule ChorusDraft.RunnerTest do
     assert hd(Store.drafts(dir))["status"] == "published"
   end
 
-  test "automatic mode never republishes an unsafe source content warning", %{
-    dir: dir,
-    client: client,
-    published: published
-  } do
-    source = Map.put(post("unsafe-cw"), "cw", "Meet at 123 Example Street")
-    Runner.mentions(runner(%{client | posts: [source]}, dir, automatic: true))
-
-    assert Agent.get(published, & &1) == []
-    assert hd(Store.drafts(dir))["status"] == "pending"
-  end
-
-  test "an opt-out in a source content warning blocks automatic replies before generation", %{
-    dir: dir,
-    client: client,
-    published: published
-  } do
-    source = Map.put(post("cw-opt-out"), "cw", "Please stop replying to me")
-    Runner.mentions(runner(%{client | posts: [source]}, dir, automatic: true))
-
-    refute_received {:ai_context, _}
-    assert Store.blocked?(dir, source["author_id"])
-    assert Store.drafts(dir) == []
-    assert Agent.get(published, & &1) == []
-  end
-
   test "automatic mode holds unsafe AI, target, and discovery drafts for review", %{
     dir: dir,
     client: client,
     published: published
   } do
-    Process.put({ChorusDraft.TestAI, :text}, "Ask @third-party.example about 123 Example Street")
+    Process.put({ChorusDraft.TestAI, :text}, "Ask @third-party.example about this deployment")
     discovery = %{post("discovery") | "author" => "bob@example.org", "author_id" => "bob"}
     run = runner(%{client | posts: [post("target"), discovery]}, dir, automatic: true)
 
@@ -162,6 +136,21 @@ defmodule ChorusDraft.RunnerTest do
     assert Runner.targets(run, ["alice"])["status"] == "pending"
     assert Runner.discovery(run, "topic")["status"] == "pending"
     assert Agent.get(published, & &1) == []
+  end
+
+  test "PII is rejected before staging in automatic and review modes", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    Process.put({ChorusDraft.TestAI, :text}, "Meet at 123 Example Street")
+
+    for automatic <- [false, true] do
+      run = runner(client, dir, automatic: automatic)
+      assert_raise Error, fn -> Runner.original(run) end
+      assert Store.drafts(dir) == []
+      assert Agent.get(published, & &1) == []
+    end
   end
 
   test "source changes or opt-outs after generation prevent automatic publication", %{
@@ -240,5 +229,31 @@ defmodule ChorusDraft.RunnerTest do
     end
 
     assert Store.drafts(dir) == []
+  end
+
+  test "automatic mode never republishes an unsafe source content warning", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    source = Map.put(post("unsafe-cw"), "cw", "Everyone should report Alice.")
+    Runner.mentions(runner(%{client | posts: [source]}, dir, automatic: true))
+
+    assert Agent.get(published, & &1) == []
+    assert hd(Store.drafts(dir))["status"] == "pending"
+  end
+
+  test "an opt-out in a source content warning blocks automatic replies before generation", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    source = Map.put(post("cw-opt-out"), "cw", "Please stop replying to me")
+    Runner.mentions(runner(%{client | posts: [source]}, dir, automatic: true))
+
+    refute_received {:ai_context, _}
+    assert Store.blocked?(dir, source["author_id"])
+    assert Store.drafts(dir) == []
+    assert Agent.get(published, & &1) == []
   end
 end

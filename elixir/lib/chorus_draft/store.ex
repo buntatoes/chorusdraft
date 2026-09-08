@@ -196,7 +196,8 @@ defmodule ChorusDraft.Store do
       {"pending", "publishing"},
       {"pending", "rejected"},
       {"publishing", "published"},
-      {"publishing", "uncertain"}
+      {"publishing", "uncertain"},
+      {"uncertain", "rejected"}
     ]
 
     unless Enum.all?(from, &({&1, to} in allowed)), do: raise(Error, "Invalid draft transition.")

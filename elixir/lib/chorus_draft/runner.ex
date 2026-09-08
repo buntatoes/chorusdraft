@@ -1,5 +1,5 @@
 defmodule ChorusDraft.Runner do
-  alias ChorusDraft.{AI, Error, Safety, Store}
+  alias ChorusDraft.{AI, Error, PII, Safety, Store}
 
   defstruct [
     :client,
@@ -224,6 +224,11 @@ defmodule ChorusDraft.Runner do
 
     Store.validate_draft!(item)
     Safety.validate_text!(Map.fetch!(item, "text"), client_call(runner, :limit))
+
+    if item["action"] == "ai_generated" do
+      PII.validate!(item["text"])
+      PII.validate!(item["cw"])
+    end
 
     if runner.platform == "bluesky" do
       unless item["visibility"] == "public",

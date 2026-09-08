@@ -1,5 +1,5 @@
 defmodule ChorusDraft.AI do
-  alias ChorusDraft.{Config, Error, HTTP, Safety}
+  alias ChorusDraft.{Config, Error, HTTP, PII, Safety}
 
   @system """
   You are ChorusDraft, a witty observer of software and everyday internet absurdity.
@@ -38,7 +38,7 @@ defmodule ChorusDraft.AI do
     prompt =
       Jason.encode!(%{
         "task" => task,
-        "untrusted_context" => data,
+        "untrusted_context" => PII.redact(data),
         "maximum_characters" => limit
       })
 
@@ -50,8 +50,9 @@ defmodule ChorusDraft.AI do
         _ -> raise Error, "AI_PROVIDER must be local, ollama, gemini, openai, or chatgpt."
       end
 
-    text = text |> to_string() |> String.trim()
+    text = require_ai_text!(text)
     Safety.validate_text!(text, limit)
+    PII.validate!(text)
     text
   end
 
@@ -170,6 +171,15 @@ defmodule ChorusDraft.AI do
   end
 
   defp openai_nested_output_text!(_output), do: raise(Error, "OpenAI response was malformed.")
+
+  defp require_ai_text!(value) do
+    text = value |> to_string_or_empty() |> String.trim()
+    if present?(text), do: text, else: raise(Error, "AI response did not include text.")
+  end
+
+  defp to_string_or_empty(value) when is_binary(value), do: value
+  defp to_string_or_empty(nil), do: ""
+  defp to_string_or_empty(value), do: to_string(value)
 
   defp present?(value), do: is_binary(value) and String.trim(value) != ""
 end

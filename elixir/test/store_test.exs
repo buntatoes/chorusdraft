@@ -127,6 +127,26 @@ defmodule ChorusDraft.StoreTest do
     assert Store.claim_automatic(dir, next) == {:error, :unresolved}
   end
 
+  test "operators can reject uncertain drafts so automatic mode can resume", %{dir: dir} do
+    uncertain = Store.stage(dir, %{"text" => "uncertain"})
+    Store.transition(dir, uncertain["id"], "pending", "publishing")
+    Store.transition(dir, uncertain["id"], "publishing", "uncertain")
+
+    held = Store.stage(dir, %{"text" => "held"})
+    assert Store.claim_automatic(dir, held) == {:error, :unresolved}
+
+    rejected = Store.transition(dir, uncertain["id"], "uncertain", "rejected")
+    assert rejected["status"] == "rejected"
+    assert Enum.find(Store.drafts(dir), &(&1["id"] == uncertain["id"]))["status"] == "rejected"
+
+    assert {:ok, claimed} = Store.claim_automatic(dir, held)
+    assert claimed["status"] == "publishing"
+
+    assert_raise Error, fn ->
+      Store.transition(dir, uncertain["id"], "uncertain", "pending")
+    end
+  end
+
   test "legacy live state loads without an automatic-attempt field", %{dir: dir} do
     item = Store.stage(dir, %{"text" => "legacy"})
     path = Path.join(dir, "state.json")

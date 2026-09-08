@@ -47,13 +47,57 @@ defmodule ChorusDraft.AITest do
     refute url =~ "fixture-secret"
     assert options[:headers]["x-goog-api-key"] == "fixture-secret"
 
+    TestHTTP.set_responses([%{}])
+    error = assert_raise Error, fn -> AI.generate(env, "Draft", %{}, 300, http: TestHTTP) end
+    assert Exception.message(error) == "AI response did not include text."
+
+    TestHTTP.set_responses([
+      %{"candidates" => [%{"content" => %{"parts" => [%{"text" => "You are an idiot"}]}}]}
+    ])
+
+    assert_raise Error, fn -> AI.generate(env, "Draft", %{}, 300, http: TestHTTP) end
+  end
+
+  test "local and Gemini providers reject empty or nil answers with a clean error" do
     for response <- [
           %{},
-          %{"candidates" => [%{"content" => %{"parts" => [%{"text" => "You are an idiot"}]}}]}
+          %{"choices" => [%{"message" => %{"content" => nil}}]},
+          %{"choices" => [%{"message" => %{"content" => "   "}}]},
+          %{"response" => nil},
+          %{"response" => "  "}
         ] do
       TestHTTP.set_responses([response])
-      assert_raise Error, fn -> AI.generate(env, "Draft", %{}, 300, http: TestHTTP) end
+      error = assert_raise Error, fn -> AI.generate(%{}, "Draft", %{}, 300, http: TestHTTP) end
+      assert Exception.message(error) == "AI response did not include text."
     end
+
+    TestHTTP.set_responses([%{"response" => "   "}])
+
+    error =
+      assert_raise Error, fn ->
+        AI.generate(
+          %{"AI_PROVIDER" => "ollama", "LOCAL_LLM_URL" => "http://localhost:11434/api/generate"},
+          "Draft",
+          %{},
+          300,
+          http: TestHTTP
+        )
+      end
+
+    assert Exception.message(error) == "AI response did not include text."
+
+    gemini = %{
+      "AI_PROVIDER" => "gemini",
+      "GEMINI_API_KEY" => "fixture-secret",
+      "GEMINI_MODEL" => "fixture-model"
+    }
+
+    TestHTTP.set_responses([
+      %{"candidates" => [%{"content" => %{"parts" => [%{"text" => nil}]}}]}
+    ])
+
+    error = assert_raise Error, fn -> AI.generate(gemini, "Draft", %{}, 300, http: TestHTTP) end
+    assert Exception.message(error) == "AI response did not include text."
   end
 
   test "OpenAI Responses API keeps credentials out of the URL and does not store responses" do

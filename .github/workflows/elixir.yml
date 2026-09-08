@@ -55,7 +55,7 @@ jobs:
           mix local.rebar --force
           mix deps.get
           git diff --exit-code -- mix.lock
-      - name: Offline regression tests
+      - name: Tests
         shell: bash
         run: mix test --warnings-as-errors
       - name: Build and inspect the escript

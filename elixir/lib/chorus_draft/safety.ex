@@ -1,5 +1,5 @@
 defmodule ChorusDraft.Safety do
-  alias ChorusDraft.Error
+  alias ChorusDraft.{Error, PII}
 
   @opt_out ~r/\b(?:leave\s+me\s+alone|(?:do\s+not|don't|dont|never|stop)\s+(?:reply(?:ing)?|respond(?:ing)?|contact(?:ing)?|mention(?:ing)?|messag(?:e|ing)|talk(?:ing)?|interact(?:ing)?)(?:\s+(?:to|with))?\s+me(?:\s+again)?)\b/iu
   @abuse ~r/(?:\b(?:kill|hang)\s+yourself\b|\bdie\s+in\s+(?:a\s+)?fire\b|\bbomb\s+threat\b|\bdoxx?(?:ing|ed)?\b|\b(?:everyone|everybody)\s+(?:go\s+)?(?:attack|harass|report|threaten)\b|\byou(?:'re|\s+are)\s+(?:an?\s+)?(?:idiot|moron|worthless|pathetic)\b)/iu
@@ -69,6 +69,7 @@ defmodule ChorusDraft.Safety do
 
   def validate_automatic_text!(text, limit) do
     validate_text!(text, limit)
+    PII.validate!(text)
     value = screening_text(text)
 
     cond do

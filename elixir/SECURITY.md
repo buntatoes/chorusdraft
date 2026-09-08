@@ -1,5 +1,9 @@
 # Security policy
 
+Current main also screens inherited content warnings before automatic publication,
+honors content-warning opt-outs, and expands deterministic threat and harassment
+screening. These unreleased changes are listed in CHANGELOG.md.
+
 ## Supported versions
 
 | Version | Runtime | Security support |
@@ -21,17 +25,15 @@ an explicit `--publish`; otherwise it enters the queue.
 
 The explicit `automatic` command may publish only the exact original or eligible
 incoming public-mention reply generated in that daemon cycle. It cannot sweep
-older pending drafts. Generated text and any content warning are screened again
-for the baseline content rules plus expanded harassment, pile-ons, normalized
-prompt-injection patterns, account mentions, links, and common email, phone, and
-street-address patterns. A held draft remains pending for review.
+older pending drafts. Automatic output is screened again for the baseline content
+rules plus harassment, pile-ons, model-added mentions, links, and common email,
+phone, and street-address patterns. A held draft remains pending for review.
 
 Before an automatic reply is claimed, the source is re-fetched from the platform
-API. Its ID, text, content warning, handle, and immutable author identity must
-still match the context used for generation, and the source must retain supported
-public visibility. Prompt-injection, opt-out, and do-not-contact checks run
-again, including opt-outs in source text or its content warning. Public opt-outs
-record both handle and immutable identity aliases.
+API. Its ID, text, content warning, handle, immutable author identity, and public
+visibility must still match the context used for generation. Prompt-injection,
+opt-out, and do-not-contact checks run again. Public opt-outs record both handle
+and immutable identity aliases.
 
 The state lock atomically reserves both the exact draft and one of five automatic
 attempts allowed per rolling 24 hours per account. Failed and ambiguous attempts
@@ -63,20 +65,39 @@ and build caches.
 Local/Ollama uses the configured loopback endpoint. Gemini and ChatGPT/OpenAI
 are remote privacy boundaries: the drafting task and selected cleaned public
 context are sent to the chosen provider. The OpenAI adapter uses the Responses
-API with a bearer authorization header and `store: false`; it rejects failed,
-incomplete, malformed, and empty responses before applying platform-length and
-content safeguards. OpenAI generation is capped at 256 output tokens.
-`store: false` disables storage for later API retrieval but does not itself claim
-zero data retention. Review [OpenAI's current data controls](https://developers.openai.com/api/docs/guides/your-data)
-before enabling a remote provider.
+API with an authorization header, bounded output, and `store: false`. Review
+provider terms and account data controls before enabling a remote provider.
 
-Remote endpoints require HTTPS. Plain HTTP is allowed only for loopback local AI
-servers. Redirects and automatic retries are disabled, request times and response
-sizes are bounded, and remote bodies or credential-bearing details are omitted
-from errors. Publication requests are never automatically retried.
+Remote social, Gemini, and OpenAI endpoints require HTTPS. When `AI_PROVIDER`
+is `local` or `ollama`, `LOCAL_LLM_URL` must use a loopback host (`localhost`,
+`127.0.0.1`, or `::1`) over HTTP or HTTPS — remote HTTPS hosts are rejected for
+local AI. Redirects and automatic retries are disabled, request times and
+response sizes are bounded, and remote bodies or credential-bearing details are
+omitted from errors. Publication requests are never automatically retried.
 
-Ambiguous publication results become `uncertain`. Inspect the account manually;
-do not replay the draft until the outcome is known.
+Ambiguous publication results become `uncertain`. Inspect the account manually,
+then reject a pending or uncertain draft with `reject ID` / `--reject ID` when it
+should not publish. Rejection clears the automatic-mode freeze without
+republishing; do not replay or force an uncertain draft back to pending until
+the outcome is known.
+
+## Personal information
+
+AI context is screened and matching personal information is replaced with
+`[REDACTED]` before any local or remote model request. Screening recognizes
+ordinary and common obfuscated email addresses, Unicode numeric contact details,
+long numeric identifiers, street/PO-box addresses, labeled identity details,
+precise coordinate pairs, and common credential formats.
+
+AI output is rejected if these patterns are detected, including in review mode.
+Saved AI drafts and content warnings are checked again before publication.
+The bot does not silently edit reviewed text. Public social mentions remain
+supported, and explicitly owner-written manual text remains under owner control.
+
+This is conservative pattern matching: it can hold harmless numbers and cannot
+identify every name, address, identifier, language, or obfuscation. Public source
+posts can still contain personal information that these rules miss. Human review
+remains necessary for sensitive material; this feature does not promise anonymity.
 
 ## State and process safety
 
@@ -91,9 +112,8 @@ in-flight publications to `uncertain`, and never alters the source file.
 
 ## Jetstream
 
-Jetstream is required and starts automatically for Bluesky `listen` and daemon
-workflows, including `start` and `automatic`. It cannot be disabled in those
-modes; `--jetstream` remains a compatibility no-op.
+Jetstream starts automatically for Bluesky `listen` and daemon workflows and
+cannot be disabled in those modes. `--jetstream` remains a compatibility no-op.
 Streamed bodies do not enter AI context, terminal output, or state. Matching
 events only wake the canonical notification fetch, where opt-out,
 deduplication, safety, and publication policy still apply.
@@ -103,15 +123,13 @@ and reconnect backoff are bounded. Invalid handshakes and unsolicited
 compression are refused. Periodic API checks reduce missed notifications after
 disconnects but cannot guarantee complete delivery. Mastodon uses polling.
 
-## Verification and known limits
+## Known limits
 
-The 0.51.4 suite contains 80 offline regressions and package checks for Linux,
-macOS, and Windows. Tests use synthetic fixtures and loopback servers without
-credentials or live publication. Coverage includes review and automatic mode,
-source-edit and opt-out revalidation, publication budgets and interlocks,
-ambiguous outcomes, state migration, provider errors, HTTP/WebSocket bounds,
-checksums, installation, private configuration, runtime-data exclusion, and an
-offline rebuild from shipped source.
+Inbound prompt-injection screening and the stricter automatic-output gates are
+best-effort, deterministic regex checks on normalized text (NFKC and
+format-character stripping, matching opt-out and harassment). They can still miss
+novel phrasing or hold benign text; interactive review before publish remains the
+primary control outside explicit automatic mode.
 
 Live Bluesky, Mastodon, and AI-provider acceptance and a sustained daemon soak
 remain operator checks. Use disposable accounts first and exercise login,

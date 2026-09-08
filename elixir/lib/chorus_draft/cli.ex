@@ -128,8 +128,7 @@ defmodule ChorusDraft.CLI do
 
       {options, [], []} ->
         if Keyword.get(options, :jetstream, :unspecified) == false do
-          {:error,
-           "Jetstream cannot be disabled; Bluesky listener and daemon modes use it automatically."}
+          {:error, "Jetstream cannot be disabled; Bluesky listen and start use it automatically."}
         else
           validate_options(
             options
@@ -146,10 +145,6 @@ defmodule ChorusDraft.CLI do
     end
   end
 
-  # Human-friendly commands translate to the strict option interface. Translation
-  # happens before strict option parsing, and none of these aliases adds
-  # --publish: generated and manual drafts remain queued unless the owner uses
-  # the explicit advanced publication flag or approves them interactively.
   def normalize_short_command([]), do: []
   def normalize_short_command(["help"]), do: ["--help"]
   def normalize_short_command(["version"]), do: ["--version"]
@@ -172,7 +167,6 @@ defmodule ChorusDraft.CLI do
   def normalize_short_command(["delete", id | rest]), do: ["--delete", id | rest]
   def normalize_short_command(["status" | rest]), do: ["--status" | rest]
   def normalize_short_command(["reject", id | rest]), do: ["--reject", id | rest]
-
   def normalize_short_command(["random"]), do: ["--random-post="]
 
   def normalize_short_command(["random", "--" <> _ = option | rest]),
@@ -385,7 +379,7 @@ defmodule ChorusDraft.CLI do
         |> Enum.each(&IO.puts("#{&1["id"]} | #{&1["status"]}"))
 
       options[:reject] ->
-        Store.transition(runner.store, options.reject, "pending", "rejected")
+        Store.transition(runner.store, options.reject, ["pending", "uncertain"], "rejected")
         IO.puts("Rejected draft.")
 
       options[:text] ->
@@ -464,8 +458,6 @@ defmodule ChorusDraft.CLI do
     if options.jitter > 0, do: Process.sleep(:rand.uniform(options.jitter * 60_000))
   end
 
-  # One daemon iteration is also used by offline tests. Failures in one job do
-  # not prevent other jobs; an attempted original is scheduled only once/interval.
   def daemon_cycle(runner, options, hours, base, last_original, now) do
     if within_hours?(options, hours) do
       guarded(fn -> Runner.mentions(runner) end)
@@ -517,11 +509,9 @@ defmodule ChorusDraft.CLI do
   end
 
   defp targets(options, base) do
-    if options[:target] do
-      [options.target]
-    else
-      read_list(Path.join([base, "config", "target_accounts.txt"]))
-    end
+    if options[:target],
+      do: [options.target],
+      else: read_list(Path.join([base, "config", "target_accounts.txt"]))
   end
 
   defp discovery_query(options, env) do
@@ -568,10 +558,10 @@ defmodule ChorusDraft.CLI do
           --replies-only       Process public mentions once
           --targets-only       Stage public target commentary
           --discover           Stage discovery commentary
-          --listen             Listen for public mentions continuously
+          --listen             Poll public mentions
           --daemon             Poll mentions and periodically draft originals
           --automatic          With --daemon, publish new originals/replies after safety checks
-          --jetstream          Compatibility no-op; Bluesky listener/daemon modes always stream
+          --jetstream          Compatibility no-op; Bluesky listen/start always streams
           --process-queue      Interactively review AI and manual drafts
           --search QUERY       Display public posts
           --random-post [QUERY] Display a random public search/timeline result
@@ -579,13 +569,13 @@ defmodule ChorusDraft.CLI do
           --setup              Create missing configuration files, without login
           --import-state FILE  Copy compatible state into an empty account store
           --status             Show queue counts and unresolved draft IDs
-          --reject ID          Reject one pending draft without publishing
+          --reject ID          Reject one pending or uncertain draft without publishing
           --base PATH          Platform configuration and data directory
           --random-reply QUERY Choose a public reply target for --text
           --target HANDLE      Account for --targets-only
           --query QUERY        Discovery search (or DISCOVERY_KEYWORDS/TAGS)
           --limit N            Inspection results, 1–40 (default 5)
-          --poll-interval N    Cycle/catch-up seconds, 10–3600 (default 60)
+          --poll-interval N    Poll seconds, 10–3600 (default 60)
           --interval N         Daemon original interval in minutes (default 120)
           --jitter N           Random delay up to N minutes, 0–60
           --active-hours RANGE Local HH:MM-HH:MM, including overnight ranges

@@ -7,13 +7,19 @@ defmodule ChorusDraft.HTTP do
   def validate_url!(url, opts \\ []) do
     uri = URI.parse(url)
     local? = Keyword.get(opts, :local, false)
+    loopback? = is_binary(uri.host) and uri.host in @loopback
 
     allowed_scheme? =
-      uri.scheme == "https" or (local? and uri.scheme == "http" and uri.host in @loopback)
+      if local? do
+        loopback? and uri.scheme in ["http", "https"]
+      else
+        uri.scheme == "https"
+      end
 
     if not allowed_scheme? or is_nil(uri.host) or uri.host == "" or not is_nil(uri.userinfo) or
          not is_nil(uri.fragment) do
-      raise Error, "Use HTTPS; HTTP is allowed only for a loopback local AI server."
+      raise Error,
+            "Use HTTPS for remote endpoints; local AI must use a loopback host (HTTP or HTTPS)."
     end
 
     uri
