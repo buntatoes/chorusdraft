@@ -1,7 +1,7 @@
 # ChorusDraft
 
 Elixir app for Linux, macOS, and Windows. One executable, Bluesky and Mastodon
-modes. Version 0.51.6. See [CHANGELOG.md](CHANGELOG.md).
+modes. Version 0.52. See [CHANGELOG.md](CHANGELOG.md).
 
 Review is the default. `automatic` may publish new originals and eligible
 public-mention replies after screening and a source recheck.
@@ -72,14 +72,31 @@ in flight. `publishing` or `uncertain` blocks later claims. A stranded claim
 ages to `uncertain` and is not retried. `reject ID` clears it after you inspect
 the account.
 
-## Bluesky Jetstream
+## Live streams
 
-On for Bluesky `listen` and daemon. `--jetstream` does nothing;
+On for Bluesky and Mastodon `listen` and daemon. `--jetstream` does nothing;
 `--no-jetstream` is rejected. Stream bodies never go to AI, the terminal, or
-state. A match wakes the normal notification fetch. Mastodon polls.
+state. A match wakes the normal notification fetch.
 
-Default: `wss://jetstream.us-east.bsky.network`. Override with
-`BLUESKY_JETSTREAM_URL`. Bounds: [SECURITY.md](SECURITY.md).
+Bluesky default: `wss://jetstream.us-east.bsky.network`. Override with
+`BLUESKY_JETSTREAM_URL`.
+
+Mastodon uses `GET /api/v1/streaming/user` on the instance. Override with
+`MASTODON_STREAMING_URL`. The access token is an Authorization header, not a
+query string.
+
+Bounds: [SECURITY.md](SECURITY.md).
+
+## Service
+
+```sh
+./chorusdraft bluesky service print
+./chorusdraft bluesky service install
+./chorusdraft mastodon service install --automatic
+```
+
+Writes a systemd user unit, LaunchAgent, or Windows task. Does not start it.
+Enable the unit yourself. Setup still does not start a service.
 
 ## State
 
@@ -100,9 +117,9 @@ auth, bounded output, and `store: false`.
 
 ## Packages
 
-- `ChorusDraft-elixir-0.51.6-linux.tar.gz`
-- `ChorusDraft-elixir-0.51.6-macos.tar.gz`
-- `ChorusDraft-elixir-0.51.6-windows.zip`
+- `ChorusDraft-elixir-0.52-linux.tar.gz`
+- `ChorusDraft-elixir-0.52-macos.tar.gz`
+- `ChorusDraft-elixir-0.52-windows.zip`
 
 Build: `MIX_ENV=prod mix run scripts/build_release.exs`  
 Verify: `./scripts/check_packages.sh` or `.\scripts\check_packages.ps1`

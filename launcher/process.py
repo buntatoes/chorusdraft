@@ -1,5 +1,6 @@
 """Run bot commands in a terminal session while keeping approval interactive."""
 import codecs
+import json
 import os
 from pathlib import Path
 import queue
@@ -46,15 +47,24 @@ class Session:
         environment.update(ERL_CRASH_DUMP=os.devnull, ERL_CRASH_DUMP_SECONDS='0')
         if settings:
             environment.update(settings)
+        self.control = environment.get('CHORUSDRAFT_CONTROL') == '1'
         if 'LD_LIBRARY_PATH_ORIG' in environment:
             environment['LD_LIBRARY_PATH'] = environment.pop('LD_LIBRARY_PATH_ORIG')
         elif getattr(sys, 'frozen', False):
             environment.pop('LD_LIBRARY_PATH', None)
-        if os.name == 'nt':
+        if os.name == 'nt' and not self.control:
             from winpty import PtyProcess
             wrapper = [sys.executable, '--terminal-child'] if getattr(sys, 'frozen', False) else [
                 sys.executable, str(Path(__file__).with_name('terminal_child.py'))]
             self.process = PtyProcess.spawn([*wrapper, *command], cwd=str(cwd), env=environment, dimensions=(40, 160))
+        elif self.control:
+            popen = {'cwd': cwd, 'stdin': subprocess.PIPE, 'stdout': subprocess.PIPE,
+                     'stderr': subprocess.PIPE, 'env': environment, 'bufsize': 0}
+            if os.name == 'nt':
+                popen['creationflags'] = subprocess.CREATE_NEW_PROCESS_GROUP
+            else:
+                popen['start_new_session'] = True
+            self.process = subprocess.Popen(command, **popen)
         else:
             import fcntl
             import pty
@@ -81,8 +91,22 @@ class Session:
                 os.close(slave)
         self.thread = threading.Thread(target=self._read, daemon=True)
         self.thread.start()
+        if self.control:
+            threading.Thread(target=self._drain_stderr, daemon=True).start()
+
+    def _drain_stderr(self):
+        try:
+            while True:
+                line = self.process.stderr.readline()
+                if not line:
+                    return
+        except Exception:
+            return
 
     def _read(self):
+        if self.control:
+            self._read_control()
+            return
         decoder = codecs.getincrementaldecoder('utf-8')(errors='replace')
         try:
             while True:
@@ -117,25 +141,72 @@ class Session:
                 os.close(self.master)
                 self.master = None
 
+    def _read_control(self):
+        try:
+            while True:
+                line = self.process.stdout.readline()
+                if not line:
+                    break
+                if isinstance(line, bytes):
+                    line = line.decode('utf-8', errors='replace')
+                if len(line) > 65536:
+                    self.events.put(('error', 'The bot sent a line that was too large.'))
+                    continue
+                line = line.rstrip('\r\n')
+                if not line:
+                    continue
+                try:
+                    message = json.loads(line)
+                except ValueError:
+                    self.events.put(('output', line + '\n'))
+                    continue
+                if not isinstance(message, dict):
+                    self.events.put(('output', line + '\n'))
+                    continue
+                event = message.get('event')
+                if event == 'log':
+                    self.events.put(('output', message.get('value') or ''))
+                elif event == 'review':
+                    draft = message.get('draft')
+                    self.events.put(('review', draft if isinstance(draft, dict) else {}))
+                else:
+                    self.events.put(('output', line + '\n'))
+            code = self.process.wait()
+            self.events.put(('exit', code))
+        except Exception:
+            self.events.put(('error', 'The bot session ended unexpectedly. Check the account before retrying a publication.'))
+        finally:
+            self.finished = True
+
     def send(self, text):
         if self.finished:
+            return
+        payload = text if text.endswith('\n') else text + '\n'
+        if self.control:
+            self.process.stdin.write(payload.encode('utf-8'))
+            self.process.stdin.flush()
             return
         if os.name == 'nt':
             self.process.write(text + '\r\n')
         else:
-            os.write(self.master, (text + '\n').encode('utf-8'))
+            os.write(self.master, payload.encode('utf-8'))
 
     def stop(self):
         if self.finished or self._stopping:
             return
         self._stopping = True
-        if os.name == 'nt':
-            self.process.write('\x03')
-        else:
-            try:
+        try:
+            if self.control:
+                if os.name == 'nt':
+                    self.process.terminate()
+                else:
+                    os.killpg(self.process.pid, signal.SIGINT)
+            elif os.name == 'nt':
+                self.process.write('\x03')
+            else:
                 os.killpg(self.process.pid, signal.SIGINT)
-            except ProcessLookupError:
-                return
+        except (ProcessLookupError, OSError):
+            return
         threading.Thread(target=self._force_stop, daemon=True).start()
 
     def _force_stop(self):
@@ -143,10 +214,12 @@ class Session:
         time.sleep(3)
         if self.finished:
             return
-        if os.name == 'nt':
-            self.process.terminate(force=True)
-        else:
-            try:
+        try:
+            if self.control:
+                self.process.kill()
+            elif os.name == 'nt':
+                self.process.terminate(force=True)
+            else:
                 os.killpg(self.process.pid, signal.SIGTERM)
-            except ProcessLookupError:
-                pass
+        except (ProcessLookupError, OSError, AttributeError):
+            pass

@@ -129,7 +129,7 @@ function App() {
   const [notice, setNotice] = useState("");
   const activityParts = useRef([]);
   const [platform, setPlatform] = useState("bluesky");
-  const [version, setVersion] = useState("0.51.6");
+  const [version, setVersion] = useState("0.52");
   const [running, setRunning] = useState(false);
   const [action, setAction] = useState(null);
   const [activity, setActivity] = useState("");
@@ -147,6 +147,7 @@ function App() {
   const [reviewEdit, setReviewEdit] = useState("");
   const [savingReview, setSavingReview] = useState(false);
   const reviewDraftId = useRef("");
+  const [reviewDraft, setReviewDraft] = useState(null);
   const savingReviewLock = useRef(false);
   const runningLock = useRef(false);
   useEffect(() => {
@@ -164,9 +165,9 @@ function App() {
         if (output) {
           promptBuffer.current = tail(promptBuffer.current, output);
           const ready = REVIEW_PROMPT.test(promptBuffer.current);
-          approvalAvailable.current = ready;
-          setReviewPrompt(ready);
           if (ready) {
+            approvalAvailable.current = true;
+            setReviewPrompt(true);
             const id = reviewDraftIdFrom(promptBuffer.current);
             if (id) reviewDraftId.current = id;
           }
@@ -188,6 +189,17 @@ function App() {
               .slice(-160000),
           );
         }
+      }
+      if (event.type === "review") {
+        const draft = event.draft || {};
+        setReviewDraft(draft);
+        if (draft.id) reviewDraftId.current = draft.id;
+        approvalAvailable.current = true;
+        setReviewPrompt(true);
+        setEditingReview(false);
+        setReviewEdit(typeof draft.text === "string" ? draft.text : "");
+        setSavingReview(false);
+        savingReviewLock.current = false;
       }
       if (event.type === "started") {
         setRunning(true);
@@ -278,6 +290,7 @@ function App() {
     setSavingReview(false);
     savingReviewLock.current = false;
     reviewDraftId.current = "";
+    setReviewDraft(null);
     await invoke(() =>
       api.run({
         runtime,
@@ -294,8 +307,25 @@ function App() {
       return false;
     if (action === "review" && !opts.force && !approvalAvailable.current)
       return false;
+    let payload = value;
+    if (typeof value === "string") {
+      const trimmed = value.trim().toLowerCase();
+      if (trimmed === "e") {
+        setReviewEdit(reviewDraft?.text || "");
+        setEditingReview(true);
+        return true;
+      }
+      payload =
+        trimmed === "y" || trimmed === "yes"
+          ? { action: "approve" }
+          : trimmed === "d"
+            ? { action: "reject" }
+            : trimmed === "q"
+              ? { action: "quit" }
+              : { action: "skip" };
+    }
     approvalAvailable.current = false;
-    const ok = await invoke(() => api.respond(value), { keepRunning: true });
+    const ok = await invoke(() => api.respond(payload), { keepRunning: true });
     if (ok) {
       promptBuffer.current = "";
       setReviewPrompt(false);
@@ -676,16 +706,13 @@ function App() {
                             savingReviewLock.current = true;
                             setSavingReview(true);
                             try {
-                              if (!(await send("e", { force: true }))) return;
                               if (
                                 !(await send(
-                                  "<<JSON>>" + JSON.stringify(next),
+                                  { action: "edit", text: reviewEdit },
                                   { force: true },
                                 ))
-                              ) {
-                                await send("", { force: true });
+                              )
                                 return;
-                              }
                               setEditingReview(false);
                               setReviewEdit("");
                             } finally {
@@ -711,32 +738,14 @@ function App() {
                         <button
                           className="button secondary"
                           disabled={savingReview}
-                          onClick={async () => {
+                          onClick={() => {
                             if (savingReviewLock.current) return;
-                            savingReviewLock.current = true;
-                            setSavingReview(true);
                             setResponse("");
-                            let next = "";
-                            try {
-                              const id =
-                                reviewDraftId.current ||
-                                reviewDraftIdFrom(promptBuffer.current);
-                              if (id) reviewDraftId.current = id;
-                              const queue = await api.queue({
-                                runtime,
-                                platform,
-                              });
-                              const item = queue.items.find(
-                                (row) => row.id === id,
-                              );
-                              if (item) next = item.text;
-                            } catch {
-                              next = "";
-                            } finally {
-                              savingReviewLock.current = false;
-                              setSavingReview(false);
-                            }
-                            setReviewEdit(next);
+                            setReviewEdit(
+                              reviewDraft && typeof reviewDraft.text === "string"
+                                ? reviewDraft.text
+                                : "",
+                            );
                             setEditingReview(true);
                           }}
                         >

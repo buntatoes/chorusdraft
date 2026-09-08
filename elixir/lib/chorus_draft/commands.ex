@@ -25,6 +25,14 @@ defmodule ChorusDraft.Commands do
       command == "automatic" ->
         ["--daemon", "--automatic" | args]
 
+      command == "service" ->
+        {action, rest} = required(args, command)
+
+        unless action in ["install", "uninstall", "print"],
+          do: raise(Error, "service requires install, uninstall, or print.")
+
+        ["--service=#{action}" | rest]
+
       command in ["post", "search", "delete", "import", "reject"] ->
         {value, rest} = required(args, command)
         flag = %{"post" => "text", "import" => "import-state"} |> Map.get(command, command)

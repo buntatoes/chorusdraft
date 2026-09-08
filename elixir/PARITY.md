@@ -6,6 +6,7 @@ Old JSON state still imports.
 
 0.51.5 adds Queue, pending-draft edit, and automatic budget in `status`.
 0.51.6 is fixes only; see CHANGELOG.
+0.52: desktop JSON control, Mastodon streaming wake-up, `service install`.
 
 | From Ruby 0.51.1 | Elixir | Tests |
 |---|---|---|
@@ -22,6 +23,7 @@ Old JSON state still imports.
 | Existing state and configuration | Read-only import into an empty account store; setup never overwrites | Legacy migration fixtures |
 | Linux, macOS, and Windows packaging | One archive per OS with both modes, source, manifest, new-directory installer | Native CI extraction, install, overwrite refusal, offline rebuild |
 | Jetstream | Bluesky notification wake-up only; periodic API catch-up; no history replay | Protocol, reconnect, coalescing, oversized/fragment, handshake, heartbeat, timeout tests |
+| Mastodon streaming | User-stream wake-up only; token in Authorization header; periodic API catch-up | Endpoint checks, SSE notification wake-up, local fixture |
 
 The bot needs Erlang/OTP. Desktop downloads include the GUI runtime. Install
 into a new directory; copy state after stopping the old process. HTTP

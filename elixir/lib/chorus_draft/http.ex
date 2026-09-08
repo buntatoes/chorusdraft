@@ -27,6 +27,20 @@ defmodule ChorusDraft.HTTP do
     _ in URI.Error -> raise Error, "Invalid endpoint URL."
   end
 
+  def open(%URI{} = uri) do
+    scheme = if uri.scheme == "https", do: :https, else: :http
+    port = uri.port || if(scheme == :https, do: 443, else: 80)
+    transport = [timeout: 10_000, send_timeout: 30_000] ++ ssl_options(uri)
+
+    Mint.HTTP.connect(scheme, uri.host, port,
+      mode: :passive,
+      protocols: [:http1],
+      log: false,
+      max_header_list_size: 16_384,
+      transport_opts: transport
+    )
+  end
+
   def request(method, url, opts \\ []) do
     uri = validate_url!(url, local: Keyword.get(opts, :local, false))
     if uri.query, do: raise(Error, "Endpoint must not contain a query string.")
@@ -47,17 +61,7 @@ defmodule ChorusDraft.HTTP do
       if(uri.path in [nil, ""], do: "/", else: uri.path) <>
         if(uri.query, do: "?" <> uri.query, else: "")
 
-    scheme = if uri.scheme == "https", do: :https, else: :http
-    transport = [timeout: 10_000, send_timeout: 30_000] ++ ssl_options(uri)
-
-    {:ok, conn} =
-      Mint.HTTP.connect(scheme, uri.host, uri.port,
-        mode: :passive,
-        protocols: [:http1],
-        log: false,
-        max_header_list_size: 16_384,
-        transport_opts: transport
-      )
+    {:ok, conn} = open(uri)
 
     try do
       {:ok, conn, ref} =

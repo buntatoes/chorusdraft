@@ -34,14 +34,15 @@ folder; use the same script with `--remove` before removing an old download.
 
 Choose Bluesky or Mastodon, click **Set up**, then **Open configuration**.
 **Create a draft** stages a post. **Open review** approves, edits, or rejects
-it. **Queue** lists pending and uncertain drafts from the account store last
-used on the selected platform, remaining automatic attempts, and freeze
-state. Edit from Queue or during review; the replacement is screened and
-still needs approval. During review, **Edit text** prefills the current draft
-and keeps line breaks. The response field is disabled while the edit form is
-open so `y` cannot publish the original. After you save, review asks again.
-You can also send `y`, `e`, `d`, or `q` through the response field when those
-buttons are showing.
+it. The desktop talks to the bot over JSON; publish buttons follow a review
+event, not a scraped prompt. **Queue** lists pending and uncertain drafts from
+the account store last used on the selected platform, remaining automatic
+attempts, and freeze state. Edit from Queue or during review; the replacement
+is screened and still needs approval. During review, **Edit text** prefills
+the current draft and keeps line breaks. The response field is disabled while
+the edit form is open so `y` cannot publish the original. After you save,
+review asks again. You can also send `y`, `e`, `d`, or `q` through the
+response field when those buttons are showing.
 
 **Start automatic mode** can post only a new original or an eligible public
 mention reply from that run. Manual posts, existing drafts, quotes, targets,
@@ -138,11 +139,12 @@ On Windows, replace `./bot` with `.\bot.bat`.
 | `import FILE` | Import compatible state into an empty account store |
 | `reject ID` | Reject a pending or uncertain draft |
 | `edit ID "TEXT"` | Replace pending draft text; review still required |
+| `service install` | Write a user service that runs `start` (CLI; add `--automatic` for automatic) |
 | `help` / `version` | Show command help or the build version |
 
 Existing Elixir flags and `./bot elixir PLATFORM COMMAND` still work.
 Desktop packages use Elixir for `./bot PLATFORM COMMAND`; Ruby is not
-included. See [Elixir usage and Jetstream](../elixir/README.md) for more
+included. See [Elixir usage and live streams](../elixir/README.md) for more
 options.
 
 ## Configuration and upgrades

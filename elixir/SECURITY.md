@@ -4,8 +4,8 @@
 
 | Version | Runtime | Support |
 |---|---|---|
-| 0.51.6 | Elixir | Current |
-| 0.51.5 and earlier | Earlier releases | Unsupported |
+| 0.52 | Elixir | Current |
+| 0.51.6 and earlier | Earlier releases | Unsupported |
 
 Report vulnerabilities through GitHub private reporting when it is available,
 or contact the maintainer privately. Do not put credentials, private posts,
@@ -37,14 +37,14 @@ retried automatically.
 `edit ID` and review `e` replace pending text after the same screens, then
 leave the draft pending. They cannot publish. `--edit` cannot be combined with
 `--publish`, reply, quote, or queue flags. Desktop review Edit prefills the
-current text, keeps line breaks, and disables the response field until the
-replacement is saved and review asks again.
+current text from the review event, keeps line breaks, and disables the
+response field until the replacement is saved and review asks again.
 
 `--random-reply` picks the target; it cannot be combined with `--publish`.
 
-Review indents draft text. The desktop recognises the approval prompt and the
-draft header only at the start of a line, so draft content cannot pose as
-either.
+Review indents draft text. The desktop lights the publish buttons from a JSON
+`review` event, not from matching prompt text. CLI review still uses the
+line-anchored prompt.
 
 These are regex checks. They miss some bad text and block some fine text.
 Do not loosen them to chase people.
@@ -106,15 +106,27 @@ One daemon per account. Import only into an empty account store. Unknown fields
 are ignored or rejected. In-flight imports become `uncertain`. The source file
 is not modified.
 
-## Jetstream
+## Live streams
 
-Always on for Bluesky `listen` and daemon. `--jetstream` is a no-op. Stream
-bodies never enter AI, the terminal, or state. Matches wake the normal
-notification fetch.
+Always on for Bluesky and Mastodon `listen` and daemon. `--jetstream` is a
+no-op on Bluesky. Stream bodies never enter AI, the terminal, or state.
+Matches wake the normal notification fetch.
 
 Jetstream frames, handshakes, and reconnects have hard size and time limits.
-Invalid handshakes and unsolicited compression are refused. Periodic API checks
-help after disconnects; they do not guarantee delivery. Mastodon polls.
+Invalid handshakes and unsolicited compression are refused.
+
+Mastodon uses `GET /api/v1/streaming/user` (or `MASTODON_STREAMING_URL`) over
+HTTPS. The access token is an Authorization header, never a URL query.
+Notification events are a wake-up only; payloads are discarded. Size, idle,
+and reconnect limits match Jetstream.
+
+Periodic API checks help after disconnects; they do not guarantee delivery.
+
+## Service
+
+`service install` writes a user-level unit. It does not start the process,
+enable linger, or put credentials in the unit. `.env` stays beside the bot.
+Enable the unit yourself. Setup still does not start a service.
 
 ## Limits
 

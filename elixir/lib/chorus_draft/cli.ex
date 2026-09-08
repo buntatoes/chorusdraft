@@ -1,5 +1,16 @@
 defmodule ChorusDraft.CLI do
-  alias ChorusDraft.{Config, Error, HTTPError, Jetstream, Runner, Setup, Store}
+  alias ChorusDraft.{
+    Config,
+    Control,
+    Error,
+    HTTPError,
+    Jetstream,
+    Runner,
+    Service,
+    Setup,
+    Store,
+    Streaming
+  }
   alias ChorusDraft.Clients.{Bluesky, Mastodon}
 
   @switches [
@@ -40,13 +51,16 @@ defmodule ChorusDraft.CLI do
     jitter: :integer,
     limit: :integer,
     active_hours: :string,
-    ignore_active_hours: :boolean
+    ignore_active_hours: :boolean,
+    service: :string
   ]
   @aliases [h: :help, v: :version, m: :text]
 
   def main(argv), do: System.halt(run(argv))
 
   def run(argv, io_opts \\ []) do
+    Control.setup!()
+
     with {:ok, platform, argv} <- platform(argv),
          {:ok, options} <- parse(argv),
          :ok <- validate_platform(platform, options),
@@ -57,16 +71,16 @@ defmodule ChorusDraft.CLI do
         code
 
       {:error, message} ->
-        IO.puts(:stderr, message)
+        Control.warn(message)
         1
     end
   rescue
     error in [Error, HTTPError] ->
-      IO.puts(:stderr, error.message)
+      Control.warn(error.message)
       1
 
     _ ->
-      IO.puts(:stderr, "Operation failed; details omitted to protect credentials and content.")
+      Control.warn("Operation failed; details omitted to protect credentials and content.")
       1
   catch
     :exit, {:shutdown, _} -> 0
@@ -201,7 +215,8 @@ defmodule ChorusDraft.CLI do
       :targets_only,
       :search,
       :random_post,
-      :delete
+      :delete,
+      :service
     ]
 
     mode_count =
@@ -213,7 +228,7 @@ defmodule ChorusDraft.CLI do
       options[:help] || options[:version] ->
         {:ok, options}
 
-      options[:automatic] && !options[:daemon] ->
+      options[:automatic] && !options[:daemon] && !options[:service] ->
         {:error, "--automatic requires --daemon; use the automatic command."}
 
       mode_count != 1 ->
@@ -247,6 +262,9 @@ defmodule ChorusDraft.CLI do
       options[:random_reply] && (options[:reply_to] || options[:quote_uri]) ->
         {:error, "Random reply cannot be combined with reply/quote targets."}
 
+      options[:service] && options.service not in ["install", "uninstall", "print"] ->
+        {:error, "service requires install, uninstall, or print."}
+
       true ->
         {:ok, options}
     end
@@ -255,11 +273,11 @@ defmodule ChorusDraft.CLI do
   defp maybe_help(platform, options) do
     cond do
       options[:version] ->
-        IO.puts(ChorusDraft.version())
+        Control.log(ChorusDraft.version())
         {:exit, 0}
 
       options[:help] ->
-        IO.puts(help(platform))
+        Control.log(help(platform))
         {:exit, 0}
 
       true ->
@@ -288,9 +306,20 @@ defmodule ChorusDraft.CLI do
     platform == "bluesky" and (options[:listen] || options[:daemon])
   end
 
+  @doc false
+  def streaming_enabled?(platform, options) do
+    options[:listen] || options[:daemon]
+  end
+
   defp execute(platform, %{history: true} = options, _io_opts) do
     base = Path.expand(Map.get(options, :base, default_base(platform)))
-    IO.puts(Jason.encode!(Store.history(base)))
+    Control.log(Jason.encode!(Store.history(base)))
+    0
+  end
+
+  defp execute(platform, %{service: action} = options, _io_opts) do
+    base = Path.expand(Map.get(options, :base, default_base(platform)))
+    Service.run(platform, action, Map.put(options, :base, base))
     0
   end
 
@@ -305,6 +334,8 @@ defmodule ChorusDraft.CLI do
     env = Config.load(Path.join(base, ".env"), System.get_env())
     env = Config.load(Path.join([base, "config", ".env"]), env)
     if jetstream_enabled?(platform, options), do: Jetstream.endpoint!(env)
+    if platform == "mastodon" and streaming_enabled?(platform, options),
+      do: Streaming.endpoint!(env)
     hours = options[:active_hours] || env["ACTIVE_HOURS"]
     active?(hours)
     client = if platform == "bluesky", do: Bluesky.new(env), else: Mastodon.new(env)
@@ -320,7 +351,7 @@ defmodule ChorusDraft.CLI do
 
     if options[:import_state] do
       count = Store.import_state(store, options.import_state, platform, account_key)
-      IO.puts("Imported #{count} drafts and interaction history; source was read only.")
+      Control.log("Imported #{count} drafts and interaction history; source was read only.")
     end
 
     load_do_not_contact(store, Path.join([base, "config", "do_not_contact.txt"]))
@@ -334,7 +365,7 @@ defmodule ChorusDraft.CLI do
         Keyword.put(io_opts, :automatic, Map.get(options, :automatic, false))
       )
 
-    IO.puts(
+    Control.log(
       "#{platform_title(platform)} #{ChorusDraft.version()} | #{publication_banner(options)} | automatic likes disabled"
     )
 
@@ -352,28 +383,28 @@ defmodule ChorusDraft.CLI do
         budget = Store.automatic_budget(runner.store)
 
         Enum.each(["pending", "publishing", "uncertain", "published", "rejected"], fn status ->
-          IO.puts("#{status}: #{Enum.count(drafts, &(&1["status"] == status))}")
+          Control.log("#{status}: #{Enum.count(drafts, &(&1["status"] == status))}")
         end)
 
-        IO.puts(
+        Control.log(
           "automatic: #{budget.remaining}/#{budget.limit} attempts remaining in the rolling 24 hours"
         )
 
         if budget.frozen,
-          do: IO.puts("automatic frozen until publishing or uncertain drafts are resolved")
+          do: Control.log("automatic frozen until publishing or uncertain drafts are resolved")
 
         drafts
         |> Enum.filter(&(&1["status"] in ["pending", "publishing", "uncertain"]))
-        |> Enum.each(&IO.puts("#{&1["id"]} | #{&1["status"]}"))
+        |> Enum.each(&Control.log("#{&1["id"]} | #{&1["status"]}"))
 
       options[:reject] ->
         Store.transition(runner.store, options.reject, ["pending", "uncertain"], "rejected")
-        IO.puts("Rejected draft.")
+        Control.log("Rejected draft.")
 
       options[:edit] ->
         cw = if Map.has_key?(options, :cw), do: [cw: options.cw], else: []
         updated = Runner.replace_pending(runner, options.edit, options.text, cw)
-        IO.puts("Updated draft #{updated["id"]}. Use review before publishing.")
+        Control.log("Updated draft #{updated["id"]}. Use review before publishing.")
 
       options[:text] ->
         manual(runner, options)
@@ -391,17 +422,25 @@ defmodule ChorusDraft.CLI do
         Runner.inspect_posts(runner, options.random_post, limit: options.limit, random: true)
 
       options[:listen] || options[:daemon] ->
-        if jetstream_enabled?(runner.platform, options) do
-          Jetstream.with_stream(
-            runner.client.__struct__.identity(runner.client),
-            runner.env,
-            fn stream ->
-              IO.puts("Jetstream enabled; notification catch-up remains active.")
+        cond do
+          jetstream_enabled?(runner.platform, options) ->
+            Jetstream.with_stream(
+              runner.client.__struct__.identity(runner.client),
+              runner.env,
+              fn stream ->
+                Control.log("Jetstream enabled; notification catch-up remains active.")
+                loop(runner, options, hours, base, nil, stream)
+              end
+            )
+
+          runner.platform == "mastodon" ->
+            Streaming.with_stream(runner.env, fn stream ->
+              Control.log("Mastodon streaming enabled; notification catch-up remains active.")
               loop(runner, options, hours, base, nil, stream)
-            end
-          )
-        else
-          loop(runner, options, hours, base, nil, nil)
+            end)
+
+          true ->
+            loop(runner, options, hours, base, nil, nil)
         end
 
       true ->
@@ -476,8 +515,8 @@ defmodule ChorusDraft.CLI do
   defp guarded(fun) do
     fun.()
   rescue
-    error in [Error, HTTPError] -> IO.puts(:stderr, error.message)
-    _ -> IO.puts(:stderr, "Cycle failed; details omitted to protect credentials and content.")
+    error in [Error, HTTPError] -> Control.warn(error.message)
+    _ -> Control.warn("Cycle failed; details omitted to protect credentials and content.")
   end
 
   defp loop(runner, options, hours, base, last_original, stream) do
@@ -541,6 +580,7 @@ defmodule ChorusDraft.CLI do
       setup, draft, review, start, automatic, listen, replies, status, history
       post TEXT, reply ID TEXT, quote ID TEXT, search QUERY, edit ID TEXT
       random [QUERY], discover [QUERY], targets [HANDLE], delete ID, reject ID, import FILE
+      service install|uninstall|print
 
       -m, --text TEXT          Stage a manual post
           --publish            Publish --text explicitly; never applies to AI
@@ -551,7 +591,7 @@ defmodule ChorusDraft.CLI do
           --replies-only       Process public mentions once
           --targets-only       Stage public target commentary
           --discover           Stage discovery commentary
-          --listen             Poll public mentions
+          --listen             Poll public mentions; Bluesky and Mastodon stream as a wake-up
           --daemon             Poll mentions and periodically draft originals
           --automatic          With --daemon, publish new originals/replies after safety checks
           --jetstream          Compatibility no-op; Bluesky listen/start always streams
@@ -576,6 +616,7 @@ defmodule ChorusDraft.CLI do
           --active-hours RANGE Local HH:MM-HH:MM, including overnight ranges
           --ignore-active-hours Bypass the schedule for this invocation
           --queue              Stage manual text (the default)
+          --service ACTION     install, uninstall, or print a user service (not started)
 
     Compatibility aliases: --reply-uri, --quote-only, --staging, --poll.
     --reply-cid/--quote-cid are accepted; records are re-fetched before posting.

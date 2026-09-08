@@ -2,6 +2,38 @@
 
 Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
+## 0.52 — 2026-09-08
+
+Desktop review talks to the bot over JSON. Mastodon listen/start uses the user
+streaming API as a wake-up, like Bluesky Jetstream. `service install` writes a
+user unit; it does not start it.
+
+### Desktop
+
+- GUI sessions no longer wrap the bot in a PTY. The bot prints JSON events;
+  the activity log is still the human lines.
+- Approve, reject, quit, skip, and edit are JSON commands. Edit is one round
+  trip and keeps line breaks. The publish buttons follow a `review` event, not
+  a scraped prompt.
+- Typing `e` in the response field opens the editor. Save sends the replacement
+  once.
+
+### Mastodon streaming
+
+- `listen`, `start`, and `automatic` open `GET /api/v1/streaming/user` (or
+  `MASTODON_STREAMING_URL`). The access token is an Authorization header, never
+  a query string.
+- Stream bodies never go to the model, the terminal, or state. A `notification`
+  event wakes the normal mention fetch. Polling catch-up stays.
+- HTTPS only. Size, idle, and reconnect limits match Jetstream.
+
+### Service
+
+- `chorusdraft PLATFORM service install` writes a systemd user unit, LaunchAgent,
+  or Windows task that runs `start`. Add `--automatic` to run automatic mode.
+  `print` shows the file. `uninstall` removes it.
+- Setup still does not start a service. Enable the unit yourself.
+
 ## 0.51.6 — 2026-09-08
 
 Bug-fix and security release. No new features.

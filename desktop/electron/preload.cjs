@@ -2,7 +2,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("chorus", {
   info: () => ipcRenderer.invoke("bot:info"),
   run: (request) => ipcRenderer.invoke("bot:run", request),
-  respond: (text) => ipcRenderer.invoke("bot:input", text),
+  respond: (payload) => ipcRenderer.invoke("bot:input", payload),
   stop: () => ipcRenderer.invoke("bot:stop"),
   settings: (selection) => ipcRenderer.invoke("bot:settings", selection),
   saveSettings: (selection, input, persist) =>

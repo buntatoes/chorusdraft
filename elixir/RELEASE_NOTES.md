@@ -1,43 +1,40 @@
-# ChorusDraft 0.51.6
+# ChorusDraft 0.52
 
 Downloads: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
-Bug-fix and security release. No new features. Upgrade if you use
-`automatic`, edit drafts from the desktop, or run automatic mode on a public
-account.
+The desktop talks to the bot over JSON instead of a fake terminal. Mastodon
+listen/start uses the user streaming API as a wake-up. `service install`
+writes a user unit; it does not start it.
 
-## Fixed
+## Desktop
 
-- `chorusdraft PLATFORM automatic` and the desktop **Start automatic mode**
-  button failed with "Unknown command" since 0.51.4. `--daemon --automatic`
-  still worked, so the bug hid behind the long form.
-- Desktop edits longer than 4095 bytes (1024 on macOS) were silently cut by
-  the terminal and then rejected. Long replacements now arrive whole.
-- Editing a reply or mention during review no longer stalls on the store lock.
-- Help text matches the parser: `import FILE`, `--history`, and the full list
-  of options `--edit` refuses.
+GUI sessions set `CHORUSDRAFT_CONTROL=1` and run the bot on ordinary pipes.
+Log lines still fill the activity pane. Review sends `approve`, `reject`,
+`quit`, `skip`, or `edit` as JSON. Edit is one command and keeps line breaks.
+The publish buttons follow a `review` event, not the prompt string.
 
-## Security
+CLI review is unchanged: type `y`, `e`, `d`, or `q`.
 
-Findings from an audit of the bot, desktop, launcher, and CI. None were
-known to be exploited.
+## Mastodon streaming
 
-- Draft text shown during review is indented, and the desktop only accepts
-  the approval prompt at the start of a line. A draft containing the prompt
-  string cannot enable the publish button early.
-- Desktop responses reject control characters other than tab. Requests to the
-  bot service are size-capped.
-- The obfuscated-email screen no longer takes seconds on long whitespace runs.
-- Automatic mode holds words that mix Latin with Cyrillic, Greek, or Armenian
-  letters, which defeated the harassment word list.
-- C1 control characters are rejected in drafts.
-- Bluesky app passwords, AWS keys, Stripe keys, and private-key headers are
-  redacted from AI context and refused in AI output.
-- Identifier checks cover the whole value; a trailing newline no longer
-  passes. `--publish` is refused with `--random-reply`.
-- Jetstream backs off from a server that accepts and immediately closes.
-- History and Queue refuse oversized state files. The bundle script's
-  integrity checks no longer depend on `assert`.
+`listen`, `start`, and `automatic` open `GET /api/v1/streaming/user` on the
+instance, or `MASTODON_STREAMING_URL` if you set one. The token goes in the
+Authorization header. Stream bodies never go to the model, the terminal, or
+state. A `notification` event wakes the same mention fetch as polling. Catch-up
+polls still run.
+
+Bluesky Jetstream is the same idea as before.
+
+## Service
+
+```sh
+./run.sh bluesky service print
+./run.sh bluesky service install
+./run.sh mastodon service install --automatic
+```
+
+That writes a systemd user unit, LaunchAgent, or Windows task. Enable it
+yourself. Setup still does not start a service. Credentials stay in `.env`.
 
 Details: [CHANGELOG.md](CHANGELOG.md). GUI: [docs/DESKTOP.md](../docs/DESKTOP.md).
 
@@ -45,11 +42,11 @@ Details: [CHANGELOG.md](CHANGELOG.md). GUI: [docs/DESKTOP.md](../docs/DESKTOP.md
 
 CLI:
 
-- `ChorusDraft-elixir-0.51.6-linux.tar.gz`
-- `ChorusDraft-elixir-0.51.6-macos.tar.gz`
-- `ChorusDraft-elixir-0.51.6-windows.zip`
+- `ChorusDraft-elixir-0.52-linux.tar.gz`
+- `ChorusDraft-elixir-0.52-macos.tar.gz`
+- `ChorusDraft-elixir-0.52-windows.zip`
 
-Desktop (`chorusdraft-v0.51.6-<os>-<arch>`, `.tar.gz` on Unix, `.zip` on
+Desktop (`chorusdraft-v0.52-<os>-<arch>`, `.tar.gz` on Unix, `.zip` on
 Windows) includes the Elixir bot and the launcher.
 
 Each archive has the executable, setup/install/verify scripts, config

@@ -1,5 +1,5 @@
 defmodule ChorusDraft.Setup do
-  alias ChorusDraft.{Error, Platform}
+  alias ChorusDraft.{Control, Error, Platform}
 
   def run(base) do
     File.mkdir_p!(base)
@@ -29,20 +29,20 @@ defmodule ChorusDraft.Setup do
           end
 
           Platform.private_file!(target)
-          IO.puts("Created #{destination}")
+          Control.log("Created #{destination}")
 
         {:error, :eexist} ->
           unless File.lstat!(target).type == :regular,
             do: raise(Error, "Existing configuration must be a regular file.")
 
           Platform.private_file!(target)
-          IO.puts("Preserved existing #{destination}")
+          Control.log("Preserved existing #{destination}")
 
         {:error, _} ->
           raise Error, "Could not create configuration."
       end
     end
 
-    IO.puts("Setup complete. Edit .env before running a command. No service was started.")
+    Control.log("Setup complete. Edit .env before running a command. No service was started.")
   end
 end

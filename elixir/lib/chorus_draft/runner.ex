@@ -1,5 +1,5 @@
 defmodule ChorusDraft.Runner do
-  alias ChorusDraft.{AI, Error, PII, Safety, Store}
+  alias ChorusDraft.{AI, Control, Error, PII, Safety, Store}
 
   defstruct [
     :client,
@@ -9,12 +9,15 @@ defmodule ChorusDraft.Runner do
     :input,
     :output,
     :interactive,
+    :control,
     :automatic,
     :ai,
     :ai_opts
   ]
 
   def new(client, store, platform, env, opts \\ []) do
+    control = Keyword.get(opts, :control, Control.enabled?())
+
     %__MODULE__{
       client: client,
       store: store,
@@ -22,7 +25,8 @@ defmodule ChorusDraft.Runner do
       env: env,
       input: Keyword.get(opts, :input, :stdio),
       output: Keyword.get(opts, :output, :stdio),
-      interactive: Keyword.get(opts, :interactive, terminal?()),
+      control: control,
+      interactive: Keyword.get(opts, :interactive, control or terminal?()),
       automatic: Keyword.get(opts, :automatic, false),
       ai: Keyword.get(opts, :ai, AI),
       ai_opts: Keyword.get(opts, :ai_opts, [])
@@ -315,9 +319,54 @@ defmodule ChorusDraft.Runner do
     if item["quote_to"], do: puts(runner, "Quote: #{Safety.clean(item["quote_to"])}")
     if item["cw"], do: puts(runner, "Content warning: #{Safety.clean(item["cw"])}")
     puts(runner, indent(item["text"]))
-    write(runner, "Publish this exact draft? [y/N/e=edit/d=reject/q=quit]: ")
 
-    case runner.input |> IO.gets("") |> to_string() |> String.trim() |> String.downcase() do
+    if runner.control do
+      Control.emit_to(runner.output, %{"event" => "review", "draft" => review_payload(item)})
+      review_command(runner, item, Control.read(runner.input))
+    else
+      write(runner, "Publish this exact draft? [y/N/e=edit/d=reject/q=quit]: ")
+
+      review_tty(
+        runner,
+        item,
+        runner.input |> IO.gets("") |> to_string() |> String.trim() |> String.downcase()
+      )
+    end
+  end
+
+  defp review_payload(item) do
+    %{
+      "id" => item["id"],
+      "action" => item["action"],
+      "visibility" => item["visibility"],
+      "text" => item["text"],
+      "cw" => item["cw"],
+      "reply_to" => item["reply_to"],
+      "quote_to" => item["quote_to"],
+      "status" => item["status"]
+    }
+  end
+
+  defp review_command(runner, item, %{"action" => "approve"}), do: review_tty(runner, item, "y")
+  defp review_command(runner, item, %{"action" => "reject"}), do: review_tty(runner, item, "d")
+  defp review_command(runner, item, %{"action" => "quit"}), do: review_tty(runner, item, "q")
+
+  defp review_command(runner, item, %{"action" => "edit", "text" => text}) do
+    try do
+      updated = replace_pending(runner, item["id"], text)
+      puts(runner, "Draft updated. Review the new text before publishing.")
+      review_item(runner, updated)
+    rescue
+      error in [Error] ->
+        puts(runner, error.message)
+        review_item(runner, item)
+    end
+  end
+
+  defp review_command(runner, item, _command), do: review_tty(runner, item, "n")
+
+  defp review_tty(runner, item, answer) do
+    case answer do
       answer when answer in ["y", "yes"] ->
         publish_draft(runner, item)
         {:cont, :ok}
@@ -525,8 +574,22 @@ defmodule ChorusDraft.Runner do
   defp empty?(nil), do: true
   defp empty?(""), do: true
   defp empty?(_), do: false
-  defp puts(runner, text), do: IO.puts(runner.output, text)
-  defp write(runner, text), do: IO.write(runner.output, text)
+
+  defp puts(runner, text) do
+    if runner.control do
+      Control.emit_to(runner.output, %{"event" => "log", "value" => text <> "\n"})
+    else
+      IO.puts(runner.output, text)
+    end
+  end
+
+  defp write(runner, text) do
+    if runner.control do
+      Control.emit_to(runner.output, %{"event" => "log", "value" => to_string(text)})
+    else
+      IO.write(runner.output, text)
+    end
+  end
 
   # Draft text is shown verbatim, so it is indented to keep it visually apart
   # from the header and prompt lines, which always start at column 0.

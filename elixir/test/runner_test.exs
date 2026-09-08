@@ -283,6 +283,43 @@ defmodule ChorusDraft.RunnerTest do
     assert hd(Store.drafts(dir))["text"] == replacement
   end
 
+  test "control review publishes from a JSON approve command", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    Runner.manual(runner(client, dir), "control wording")
+    {:ok, input} = StringIO.open(~s({"action":"approve"}\n))
+    {:ok, output} = StringIO.open("")
+
+    Runner.review(
+      runner(client, dir, interactive: true, control: true, input: input, output: output)
+    )
+
+    assert length(Agent.get(published, & &1)) == 1
+    {_, shown} = StringIO.contents(output)
+    assert shown =~ ~s("event":"review")
+    refute shown =~ "Publish this exact draft"
+  end
+
+  test "control review edits in one JSON command", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    Runner.manual(runner(client, dir), "original wording")
+    replacement = "first line\n\nsecond line"
+
+    {:ok, input} =
+      StringIO.open(
+        Jason.encode!(%{"action" => "edit", "text" => replacement}) <>
+          "\n" <> ~s({"action":"approve"}\n)
+      )
+
+    Runner.review(runner(client, dir, interactive: true, control: true, input: input))
+    assert hd(Agent.get(published, & &1))["text"] == replacement
+  end
+
   test "review indents draft text so it cannot pose as the approval prompt", %{
     dir: dir,
     client: client,

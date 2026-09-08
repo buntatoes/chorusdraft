@@ -25,9 +25,15 @@ ACTIONS.update({'automatic', 'reject', 'edit', 'status'})
 LINE_LIMIT = 65536
 
 
-def has_control(text):
-    """True for any control character other than a tab; these reach the bot as a terminal line."""
-    return any((ord(c) < 0x20 and c != '\t') or c == '\x7f' for c in text)
+def has_control(text, newline=False):
+    """True for control characters the bot must not receive as a terminal line."""
+    for character in text:
+        code = ord(character)
+        if character == '\t' or (newline and character == '\n'):
+            continue
+        if code < 0x20 or code == 0x7f:
+            return True
+    return False
 
 
 def valid_id(value):
@@ -131,7 +137,10 @@ def serve(root):
                     kind, value = session.events.get_nowait()
                 except queue.Empty:
                     break
-                emit(kind, value=value)
+                if kind == 'review':
+                    emit('review', draft=value)
+                else:
+                    emit(kind, value=value)
             if quitting and session.finished:
                 return
         try:
@@ -145,17 +154,31 @@ def serve(root):
                     raise ValueError('Stop the running bot before starting another action.')
                 runtime, platform, args = arguments(request)
                 environment = settings(request)
+                environment['CHORUSDRAFT_CONTROL'] = '1'
                 try:
                     session = Session(bot_command(root, runtime, platform, args), root, environment)
                 finally:
                     environment.clear()
                 emit('started', action=args[0], runtime=runtime, platform=platform)
             elif kind == 'input':
+                action = request.get('action')
                 text = request.get('text')
-                if not isinstance(text, str) or len(text) > 20000 or has_control(text):
-                    raise ValueError('Enter one response at a time.')
-                if session and not session.finished:
-                    session.send(text)
+                if action is not None:
+                    if action not in {'approve', 'reject', 'quit', 'skip', 'edit'}:
+                        raise ValueError('Enter one response at a time.')
+                    command = {'action': action}
+                    if action == 'edit':
+                        if (not isinstance(text, str) or not text.strip() or len(text) > 20000 or
+                                has_control(text, newline=True)):
+                            raise ValueError('Enter replacement text (maximum 10,000 characters).')
+                        command['text'] = text
+                    if session and not session.finished:
+                        session.send(json.dumps(command, ensure_ascii=True))
+                else:
+                    if not isinstance(text, str) or len(text) > 20000 or has_control(text):
+                        raise ValueError('Enter one response at a time.')
+                    if session and not session.finished:
+                        session.send(text)
             elif kind == 'stop':
                 if session:
                     session.stop()

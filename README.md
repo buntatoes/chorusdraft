@@ -21,17 +21,11 @@ Providers: local/Ollama, Gemini, or ChatGPT/OpenAI.
 
 ## Latest
 
-**[v0.51.6](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.6)**
+**[v0.52](https://github.com/buntatoes/chorusdraft/releases/tag/v0.52)**
 
-Bug-fix and security release.
-
-- The `automatic` command works again; it had failed with "Unknown command"
-  since 0.51.4 unless spelled `--daemon --automatic`.
-- Long desktop edits are no longer cut by the terminal.
-- Review output and the desktop approval prompt are hardened against draft
-  text that imitates them; the automatic screens catch mixed-script words,
-  C1 controls, and more credential formats. Details in
-  [RELEASE_NOTES.md](RELEASE_NOTES.md).
+Desktop review talks to the bot over JSON. Mastodon listen/start uses the user
+streaming API as a wake-up. `service install` writes a user unit; it does not
+start it. Details in [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
 [Changelog](CHANGELOG.md) · [Releases](https://github.com/buntatoes/chorusdraft/releases) · [Build](elixir/README.md) · [Security](SECURITY.md)
 
@@ -41,7 +35,7 @@ Bug-fix and security release.
 - Owner posts, search, mentions, queue review, reject, and delete
 - Local queues, split by service, origin, and account
 - Opt-outs, do-not-contact, budgets, and screening
-- Bluesky Jetstream for listen/daemon; Mastodon polls
+- Bluesky Jetstream and Mastodon user streaming for listen/daemon
 - `automatic` daemon: attempt budget, source recheck, lockout
 
 Does not auto-like, favourite, boost, or repost. Does not publish unsolicited
@@ -75,6 +69,7 @@ use `elixir/chorusdraft` after `mix escript.build`.
 | `reject ID` | Drop one pending or uncertain draft |
 | `edit ID TEXT` | Replace pending draft text; still review before publish |
 | `delete ID` | Delete one of your posts |
+| `service install` | Write a user service that runs `start` (add `--automatic` for automatic) |
 
 ## Automatic mode
 

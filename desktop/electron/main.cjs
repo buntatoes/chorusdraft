@@ -91,6 +91,9 @@ function validText(text, limit) {
     !/\0/.test(text)
   );
 }
+function validDraft(text, limit) {
+  return validText(text, limit) && !/[\x00-\x08\x0b-\x1f\x7f]/.test(text);
+}
 function validId(id) {
   return (
     typeof id === "string" &&
@@ -257,7 +260,7 @@ app
         throw new Error("Choose a pending or uncertain draft to reject.");
       if (
         request.action === "edit" &&
-        (!validId(request.target) || !validText(request.text, 10000))
+        (!validId(request.target) || !validDraft(request.text, 10000))
       )
         throw new Error("Enter replacement text for a pending draft.");
       const environment = ["setup", "help", "version"].includes(request.action)
@@ -281,7 +284,20 @@ app
         throw error;
       }
     });
-    handle("bot:input", (text) => {
+    handle("bot:input", (payload) => {
+      if (typeof payload === "string") payload = { text: payload };
+      if (!payload || typeof payload !== "object")
+        throw new Error("Enter one response at a time.");
+      const action = payload.action;
+      const text = payload.text;
+      if (action) {
+        if (!["approve", "reject", "quit", "skip", "edit"].includes(action))
+          throw new Error("Enter one response at a time.");
+        if (action === "edit" && !validDraft(text, 20000))
+          throw new Error("Enter replacement text for a pending draft.");
+        send({ type: "input", action, text });
+        return;
+      }
       if (typeof text !== "string" || text.length > 20000 || CONTROL.test(text))
         throw new Error("Enter one response at a time.");
       send({ type: "input", text });

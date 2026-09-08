@@ -1,4 +1,5 @@
 """Native desktop smoke tests and terminal-session regression checks."""
+import json
 import os
 from pathlib import Path
 import queue
@@ -61,6 +62,8 @@ class DesktopTests(unittest.TestCase):
         for text in ('\x03', 'y\x1a', 'stop\x04', 'del\x7f', 'line\n', 'ret\r', 'nul\x00'):
             self.assertTrue(has_control(text), repr(text))
         self.assertFalse(has_control('tabs\tare fine, so is café'))
+        self.assertFalse(has_control('line\nbreaks', newline=True))
+        self.assertTrue(has_control('line\nbreaks'))
         for request in ({'runtime': 'elixir', 'platform': 'mastodon', 'action': 'reject', 'text': 'draft\x03id'},
                         {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'edit', 'target': 'draft\x1bid', 'text': 'ok'}):
             with self.assertRaises(ValueError):
@@ -77,6 +80,45 @@ class DesktopTests(unittest.TestCase):
         while not session.finished and time.monotonic() < deadline:
             time.sleep(0.1)
         self.assertTrue(session.finished)
+
+    def test_control_sessions_speak_json_instead_of_a_tty(self):
+        with tempfile.TemporaryDirectory(prefix='ChorusDraft GUI test ') as folder:
+            program = Path(folder) / 'control.py'
+            program.write_text(
+                "import json,sys\n"
+                "print(json.dumps({'event':'log','value':'hello\\n'}), flush=True)\n"
+                "print(json.dumps({'event':'review','draft':{'id':'1','text':'hi'}}), flush=True)\n"
+                "command = json.loads(sys.stdin.readline())\n"
+                "print(json.dumps({'event':'log','value':'got '+command['action']+'\\n'}), flush=True)\n"
+            )
+            session = Session([sys.executable, str(program)], folder, {'CHORUSDRAFT_CONTROL': '1'})
+            output = ''
+            review = None
+            deadline = time.monotonic() + 20
+            sent = False
+            while time.monotonic() < deadline:
+                try:
+                    kind, value = session.events.get(timeout=0.2)
+                except queue.Empty:
+                    continue
+                if kind == 'output':
+                    output += value
+                elif kind == 'review':
+                    review = value
+                    if not sent:
+                        session.send(json.dumps({'action': 'approve'}))
+                        sent = True
+                elif kind == 'exit':
+                    break
+                else:
+                    raise AssertionError(value)
+            else:
+                session.stop()
+                raise AssertionError('Control session timed out')
+            self.assertEqual(review, {'id': '1', 'text': 'hi'})
+            self.assertIn('hello', output)
+            self.assertIn('got approve', output)
+            self.assertTrue(session.control)
 
     def test_desktop_commands_cannot_inject_flags_or_skip_approval(self):
         text = 'quotes "hello" & pipes | $HOME; café'
