@@ -319,6 +319,16 @@ test("history exposes only recent published drafts and never edits pending, unce
   fs.writeFileSync(activity, "{broken activity\n");
   assert.throws(() => history.prune(), /preserved for recovery/);
   assert.equal(fs.readFileSync(activity, "utf8"), "{broken activity\n");
+  // Oversized files are refused before they are read, and left alone.
+  fs.truncateSync(activity, 50 * 1024 * 1024 + 1);
+  assert.throws(() => history.prune(), /preserved for recovery/);
+  assert.equal(fs.statSync(activity).size, 50 * 1024 * 1024 + 1);
+  fs.unlinkSync(activity);
+  fs.writeFileSync(file, original);
+  fs.truncateSync(file, 50 * 1024 * 1024 + 1);
+  assert.throws(() => history.list("bluesky"), /Invalid history file/);
+  assert.throws(() => history.queue("bluesky"), /Invalid history file/);
+  assert.equal(fs.statSync(file).size, 50 * 1024 * 1024 + 1);
 });
 test("queue lists unresolved drafts and automatic budget without writing state", (t) => {
   const root = fixture(t),
