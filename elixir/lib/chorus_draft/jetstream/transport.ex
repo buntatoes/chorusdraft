@@ -10,16 +10,20 @@ defmodule ChorusDraft.Jetstream.Transport do
   @read_timeout 10_000
   @heartbeat 30_000
   @idle_timeout 90_000
+  @stable_session 30_000
   @guid "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
   # The socket stays passive. Read lengths before payloads, and never hand an
   # unbounded network buffer to the WebSocket parser or a process mailbox.
   def start_link(conn, stream), do: Task.start_link(fn -> reconnect(conn, stream, 0) end)
 
+  # A session that drops right after the handshake counts as a failure, so a
+  # server that accepts and closes cannot hold the client in a one-second loop.
   defp reconnect(conn, stream, attempt) do
-    connected? = session(conn, stream)
-    Process.sleep(Socket.reconnect_delay(if connected?, do: 0, else: attempt))
-    reconnect(conn, stream, if(connected?, do: 1, else: min(attempt + 1, 5)))
+    started = now()
+    stable? = session(conn, stream) and now() - started >= @stable_session
+    Process.sleep(Socket.reconnect_delay(if stable?, do: 0, else: attempt))
+    reconnect(conn, stream, if(stable?, do: 1, else: min(attempt + 1, 5)))
   end
 
   defp session(conn, stream) do

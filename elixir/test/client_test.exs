@@ -33,6 +33,17 @@ defmodule ChorusDraft.ClientTest do
     refute Jason.encode!(post) =~ "SECRET"
   end
 
+  test "identifier checks are anchored to the whole value" do
+    assert_raise Error, fn -> Mastodon.get_post(mastodon(), "123\n") end
+    assert_raise Error, fn -> Mastodon.get_post(mastodon(), "123\nx") end
+
+    assert_raise Error, fn ->
+      Bluesky.get_post(bluesky(), "at://did:plc:x/app.bsky.feed.post/abc\n")
+    end
+
+    assert TestHTTP.calls() == []
+  end
+
   test "Mastodon rechecks reply visibility before publication" do
     TestHTTP.set_responses([%{"id" => "1", "visibility" => "direct"}])
     draft = %{"id" => "draft", "text" => "Hello", "visibility" => "public", "reply_to" => "1"}

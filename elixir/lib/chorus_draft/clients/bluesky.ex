@@ -2,7 +2,7 @@ defmodule ChorusDraft.Clients.Bluesky do
   alias ChorusDraft.{Config, Error, HTTP, HTTPError, Safety}
 
   @facet ~r/https:\/\/[^\s<>]+|(?<![\w@])@[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}|(?<!\w)#[\p{L}\p{N}_]+/u
-  @uri ~r/^at:\/\/[^\/\s]+\/app\.bsky\.feed\.post\/[a-zA-Z0-9._~:-]+$/
+  @uri ~r/\Aat:\/\/[^\/\s]+\/app\.bsky\.feed\.post\/[a-zA-Z0-9._~:-]+\z/
   defstruct [:base, :env, :http, :identity, :session]
 
   def new(env, opts \\ []) do

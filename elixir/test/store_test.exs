@@ -211,6 +211,45 @@ defmodule ChorusDraft.StoreTest do
     assert updated["text"] == "hello there"
   end
 
+  test "identifier fields reject whitespace and C1 controls", %{dir: dir} do
+    assert Store.validate_draft!(pending_draft("hello"))
+
+    for {key, value} <- [
+          {"reply_to", "123\n"},
+          {"quote_to", "at://did/app.bsky.feed.post/x\t"},
+          {"author_id", "alice example"},
+          {"language", "en\n"},
+          {"text", "a\u0085b"},
+          {"cw", "a\u009Bb"}
+        ] do
+      assert_raise Error, fn ->
+        Store.validate_draft!(Map.put(pending_draft("hello"), key, value))
+      end
+    end
+
+    item = Store.stage(dir, Map.put(pending_draft("hello"), "reply_to", "1\n"))
+
+    assert_raise Error, fn ->
+      Store.replace_pending(dir, item["id"], fn draft, _state -> draft end)
+    end
+  end
+
+  test "a nested transaction on the same store fails at once", %{dir: dir} do
+    {elapsed, error} =
+      :timer.tc(fn ->
+        assert_raise Error, fn ->
+          Store.transaction(dir, fn state ->
+            Store.transaction(dir, fn inner -> {nil, inner} end)
+            {nil, state}
+          end)
+        end
+      end)
+
+    assert Exception.message(error) =~ "already locked"
+    assert elapsed < 2_000_000
+    assert Store.drafts(dir) == []
+  end
+
   defp pending_draft(text) do
     %{
       "platform" => "mastodon",

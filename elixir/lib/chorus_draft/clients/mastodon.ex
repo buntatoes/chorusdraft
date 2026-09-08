@@ -51,7 +51,7 @@ defmodule ChorusDraft.Clients.Mastodon do
   end
 
   def get_post(client, id) do
-    unless Regex.match?(~r/^\d+$/, to_string(id)),
+    unless Regex.match?(~r/\A\d+\z/, to_string(id)),
       do: raise(Error, "Use a numeric Mastodon status ID.")
 
     client |> call(:get, "/api/v1/statuses/#{id}") |> normalize()
@@ -80,7 +80,7 @@ defmodule ChorusDraft.Clients.Mastodon do
   end
 
   def recent(client, limit \\ 12) do
-    unless Regex.match?(~r/^\d+$/, to_string(client.identity)),
+    unless Regex.match?(~r/\A\d+\z/, to_string(client.identity)),
       do: raise(Error, "Invalid account identity.")
 
     client
@@ -95,7 +95,7 @@ defmodule ChorusDraft.Clients.Mastodon do
       call(client, :get, "/api/v1/accounts/lookup", query: %{"acct" => account})
       |> Map.fetch!("id")
 
-    unless Regex.match?(~r/^\d+$/, to_string(id)), do: raise(Error, "Invalid account ID.")
+    unless Regex.match?(~r/\A\d+\z/, to_string(id)), do: raise(Error, "Invalid account ID.")
 
     client
     |> call(:get, "/api/v1/accounts/#{id}/statuses",
@@ -106,7 +106,7 @@ defmodule ChorusDraft.Clients.Mastodon do
 
   def context(client, post) do
     id = Map.fetch!(post, "id")
-    unless Regex.match?(~r/^\d+$/, id), do: raise(Error, "Invalid status ID.")
+    unless Regex.match?(~r/\A\d+\z/, id), do: raise(Error, "Invalid status ID.")
 
     client
     |> call(:get, "/api/v1/statuses/#{id}/context")

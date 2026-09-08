@@ -49,7 +49,23 @@ defmodule ChorusDraft.SafetyTest do
 
   test "control characters and platform lengths fail closed" do
     assert_raise Error, fn -> Safety.validate_text!("Hidden\e[8mtext", 500) end
+    assert_raise Error, fn -> Safety.validate_text!("Hidden\u009B8mtext", 500) end
+    assert_raise Error, fn -> Safety.validate_text!("Line\u0085break", 500) end
     assert_raise Error, fn -> Safety.validate_text!(String.duplicate("x", 301), 300) end
+    assert Safety.validate_text!("Two\nlines", 300)
+  end
+
+  test "automatic publication holds words that mix scripts" do
+    assert_raise Error, ~r/mixes scripts/, fn ->
+      Safety.validate_automatic_text!("k\u0456ll yourself", 500)
+    end
+
+    assert_raise Error, ~r/mixes scripts/, fn ->
+      Safety.validate_automatic_text!("You are an \u0456diot", 500)
+    end
+
+    assert Safety.validate_automatic_text!("Café culture is naïve about deadlines.", 500)
+    assert Safety.validate_automatic_text!("Привет мир, добрый день.", 500)
   end
 
   test "automatic publication applies stricter harassment, link, mention, and PII gates" do

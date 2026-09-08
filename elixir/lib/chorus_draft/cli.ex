@@ -232,6 +232,9 @@ defmodule ChorusDraft.CLI do
       options[:publish] && (!options[:text] || options[:queue]) ->
         {:error, "--publish requires --text and cannot be combined with --queue."}
 
+      options[:publish] && options[:random_reply] ->
+        {:error, "--random-reply picks the target for you; stage it and publish from review."}
+
       options[:reply_to] && options[:quote_uri] ->
         {:error, "Choose either a reply or quote."}
 
