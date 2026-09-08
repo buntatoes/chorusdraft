@@ -1,5 +1,5 @@
 defmodule ChorusDraft.AI do
-  alias ChorusDraft.{Config, Error, HTTP, Safety}
+  alias ChorusDraft.{Config, Error, HTTP, PII, Safety}
 
   @system """
   You are ChorusDraft, a witty observer of software and everyday internet absurdity.
@@ -38,7 +38,7 @@ defmodule ChorusDraft.AI do
     prompt =
       Jason.encode!(%{
         "task" => task,
-        "untrusted_context" => data,
+        "untrusted_context" => PII.redact(data),
         "maximum_characters" => limit
       })
 
@@ -52,6 +52,7 @@ defmodule ChorusDraft.AI do
 
     text = require_ai_text!(text)
     Safety.validate_text!(text, limit)
+    PII.validate!(text)
     text
   end
 

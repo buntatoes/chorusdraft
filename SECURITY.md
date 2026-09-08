@@ -77,6 +77,24 @@ should not publish. Rejection clears the automatic-mode freeze without
 republishing; do not replay or force an uncertain draft back to pending until
 the outcome is known.
 
+## Personal information
+
+AI context is screened and matching personal information is replaced with
+`[REDACTED]` before any local or remote model request. Screening recognizes
+ordinary and common obfuscated email addresses, Unicode numeric contact details,
+long numeric identifiers, street/PO-box addresses, labeled identity details,
+precise coordinate pairs, and common credential formats.
+
+AI output is rejected if these patterns are detected, including in review mode.
+Saved AI drafts and content warnings are checked again before publication.
+The bot does not silently edit reviewed text. Public social mentions remain
+supported, and explicitly owner-written manual text remains under owner control.
+
+This is conservative pattern matching: it can hold harmless numbers and cannot
+identify every name, address, identifier, language, or obfuscation. Public source
+posts can still contain personal information that these rules miss. Human review
+remains necessary for sensitive material; this feature does not promise anonymity.
+
 ## State and process safety
 
 State is separated by platform, service origin, and account. Native locks
@@ -121,3 +139,4 @@ Live Bluesky, Mastodon, and AI-provider acceptance and a sustained daemon soak
 remain operator checks. Use disposable accounts first and exercise login,
 read-only search, staging, exact review, automatic publication, deletion,
 opt-outs, and network reconnection before production use.
+

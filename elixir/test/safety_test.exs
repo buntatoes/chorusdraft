@@ -62,6 +62,8 @@ defmodule ChorusDraft.SafetyTest do
           "Ask @alice@example.org about it",
           "Details at https://example.org/private",
           "Details at example.com/private",
+          "Details at example.uk/private",
+          "Details at example.photography/private",
           "Email alice@example.org",
           "Call +1 (312) 555-0199",
           "Meet at 123 Example Street"
@@ -97,3 +99,4 @@ defmodule ChorusDraft.SafetyTest do
     File.rm!(path)
   end
 end
+

@@ -3,6 +3,14 @@
 This file preserves the existing project history. Future updates and release
 notes are published in [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
+## Unreleased
+
+- Redact recognized personal information from AI context before provider requests.
+- Reject detected personal information and common credential formats in AI output
+  and recheck saved AI drafts and content warnings before publication.
+- Expand automatic link screening beyond a small list of domain suffixes.
+- Add a verified email-history cleanup utility for authenticated local use.
+
 ## 0.51.4 — 2026-09-07
 
 ### Automatic mode
@@ -113,3 +121,4 @@ notes are published in [GitHub Releases](https://github.com/buntatoes/chorusdraf
 - Began the ChorusDraft release line with Bluesky and Mastodon drafting,
   interactive review, local AI and Gemini support, scheduling, account-scoped
   state, opt-outs, privacy filtering, and cross-platform packages.
+
