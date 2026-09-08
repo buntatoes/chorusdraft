@@ -174,7 +174,7 @@ defmodule ChorusDraft.StoreTest do
   end
 
   test "pending drafts can be replaced and automatic budget is visible", %{dir: dir} do
-    item = Store.stage(dir, %{"text" => "hello"})
+    item = Store.stage(dir, pending_draft("hello"))
     budget = Store.automatic_budget(dir)
     assert budget.remaining == 5
     refute budget.frozen
@@ -189,12 +189,23 @@ defmodule ChorusDraft.StoreTest do
   end
 
   test "replace_pending re-validates inside the store lock", %{dir: dir} do
-    item = Store.stage(dir, %{"text" => "hello"})
+    item = Store.stage(dir, pending_draft("hello"))
 
     assert_raise Error, fn ->
       Store.replace_pending(dir, item["id"], %{"text" => "hello\u0001there"})
     end
 
     assert hd(Store.drafts(dir))["text"] == "hello"
+  end
+
+  defp pending_draft(text) do
+    %{
+      "platform" => "mastodon",
+      "account" => "acct",
+      "text" => text,
+      "action" => "manual",
+      "visibility" => "public",
+      "language" => "en"
+    }
   end
 end
