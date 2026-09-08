@@ -156,68 +156,156 @@ defmodule ChorusDraft.CLI do
   def normalize_short_command(["listen" | rest]), do: ["--listen" | rest]
   def normalize_short_command(["replies" | rest]), do: ["--replies-only" | rest]
   def normalize_short_command(["post", text | rest]), do: ["--text", text | rest]
-  def normalize_short_command(["reply", id, text | rest]), do: ["--text", text, "--reply-to", id | rest]
-  def normalize_short_command(["quote", id, text | rest]), do: ["--text", text, "--quote-uri", id | rest]
+
+  def normalize_short_command(["reply", id, text | rest]),
+    do: ["--text", text, "--reply-to", id | rest]
+
+  def normalize_short_command(["quote", id, text | rest]),
+    do: ["--text", text, "--quote-uri", id | rest]
+
   def normalize_short_command(["search", query | rest]), do: ["--search", query | rest]
   def normalize_short_command(["delete", id | rest]), do: ["--delete", id | rest]
   def normalize_short_command(["status" | rest]), do: ["--status" | rest]
   def normalize_short_command(["reject", id | rest]), do: ["--reject", id | rest]
   def normalize_short_command(["random"]), do: ["--random-post="]
-  def normalize_short_command(["random", "--" <> _ = option | rest]), do: ["--random-post=", option | rest]
+
+  def normalize_short_command(["random", "--" <> _ = option | rest]),
+    do: ["--random-post=", option | rest]
+
   def normalize_short_command(["random", query | rest]), do: ["--random-post", query | rest]
   def normalize_short_command(["discover"]), do: ["--discover"]
-  def normalize_short_command(["discover", "--" <> _ = option | rest]), do: ["--discover", option | rest]
-  def normalize_short_command(["discover", query | rest]), do: ["--discover", "--query", query | rest]
+
+  def normalize_short_command(["discover", "--" <> _ = option | rest]),
+    do: ["--discover", option | rest]
+
+  def normalize_short_command(["discover", query | rest]),
+    do: ["--discover", "--query", query | rest]
+
   def normalize_short_command(["targets"]), do: ["--targets-only"]
-  def normalize_short_command(["targets", "--" <> _ = option | rest]), do: ["--targets-only", option | rest]
-  def normalize_short_command(["targets", handle | rest]), do: ["--targets-only", "--target", handle | rest]
+
+  def normalize_short_command(["targets", "--" <> _ = option | rest]),
+    do: ["--targets-only", option | rest]
+
+  def normalize_short_command(["targets", handle | rest]),
+    do: ["--targets-only", "--target", handle | rest]
+
   def normalize_short_command(argv), do: argv
 
   defp normalize_compatibility_args([]), do: []
   defp normalize_compatibility_args(["--random-post"]), do: ["--random-post="]
-  defp normalize_compatibility_args(["--random-post", "--" <> _ = next | rest]), do: ["--random-post=" | normalize_compatibility_args([next | rest])]
+
+  defp normalize_compatibility_args(["--random-post", "--" <> _ = next | rest]),
+    do: ["--random-post=" | normalize_compatibility_args([next | rest])]
+
   defp normalize_compatibility_args([value | rest]) do
-    aliases = %{"--reply-uri" => "--reply-to", "--quote-only" => "--targets-only", "--staging" => "--queue", "--poll" => "--poll-interval"}
-    value = case String.split(value, "=", parts: 2) do
-      [flag, argument] -> Map.get(aliases, flag, flag) <> "=" <> argument
-      [flag] -> Map.get(aliases, flag, flag)
-    end
+    aliases = %{
+      "--reply-uri" => "--reply-to",
+      "--quote-only" => "--targets-only",
+      "--staging" => "--queue",
+      "--poll" => "--poll-interval"
+    }
+
+    value =
+      case String.split(value, "=", parts: 2) do
+        [flag, argument] -> Map.get(aliases, flag, flag) <> "=" <> argument
+        [flag] -> Map.get(aliases, flag, flag)
+      end
+
     [value | normalize_compatibility_args(rest)]
   end
 
   defp validate_options(options) do
     options = Map.merge(%{poll_interval: 60, interval: 120, jitter: 0, limit: 5}, options)
-    valid_numbers? = options.poll_interval in 10..3600 and options.interval in 1..1440 and options.jitter in 0..60 and options.limit in 1..40
-    unless valid_numbers?, do: raise(Error, "Poll must be 10–3600 seconds; interval 1–1440 minutes; jitter 0–60; limit 1–40.")
-    modes = [:setup, :import_state, :status, :reject, :text, :post_only, :replies_only, :discover, :listen, :daemon, :process_queue, :targets_only, :search, :random_post, :delete]
+
+    valid_numbers? =
+      options.poll_interval in 10..3600 and options.interval in 1..1440 and
+        options.jitter in 0..60 and options.limit in 1..40
+
+    unless valid_numbers?,
+      do:
+        raise(
+          Error,
+          "Poll must be 10–3600 seconds; interval 1–1440 minutes; jitter 0–60; limit 1–40."
+        )
+
+    modes = [
+      :setup,
+      :import_state,
+      :status,
+      :reject,
+      :text,
+      :post_only,
+      :replies_only,
+      :discover,
+      :listen,
+      :daemon,
+      :process_queue,
+      :targets_only,
+      :search,
+      :random_post,
+      :delete
+    ]
+
     mode_count = Enum.count(modes, &Map.has_key?(options, &1))
+
     cond do
-      options[:help] || options[:version] -> {:ok, options}
-      options[:automatic] && !options[:daemon] -> {:error, "--automatic requires --daemon; use the automatic command."}
-      mode_count != 1 -> {:error, "Choose one command at a time."}
-      options[:publish] && (!options[:text] || options[:queue]) -> {:error, "--publish requires --text and cannot be combined with --queue."}
-      options[:reply_to] && options[:quote_uri] -> {:error, "Choose either a reply or quote."}
-      options[:random_reply] && !options[:text] -> {:error, "--random-reply requires --text."}
-      (options[:reply_to] || options[:quote_uri] || options[:cw]) && !options[:text] -> {:error, "Reply, quote and CW options require --text."}
-      options[:random_reply] && (options[:reply_to] || options[:quote_uri]) -> {:error, "Random reply cannot be combined with reply/quote targets."}
-      true -> {:ok, options}
+      options[:help] || options[:version] ->
+        {:ok, options}
+
+      options[:automatic] && !options[:daemon] ->
+        {:error, "--automatic requires --daemon; use the automatic command."}
+
+      mode_count != 1 ->
+        {:error, "Choose one command at a time."}
+
+      options[:publish] && (!options[:text] || options[:queue]) ->
+        {:error, "--publish requires --text and cannot be combined with --queue."}
+
+      options[:reply_to] && options[:quote_uri] ->
+        {:error, "Choose either a reply or quote."}
+
+      options[:random_reply] && !options[:text] ->
+        {:error, "--random-reply requires --text."}
+
+      (options[:reply_to] || options[:quote_uri] || options[:cw]) && !options[:text] ->
+        {:error, "Reply, quote and CW options require --text."}
+
+      options[:random_reply] && (options[:reply_to] || options[:quote_uri]) ->
+        {:error, "Random reply cannot be combined with reply/quote targets."}
+
+      true ->
+        {:ok, options}
     end
   end
 
   defp maybe_help(platform, options) do
     cond do
-      options[:version] -> IO.puts(ChorusDraft.version()); {:exit, 0}
-      options[:help] -> IO.puts(help(platform)); {:exit, 0}
-      true -> :ok
+      options[:version] ->
+        IO.puts(ChorusDraft.version())
+        {:exit, 0}
+
+      options[:help] ->
+        IO.puts(help(platform))
+        {:exit, 0}
+
+      true ->
+        :ok
     end
   end
 
   defp validate_platform(platform, options) do
     cond do
-      options[:help] || options[:version] -> :ok
-      options[:jetstream] && platform != "bluesky" -> {:error, "Jetstream is available only for Bluesky."}
-      options[:jetstream] && !(options[:listen] || options[:daemon]) -> {:error, "--jetstream requires --listen or --daemon."}
-      true -> :ok
+      options[:help] || options[:version] ->
+        :ok
+
+      options[:jetstream] && platform != "bluesky" ->
+        {:error, "Jetstream is available only for Bluesky."}
+
+      options[:jetstream] && !(options[:listen] || options[:daemon]) ->
+        {:error, "--jetstream requires --listen or --daemon."}
+
+      true ->
+        :ok
     end
   end
 
@@ -242,58 +330,111 @@ defmodule ChorusDraft.CLI do
     client = if platform == "bluesky", do: Bluesky.new(env), else: Mastodon.new(env)
     client = client.__struct__.login(client)
     account_key = client.__struct__.account_key(client)
-    account_hash = :crypto.hash(:sha256, "#{platform}:#{account_key}") |> Base.encode16(case: :lower) |> String.slice(0, 24)
+
+    account_hash =
+      :crypto.hash(:sha256, "#{platform}:#{account_key}")
+      |> Base.encode16(case: :lower)
+      |> String.slice(0, 24)
+
     store = Store.new(Path.join([base, "data", account_hash]))
+
     if options[:import_state] do
       count = Store.import_state(store, options.import_state, platform, account_key)
       IO.puts("Imported #{count} drafts and interaction history; source was read only.")
     end
+
     load_do_not_contact(store, Path.join([base, "config", "do_not_contact.txt"]))
-    runner = Runner.new(client, store, platform, env, Keyword.put(io_opts, :automatic, Map.get(options, :automatic, false)))
-    IO.puts("#{platform_title(platform)} #{ChorusDraft.version()} | #{publication_banner(options)} | automatic likes disabled")
+
+    runner =
+      Runner.new(
+        client,
+        store,
+        platform,
+        env,
+        Keyword.put(io_opts, :automatic, Map.get(options, :automatic, false))
+      )
+
+    IO.puts(
+      "#{platform_title(platform)} #{ChorusDraft.version()} | #{publication_banner(options)} | automatic likes disabled"
+    )
+
     dispatch(runner, options, hours, base)
     0
   end
 
   defp dispatch(runner, options, hours, base) do
     cond do
-      options[:import_state] -> :ok
+      options[:import_state] ->
+        :ok
+
       options[:status] ->
         drafts = Store.drafts(runner.store)
+
         Enum.each(["pending", "publishing", "uncertain", "published", "rejected"], fn status ->
           IO.puts("#{status}: #{Enum.count(drafts, &(&1["status"] == status))}")
         end)
-        drafts |> Enum.filter(&(&1["status"] in ["pending", "publishing", "uncertain"])) |> Enum.each(&IO.puts("#{&1["id"]} | #{&1["status"]}"))
+
+        drafts
+        |> Enum.filter(&(&1["status"] in ["pending", "publishing", "uncertain"]))
+        |> Enum.each(&IO.puts("#{&1["id"]} | #{&1["status"]}"))
+
       options[:reject] ->
         Store.transition(runner.store, options.reject, ["pending", "uncertain"], "rejected")
         IO.puts("Rejected draft.")
-      options[:text] -> manual(runner, options)
-      options[:process_queue] -> Runner.review(runner)
-      options[:delete] -> Runner.delete(runner, options.delete)
-      options[:search] -> Runner.inspect_posts(runner, options.search, limit: options.limit)
-      Map.has_key?(options, :random_post) -> Runner.inspect_posts(runner, options.random_post, limit: options.limit, random: true)
+
+      options[:text] ->
+        manual(runner, options)
+
+      options[:process_queue] ->
+        Runner.review(runner)
+
+      options[:delete] ->
+        Runner.delete(runner, options.delete)
+
+      options[:search] ->
+        Runner.inspect_posts(runner, options.search, limit: options.limit)
+
+      Map.has_key?(options, :random_post) ->
+        Runner.inspect_posts(runner, options.random_post, limit: options.limit, random: true)
+
       options[:listen] || options[:daemon] ->
         if jetstream_enabled?(runner.platform, options) do
-          Jetstream.with_stream(runner.client.__struct__.identity(runner.client), runner.env, fn stream ->
-            IO.puts("Jetstream enabled; notification catch-up remains active.")
-            loop(runner, options, hours, base, nil, stream)
-          end)
+          Jetstream.with_stream(
+            runner.client.__struct__.identity(runner.client),
+            runner.env,
+            fn stream ->
+              IO.puts("Jetstream enabled; notification catch-up remains active.")
+              loop(runner, options, hours, base, nil, stream)
+            end
+          )
         else
           loop(runner, options, hours, base, nil, nil)
         end
-      true -> cycle(runner, options, hours, base)
+
+      true ->
+        cycle(runner, options, hours, base)
     end
   end
 
   defp manual(runner, options) do
-    options = if options[:random_reply] do
-      posts = runner.client.__struct__.search(runner.client, options.random_reply, 20) |> Enum.filter(&Runner.eligible?(runner, &1))
-      if posts == [], do: raise(Error, "No eligible public posts found.")
-      Map.put(options, :reply_to, Enum.random(posts)["id"])
-    else
-      options
-    end
-    Runner.manual(runner, options.text, reply_to: options[:reply_to], quote_to: options[:quote_uri], cw: options[:cw], publish: Map.get(options, :publish, false))
+    options =
+      if options[:random_reply] do
+        posts =
+          runner.client.__struct__.search(runner.client, options.random_reply, 20)
+          |> Enum.filter(&Runner.eligible?(runner, &1))
+
+        if posts == [], do: raise(Error, "No eligible public posts found.")
+        Map.put(options, :reply_to, Enum.random(posts)["id"])
+      else
+        options
+      end
+
+    Runner.manual(runner, options.text,
+      reply_to: options[:reply_to],
+      quote_to: options[:quote_uri],
+      cw: options[:cw],
+      publish: Map.get(options, :publish, false)
+    )
   end
 
   defp within_hours?(options, hours), do: options[:ignore_active_hours] || active?(hours)
@@ -301,6 +442,7 @@ defmodule ChorusDraft.CLI do
   defp cycle(runner, options, hours, base) do
     if within_hours?(options, hours) do
       jitter(options)
+
       if within_hours?(options, hours) do
         cond do
           options[:replies_only] || options[:listen] -> Runner.mentions(runner)
@@ -319,8 +461,10 @@ defmodule ChorusDraft.CLI do
   def daemon_cycle(runner, options, hours, base, last_original, now) do
     if within_hours?(options, hours) do
       guarded(fn -> Runner.mentions(runner) end)
+
       if is_nil(last_original) or now - last_original >= options.interval * 60 do
         jitter(options)
+
         if within_hours?(options, hours) do
           guarded(fn -> Runner.original(runner) end)
           guarded(fn -> Runner.targets(runner, targets(options, base)) end)
@@ -345,34 +489,47 @@ defmodule ChorusDraft.CLI do
 
   defp loop(runner, options, hours, base, last_original, stream) do
     started = System.monotonic_time(:millisecond)
-    last_original = if options[:daemon] do
-      daemon_cycle(runner, options, hours, base, last_original, System.monotonic_time(:second))
-    else
-      guarded(fn -> cycle(runner, options, hours, base) end)
-      last_original
-    end
+
+    last_original =
+      if options[:daemon] do
+        daemon_cycle(runner, options, hours, base, last_original, System.monotonic_time(:second))
+      else
+        guarded(fn -> cycle(runner, options, hours, base) end)
+        last_original
+      end
+
     if stream do
       cooldown = max(5_000 - (System.monotonic_time(:millisecond) - started), 0)
       Jetstream.wait(stream, options.poll_interval * 1000, cooldown)
     else
       Process.sleep(options.poll_interval * 1000)
     end
+
     loop(runner, options, hours, base, last_original, stream)
   end
 
   defp targets(options, base) do
-    if options[:target], do: [options.target], else: read_list(Path.join([base, "config", "target_accounts.txt"]))
+    if options[:target],
+      do: [options.target],
+      else: read_list(Path.join([base, "config", "target_accounts.txt"]))
   end
 
   defp discovery_query(options, env) do
-    (options[:query] || env["DISCOVERY_KEYWORDS"] || env["DISCOVERY_TAGS"] || "opensource") |> String.split(",") |> Enum.random() |> String.trim()
+    (options[:query] || env["DISCOVERY_KEYWORDS"] || env["DISCOVERY_TAGS"] || "opensource")
+    |> String.split(",")
+    |> Enum.random()
+    |> String.trim()
   end
 
   defp load_do_not_contact(store, path), do: Enum.each(read_list(path), &Store.block(store, &1))
 
   defp read_list(path) do
     if File.regular?(path) do
-      path |> File.read!() |> String.split("\n") |> Enum.map(&String.trim/1) |> Enum.reject(&(&1 == "" or String.starts_with?(&1, "#")))
+      path
+      |> File.read!()
+      |> String.split("\n")
+      |> Enum.map(&String.trim/1)
+      |> Enum.reject(&(&1 == "" or String.starts_with?(&1, "#")))
     else
       []
     end

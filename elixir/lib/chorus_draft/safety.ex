@@ -1,11 +1,11 @@
 defmodule ChorusDraft.Safety do
-  alias ChorusDraft.Error
+  alias ChorusDraft.{Error, PII}
 
   @opt_out ~r/\b(?:leave\s+me\s+alone|(?:do\s+not|don't|dont|stop)\s+(?:reply(?:ing)?|respond(?:ing)?|contact(?:ing)?|mention(?:ing)?)(?:\s+to)?\s+me)\b/iu
   @abuse ~r/(?:\b(?:kill|hang)\s+yourself\b|\bdie\s+in\s+(?:a\s+)?fire\b|\bbomb\s+threat\b|\bdoxx?(?:ing|ed)?\b|\b(?:everyone|everybody)\s+(?:go\s+)?(?:attack|harass|report|threaten)\b|\byou(?:'re|\s+are)\s+(?:an?\s+)?(?:idiot|moron|worthless|pathetic)\b)/iu
   @automatic_abuse ~r/(?:\b(?:clown|creep|disgusting|dumb|idiot|loser|moron|pathetic|stupid|trash|worthless)\b|\b(?:shut\s+up|go\s+(?:away|die)|nobody\s+likes\s+you)\b|\b(?:attack|dogpile|harass|mass[- ]?report|ratio|threaten)\s+@?\w+|\b(?:send\s+nudes|nice\s+(?:ass|tits)|your\s+(?:body|chest)\s+is\s+hot)\b)/iu
   @automatic_mention ~r/(?<![\p{L}\p{N}_@])@[\p{L}\p{N}_][\p{L}\p{N}_.-]*(?:@[\p{L}\p{N}_][\p{L}\p{N}_.-]*)?/u
-  @automatic_url ~r/(?:\b(?:https?:\/\/|www\.)[^\s<>]+|\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:ai|app|co|com|dev|io|net|org|social|xyz)(?:\/[^\s<>]*)?)/iu
+  @automatic_url ~r/(?:\b(?:https?:\/\/|www\.)[^\s<>]+|\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[\p{L}]{2,63}|xn--[a-z0-9-]{2,59})(?:\/[^\s<>]*)?)/iu
   @automatic_email ~r/\b[a-z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+\b/iu
   @automatic_phone ~r/(?<![\p{L}\p{N}])\+?\d[\d .()-]{6,}\d(?![\p{L}\p{N}])/u
   @automatic_address ~r/\b\d{1,6}\s+[\p{L}\p{N}][\p{L}\p{N} .'’-]{0,60}\s+(?:avenue|ave|boulevard|blvd|court|ct|drive|dr|lane|ln|road|rd|street|st|way)\b/iu
@@ -61,6 +61,7 @@ defmodule ChorusDraft.Safety do
 
   def validate_automatic_text!(text, limit) do
     validate_text!(text, limit)
+    PII.validate!(text)
     value = screening_text(text)
 
     cond do

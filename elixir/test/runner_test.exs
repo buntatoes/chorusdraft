@@ -128,7 +128,7 @@ defmodule ChorusDraft.RunnerTest do
     client: client,
     published: published
   } do
-    Process.put({ChorusDraft.TestAI, :text}, "Ask @third-party.example about 123 Example Street")
+    Process.put({ChorusDraft.TestAI, :text}, "Ask @third-party.example about this deployment")
     discovery = %{post("discovery") | "author" => "bob@example.org", "author_id" => "bob"}
     run = runner(%{client | posts: [post("target"), discovery]}, dir, automatic: true)
 
@@ -136,6 +136,21 @@ defmodule ChorusDraft.RunnerTest do
     assert Runner.targets(run, ["alice"])["status"] == "pending"
     assert Runner.discovery(run, "topic")["status"] == "pending"
     assert Agent.get(published, & &1) == []
+  end
+
+  test "PII is rejected before staging in automatic and review modes", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    Process.put({ChorusDraft.TestAI, :text}, "Meet at 123 Example Street")
+
+    for automatic <- [false, true] do
+      run = runner(client, dir, automatic: automatic)
+      assert_raise Error, fn -> Runner.original(run) end
+      assert Store.drafts(dir) == []
+      assert Agent.get(published, & &1) == []
+    end
   end
 
   test "source changes or opt-outs after generation prevent automatic publication", %{
