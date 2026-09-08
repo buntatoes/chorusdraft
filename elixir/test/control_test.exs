@@ -23,4 +23,27 @@ defmodule ChorusDraft.ControlTest do
 
     assert Control.decode!(~s({"action":"edit","text":"keep\\ttabs"}))["text"] == "keep\ttabs"
   end
+
+  test "control read accepts piped binaries and list-mode stdio charlists" do
+    path = Path.join(System.tmp_dir!(), "control-#{System.unique_integer([:positive])}.txt")
+    File.write!(path, ~s({"action":"approve"}\n{"action":"quit"}\n))
+    on_exit(fn -> File.rm(path) end)
+
+    {:ok, binary} = File.open(path, [:read, :binary])
+
+    try do
+      assert Control.read(binary) == %{"action" => "approve"}
+    after
+      File.close(binary)
+    end
+
+    {:ok, listed} = :file.open(String.to_charlist(path), [:read])
+    :ok = :io.setopts(listed, [{:binary, false}, {:encoding, :unicode}])
+
+    try do
+      assert Control.read(listed) == %{"action" => "approve"}
+    after
+      :file.close(listed)
+    end
+  end
 end

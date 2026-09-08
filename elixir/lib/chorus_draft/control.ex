@@ -9,8 +9,9 @@ defmodule ChorusDraft.Control do
 
   def setup! do
     if enabled?() do
-      _ = :io.setopts(:standard_io, [{:encoding, :unicode}, {:binary, false}])
-      _ = :io.setopts(:standard_io, [{:buffer, :line}])
+      # JSON lines travel over a pipe. List-mode stdio makes IO.read/2 return
+      # charlists, which used to crash review with a generic failure.
+      _ = :io.setopts(:standard_io, [:binary])
     end
 
     :ok
@@ -43,15 +44,10 @@ defmodule ChorusDraft.Control do
   end
 
   def read(device) do
-    case IO.read(device, :line) do
-      :eof ->
-        %{"action" => "quit"}
-
-      {:error, _} ->
-        %{"action" => "quit"}
-
-      line when is_binary(line) ->
-        decode!(line)
+    case line(device) do
+      :eof -> %{"action" => "quit"}
+      {:error, _} -> %{"action" => "quit"}
+      data -> decode!(normalize(data))
     end
   end
 
@@ -80,6 +76,17 @@ defmodule ChorusDraft.Control do
   end
 
   defp validate!(action, _command), do: %{"action" => action}
+
+  defp line(device) do
+    try do
+      IO.binread(device, :line)
+    rescue
+      _ -> IO.read(device, :line)
+    end
+  end
+
+  defp normalize(data) when is_binary(data), do: data
+  defp normalize(data) when is_list(data), do: List.to_string(data)
 
   defp ending(text), do: if(String.ends_with?(text, "\n"), do: text, else: text <> "\n")
 end
