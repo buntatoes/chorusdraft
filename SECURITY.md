@@ -119,15 +119,7 @@ and reconnect backoff are bounded. Invalid handshakes and unsolicited
 compression are refused. Periodic API checks reduce missed notifications after
 disconnects but cannot guarantee complete delivery. Mastodon uses polling.
 
-## Verification and known limits
-
-The 0.51.4 suite contains 83 offline regressions and package checks for Linux,
-macOS, and Windows. Tests use synthetic fixtures and loopback servers without
-credentials or live publication. Coverage includes review and automatic mode,
-source-edit and opt-out revalidation, publication budgets and interlocks,
-ambiguous outcomes, state migration, provider errors, HTTP/WebSocket bounds,
-checksums, installation, private configuration, runtime-data exclusion, and an
-offline rebuild from shipped source.
+## Known limits
 
 Inbound prompt-injection screening and the stricter automatic-output gates are
 best-effort, deterministic regex checks on normalized text (NFKC and
