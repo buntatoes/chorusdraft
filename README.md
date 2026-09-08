@@ -8,6 +8,18 @@ originals and eligible public-mention replies after deterministic safeguards.
 Writing style favors dry wit and playful observations, with a sincere tone for
 serious topics. Providers: local/Ollama, Gemini, or ChatGPT/OpenAI.
 
+## Latest updates
+
+**On `main` — not yet included in release downloads**
+
+- Redacts recognized personal information from context before sending it to an AI provider.
+- Rejects detected personal information and common credential formats in AI drafts, with another check before publication.
+- Expands automatic link screening while preserving public social mentions.
+
+**Latest release: [v0.51.4](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.4)** — adds opt-in automatic publishing, ChatGPT/OpenAI support, and controls for uncertain publications. Review remains the default.
+
+See the [changelog](CHANGELOG.md) for details and [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases) for downloads.
+
 ## What it does
 
 - Drafts originals, replies, quotes, target commentary, and discovery commentary
