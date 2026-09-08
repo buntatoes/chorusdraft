@@ -125,7 +125,7 @@ function App() {
   const [notice, setNotice] = useState("");
   const activityParts = useRef([]);
   const [platform, setPlatform] = useState("bluesky");
-  const [version, setVersion] = useState("0.51.4-testing");
+  const [version, setVersion] = useState("0.51.4");
   const [running, setRunning] = useState(false);
   const [action, setAction] = useState(null);
   const [activity, setActivity] = useState("");
@@ -330,7 +330,7 @@ function App() {
         <div className="sidebar-footer">
           <span className="version-mark">C</span>
           <div>
-            ChorusDraft<span>{version.replace("-testing", "")} · Preview</span>
+            ChorusDraft<span>{version}</span>
           </div>
         </div>
       </aside>
@@ -340,7 +340,7 @@ function App() {
             Workspace <span>/</span>{" "}
             {page === "history" ? "History" : "Overview"}
           </div>
-          <span className="preview-tag">0.51.4 PREVIEW</span>
+          <span className="version-tag">{version}</span>
         </header>
         <div className="workspace">
           {notice && (

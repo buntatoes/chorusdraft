@@ -1,8 +1,7 @@
 # ChorusDraft
 
 Elixir app for Linux, macOS, and Windows. One executable, Bluesky and Mastodon
-modes. Version 0.51.4; `main` has extra privacy and automatic-screening checks
-that are not in the v0.51.4 downloads. See [CHANGELOG.md](CHANGELOG.md).
+modes. Version 0.51.4. See [CHANGELOG.md](CHANGELOG.md).
 
 Review is the default. `automatic` may publish new originals and eligible
 public-mention replies after stricter checks.

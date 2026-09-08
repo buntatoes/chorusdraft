@@ -4,17 +4,13 @@ Downloads: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
 0.51.4 adds opt-in automatic mode, makes Jetstream the Bluesky listener
 transport, and adds ChatGPT via the OpenAI Responses API. Review stays the
-default.
-
-`main` has later privacy and screening fixes. Those are not in the v0.51.4
-zips. See [CHANGELOG.md](CHANGELOG.md).
-
-The desktop preview includes protected credentials, ten-day local history, and
-verified Windows console detection. Desktop packages are CI artifacts and are
-not the published v0.51.4 CLI release.
+default. This version also includes the desktop launcher, Apache License 2.0,
+and later privacy and screening checks.
 
 ## Highlights
 
+- Desktop launcher with encrypted account settings, ten-day local history, and
+  verified Windows console detection. See [docs/DESKTOP.md](../docs/DESKTOP.md).
 - `chorusdraft PLATFORM automatic` may auto-post new originals and eligible
   public-mention replies.
 - `reject ID` drops a pending or uncertain draft so automatic mode can resume.
@@ -25,6 +21,9 @@ not the published v0.51.4 CLI release.
   Local/Ollama and Gemini still work.
 - Bluesky `listen` and `start` use Jetstream. `--jetstream` is a no-op;
   `--no-jetstream` is rejected.
+- Recognized personal information is redacted from AI context and rejected in
+  drafts. Inherited content warnings and CW opt-outs are screened on automatic
+  replies.
 
 ## Automatic mode
 
@@ -63,9 +62,14 @@ runtime config are not in release packages.
 
 ## Packages
 
+CLI:
+
 - `ChorusDraft-elixir-0.51.4-linux.tar.gz`
 - `ChorusDraft-elixir-0.51.4-macos.tar.gz`
 - `ChorusDraft-elixir-0.51.4-windows.zip`
+
+Desktop (`chorusdraft-v0.51.4-<os>-<arch>`, `.tar.gz` on Unix, `.zip` on
+Windows) includes the Elixir bot and the launcher.
 
 Each archive has the executable, setup/install/verify scripts, config
 examples, docs, application source, pinned dependency source and licenses, a

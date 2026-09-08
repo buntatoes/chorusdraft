@@ -14,7 +14,9 @@ a local Ollama/OpenAI-compatible endpoint, Gemini, or ChatGPT/OpenAI API key and
 
 ## Download and launch
 
-Development desktop packages are available as artifacts from successful
+Desktop packages are available from
+[GitHub Releases](https://github.com/buntatoes/chorusdraft/releases) and as
+artifacts from successful
 [desktop checks](https://github.com/buntatoes/chorusdraft/actions/workflows/bot-testing.yml).
 Choose your operating system and processor architecture, then extract the download.
 Each package contains the Elixir bot, both social platforms, the desktop launcher,

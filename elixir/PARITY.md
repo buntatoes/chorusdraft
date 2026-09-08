@@ -5,7 +5,7 @@ ChorusDraft's historical Ruby 0.51.1 reference commit
 `68b83694ec34b1161839b5ff62a857a774415ece`. Ruby is no longer part of the active
 0.51.3 application. Compatible legacy JSON state remains importable.
 
-Version 0.51.3 adds short commands, the React desktop interface, protected GUI
+Version 0.51.4 includes short commands, the React desktop interface, protected GUI
 credential entry, and local history retention. The table below describes the
 inherited behavioral baseline.
 

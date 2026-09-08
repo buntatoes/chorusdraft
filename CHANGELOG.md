@@ -2,13 +2,18 @@
 
 Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
-## Unreleased
+## 0.51.4 — 2026-09-08
+
+### License and desktop
 
 - Apache License 2.0.
-- Desktop preview 0.51.4-testing: ChatGPT credentials, automatic mode, and
-  ten-day local history. Windows console detection is verified in the terminal
+- Desktop launcher with ChatGPT credentials, automatic mode, and ten-day
+  local history. Windows console detection is verified in the terminal
   launcher before enabling queue review.
 - Replace the README project image with a high-contrast ChorusDraft banner.
+
+### Privacy and screening
+
 - Screen inherited content warnings before automatic publication and honor
   opt-outs in source text and content warnings.
 - Expand automatic screening for direct threats, self-harm encouragement,
@@ -19,8 +24,6 @@ Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/r
   output and recheck saved AI drafts and content warnings before publication.
 - Expand automatic link screening beyond a small list of domain suffixes.
 - Add a verified email-history cleanup utility for authenticated local use.
-
-## 0.51.4 — 2026-09-07
 
 ### Automatic mode
 

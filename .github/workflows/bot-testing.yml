@@ -2,9 +2,9 @@ name: Elixir desktop checks
 
 on:
   push:
-    branches: [bot-testing]
+    branches: [main, bot-testing]
   pull_request:
-    branches: [bot-testing]
+    branches: [main, bot-testing]
   workflow_dispatch:
 
 permissions:
@@ -98,7 +98,7 @@ jobs:
         run: python scripts/verify_launcher.py
       - uses: actions/upload-artifact@v4
         with:
-          name: chorusdraft-testing-${{ matrix.os }}
-          path: dist/chorusdraft-v0.51.4-testing-*
+          name: chorusdraft-${{ matrix.os }}
+          path: dist/chorusdraft-v0.51.4-*
           if-no-files-found: error
           retention-days: 14

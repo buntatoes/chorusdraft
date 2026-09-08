@@ -21,21 +21,18 @@ Providers: local/Ollama, Gemini, or ChatGPT/OpenAI.
 
 ## Latest
 
-Desktop preview: encrypted account settings, ten-day searchable local history,
-ChatGPT/OpenAI setup, and an explicit automatic-mode action. See
-[the desktop guide](docs/DESKTOP.md).
+**[v0.51.4](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.4)**
 
-**On `main`, not in the v0.51.4 downloads yet**
-
+- Desktop: encrypted account settings, ten-day searchable local history,
+  ChatGPT/OpenAI setup, and an explicit automatic-mode action. See
+  [the desktop guide](docs/DESKTOP.md).
 - Redacts recognized personal information before it goes to an AI provider.
 - Rejects those patterns (and common credentials) in drafts, then checks again
   before publish.
 - Broader automatic link screening; public @mentions still work.
 - Screens inherited content warnings and honors CW opt-outs on automatic
   replies; stronger threat and harassment checks.
-
-**[v0.51.4](https://github.com/buntatoes/chorusdraft/releases/tag/v0.51.4)** —
-opt-in automatic publishing, ChatGPT, and controls for uncertain drafts.
+- Opt-in automatic publishing, ChatGPT, and controls for uncertain drafts.
 
 [Changelog](CHANGELOG.md) · [Releases](https://github.com/buntatoes/chorusdraft/releases) · [Build](elixir/README.md) · [Security](SECURITY.md)
 
