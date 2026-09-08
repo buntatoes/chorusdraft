@@ -88,7 +88,7 @@ button:not(:disabled):active {
   width: 36px;
   display: grid;
   place-items: center;
-  background: #6851c9;
+  background: linear-gradient(180deg, #7a63d6 0%, #6851c9 55%, #5c46bc 100%);
   border-radius: 11px;
   color: #fff;
   flex-shrink: 0;

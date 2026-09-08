@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="ChorusDraft">
+  <defs>
+    <linearGradient id="mark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7a63d6"/>
+      <stop offset="0.55" stop-color="#6851c9"/>
+      <stop offset="1" stop-color="#5c46bc"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="236" fill="url(#mark)"/>
+  <g transform="translate(172 172) scale(21.25)" fill="none" stroke="#fff" stroke-linejoin="round">
+    <path d="M7 12c0-4 4-7 9-7s9 3 9 7v6c0 4-4 7-9 7h-3l-6 3V12Z" stroke-width="2.4"/>
+    <path d="M12 13v5m4-8v11m4-8v5" stroke-width="2" stroke-linecap="round"/>
+  </g>
+</svg>
