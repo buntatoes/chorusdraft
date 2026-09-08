@@ -157,6 +157,7 @@ export function Settings({ selection, onClose, onSaved }) {
               <label className="settings-field">
                 <span>Provider</span>
                 <select
+                  aria-label="Provider"
                   value={
                     values.AI_PROVIDER === "ollama"
                       ? "local"
