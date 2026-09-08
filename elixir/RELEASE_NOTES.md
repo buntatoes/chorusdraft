@@ -85,18 +85,3 @@ scripts, configuration examples, documentation, GPL source, pinned dependency
 source and licenses, and a complete manifest. Each archive has a SHA-256
 sidecar. Install into a new directory and import compatible state explicitly
 after stopping the old process.
-
-## Verification status
-
-The automated suite contains 83 offline regressions and passes on Elixir 1.15.8
-with Erlang/OTP 25. Tests cover review and automatic publication boundaries,
-strict output screening, exact source revalidation, opt-outs, persistent
-budgets, atomic claims, ambiguous outcomes, stale-claim recovery, provider
-response validation, Jetstream framing, HTTP bounds, state migration, and
-package behavior.
-
-The repository workflow runs tests, source builds, formatting, and package
-checks on Ubuntu 22.04, macOS 14, and Windows Server 2022. Local verification
-does not establish live-service acceptance. Use disposable accounts to test
-login, read-only search, review and automatic modes, publication, deletion,
-opt-outs, and reconnect behavior before production use.
