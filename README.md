@@ -92,3 +92,5 @@ disposable account first. Details: [SECURITY.md](SECURITY.md).
 ## License
 
 Copyright 2026 Buntos. [Apache License 2.0](LICENSE). See [NOTICE](NOTICE).
+
+Issues and pull requests follow the [code of conduct](CODE_OF_CONDUCT.md).
