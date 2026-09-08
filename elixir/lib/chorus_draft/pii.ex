@@ -3,8 +3,8 @@ defmodule ChorusDraft.PII do
   alias ChorusDraft.{Error, Safety}
 
   # A leading @ distinguishes a federated social mention from an email address.
-  @email ~r/(?<![\p{L}\p{N}_@])[\p{L}\p{N}.!#$%&'*+\/=?^_`{|}~-]+\s*@\s*[\p{L}\p{N}-]+(?:\s*\.\s*[\p{L}\p{N}-]+)+/iu
-  @obfuscated_email ~r/(?<![\p{L}\p{N}_@])[\p{L}\p{N}._%+-]+\s*(?:\[at\]|\(at\)|\{at\}|\s+at\s+)\s*[\p{L}\p{N}-]+(?:\s*(?:\[dot\]|\(dot\)|\{dot\}|\s+dot\s+|\.)\s*[\p{L}\p{N}-]+)+/iu
+  @email ~r/(?<![\p{L}\p{N}_@])[\p{L}\p{N}.!#$%&'*+\/=?^_`{|}~-]+@[\p{L}\p{N}-]+(?:\s*\.\s*[\p{L}\p{N}-]+)+/iu
+  @obfuscated_email ~r/(?<![\p{L}\p{N}_@])[\p{L}\p{N}._%+-]+\s*(?:\[at\]|\(at\)|\{at\}|\s+at\s+|\s+@\s+)\s*[\p{L}\p{N}-]+(?:\s*(?:\[dot\]|\(dot\)|\{dot\}|\s+dot\s+|\.)\s*[\p{L}\p{N}-]+)+/iu
   # Seven or more digits covers local/international phones, SSNs and card numbers.
   @number ~r/(?<![\p{L}\p{N}])\+?\p{Nd}(?:[\p{Zs}\t.()\-‐‑‒–—]*\p{Nd}){6,}(?![\p{L}\p{N}])/u
   @address ~r/\b\d{1,6}\s+[\p{L}\p{N}][\p{L}\p{N} .'’-]{0,60}\s+(?:avenue|ave|boulevard|blvd|court|ct|drive|dr|lane|ln|road|rd|street|st|way|place|pl|terrace|ter|circle|cir|parkway|pkwy|highway|hwy)\b/iu
