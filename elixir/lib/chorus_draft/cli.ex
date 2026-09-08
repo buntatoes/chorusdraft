@@ -172,6 +172,7 @@ defmodule ChorusDraft.CLI do
 
   def normalize_short_command(["edit", id, text | rest]),
     do: ["--edit", id, "--text", text | rest]
+
   def normalize_short_command(["random"]), do: ["--random-post="]
 
   def normalize_short_command(["random", "--" <> _ = option | rest]),

@@ -354,11 +354,8 @@ defmodule ChorusDraft.Runner do
 
       String.starts_with?(raw, "<<JSON>>") ->
         case Jason.decode(String.replace_prefix(raw, "<<JSON>>", "")) do
-          {:ok, text} when is_binary(text) and String.trim(text) != "" ->
-            {:ok, text}
-
           {:ok, text} when is_binary(text) ->
-            :cancel
+            if String.trim(text) == "", do: :cancel, else: {:ok, text}
 
           _ ->
             raise Error, "Replacement text is invalid."

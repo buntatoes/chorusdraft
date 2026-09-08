@@ -15,7 +15,12 @@ defmodule ChorusDraft.CommandsTest do
            ]
 
     assert Commands.normalize(["quote", "123", text]) == ["--text=" <> text, "--quote-uri=123"]
-    assert Commands.normalize(["edit", "draft-id", text]) == ["--edit=draft-id", "--text=" <> text]
+
+    assert Commands.normalize(["edit", "draft-id", text]) == [
+             "--edit=draft-id",
+             "--text=" <> text
+           ]
+
     assert Commands.normalize(["start", "--jetstream"]) == ["--daemon", "--jetstream"]
     assert Commands.normalize(["random", "--limit", "3"]) == ["--random-post=", "--limit", "3"]
     assert Commands.normalize(["discover", "ruby"]) == ["--discover", "--query=ruby"]

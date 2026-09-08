@@ -125,8 +125,7 @@ defmodule ChorusDraft.Store do
          limit: @automatic_limit,
          used: used,
          remaining: max(@automatic_limit - used, 0),
-         frozen:
-           Enum.any?(pruned["drafts"], &(&1["status"] in ["publishing", "uncertain"]))
+         frozen: Enum.any?(pruned["drafts"], &(&1["status"] in ["publishing", "uncertain"]))
        }, pruned}
     end)
   end
@@ -150,8 +149,9 @@ defmodule ChorusDraft.Store do
 
       changed = updater.(Enum.at(state["drafts"], index))
 
-      unless is_map(changed) and is_binary(changed["text"]) and String.trim(changed["text"]) != "",
-        do: raise(Error, "Replacement text is required.")
+      unless is_map(changed) and is_binary(changed["text"]) and
+               String.trim(changed["text"]) != "",
+             do: raise(Error, "Replacement text is required.")
 
       validate_draft!(changed)
       {changed, put_in(state, ["drafts", Access.at(index)], changed)}

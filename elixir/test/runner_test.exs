@@ -322,6 +322,7 @@ defmodule ChorusDraft.RunnerTest do
 
     updated =
       Runner.replace_pending(runner(client, dir), saved["id"], "replacement wording")
+
     assert updated["text"] == "replacement wording"
     assert updated["status"] == "pending"
     assert Agent.get(published, & &1) == []
