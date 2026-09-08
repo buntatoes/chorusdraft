@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/chorusdraft-logo.png" alt="ChorusDraft logo" width="420">
+  <img src="assets/chorusdraft-logo.png" alt="ChorusDraft — conversation bubble and fountain pen banner" width="720">
 </p>
 
 # ChorusDraft

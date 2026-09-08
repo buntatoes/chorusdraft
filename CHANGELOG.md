@@ -5,6 +5,7 @@ notes are published in [GitHub Releases](https://github.com/buntatoes/chorusdraf
 
 ## Unreleased
 
+- Replace the README project image with a new high-contrast ChorusDraft banner.
 - Screen inherited content warnings before automatic publication and honor
   opt-outs in both source text and content warnings.
 - Expand automatic screening for direct threats, self-harm encouragement,
