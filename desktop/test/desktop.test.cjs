@@ -185,6 +185,14 @@ test(
           /Staged manual draft /,
         );
       }
+      await page.getByRole("button", { name: "Queue", exact: true }).click();
+      await page.getByRole("heading", { name: "Queue", exact: true }).waitFor();
+      await page.getByText(texts[0], { exact: true }).waitFor();
+      await page.getByText(texts[1], { exact: true }).waitFor();
+      await page
+        .getByText(/Automatic attempts remaining: 5\/5/)
+        .waitFor();
+      await page.getByRole("button", { name: "Overview", exact: true }).click();
       await assert.rejects(fs.access(path.join(root, "published.txt")));
       await page
         .getByRole("button", { name: "Open review", exact: true })

@@ -2,8 +2,25 @@
 
 Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
-## Unreleased
+## 0.51.5 — 2026-09-08
 
+### Queue and review
+
+- Desktop Queue lists pending, publishing, and uncertain drafts, with remaining
+  automatic attempts and freeze state.
+- `edit ID TEXT` replaces pending draft text. The new text is screened, then
+  stays pending for review. `--publish` cannot be combined with `--edit`.
+- Interactive review accepts `e` to replace the current draft, then asks again
+  before publish.
+- `status` prints the automatic attempt budget and whether automatic mode is
+  frozen.
+
+### Packaging
+
+- CI artifact paths are taken from `VERSION`, so a testing suffix cannot fail
+  the upload step after tests pass.
+- Elixir checks can be started by hand and cancel overlapping runs on the same
+  branch.
 - README banner uses the desktop speech-bubble and voices mark.
 
 ## 0.51.4 — 2026-09-08

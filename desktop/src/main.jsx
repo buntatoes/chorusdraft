@@ -1,4 +1,4 @@
-import { Settings, History } from "./Privacy.jsx";
+import { Settings, History, Queue } from "./Privacy.jsx";
 import { TerminalText } from "./terminal.mjs";
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -113,6 +113,9 @@ const titles = {
   replies: "Draft replies",
   search: "Search posts",
   post: "Write a post",
+  edit: "Edit draft",
+  reject: "Reject draft",
+  status: "Queue status",
   help: "Command help",
   version: "Version",
 };
@@ -125,7 +128,7 @@ function App() {
   const [notice, setNotice] = useState("");
   const activityParts = useRef([]);
   const [platform, setPlatform] = useState("bluesky");
-  const [version, setVersion] = useState("0.51.4");
+  const [version, setVersion] = useState("0.51.5");
   const [running, setRunning] = useState(false);
   const [action, setAction] = useState(null);
   const [activity, setActivity] = useState("");
@@ -139,6 +142,8 @@ function App() {
   const promptBuffer = useRef("");
   const approvalAvailable = useRef(false);
   const [reviewPrompt, setReviewPrompt] = useState(false);
+  const [editingReview, setEditingReview] = useState(false);
+  const [reviewEdit, setReviewEdit] = useState("");
   useEffect(() => {
     if (!api) {
       setError("Open ChorusDraft in the desktop app to use the bot controls.");
@@ -230,7 +235,7 @@ function App() {
       setRunning(false);
     }
   };
-  const run = async (nextAction, suppliedText) => {
+  const run = async (nextAction, suppliedText, target) => {
     if (!api || running) return;
     if (["search", "post"].includes(nextAction) && suppliedText === undefined) {
       setText("");
@@ -249,13 +254,21 @@ function App() {
     promptBuffer.current = "";
     approvalAvailable.current = false;
     setReviewPrompt(false);
+    setEditingReview(false);
+    setReviewEdit("");
     await invoke(() =>
-      api.run({ runtime, platform, action: nextAction, text: suppliedText }),
+      api.run({
+        runtime,
+        platform,
+        action: nextAction,
+        text: suppliedText,
+        target,
+      }),
     );
   };
-  const send = async (value) => {
+  const send = async (value, opts = {}) => {
     if (!api || !running) return;
-    if (action === "review" && !approvalAvailable.current) return;
+    if (action === "review" && !opts.force && !approvalAvailable.current) return;
     approvalAvailable.current = false;
     promptBuffer.current = "";
     setReviewPrompt(false);
@@ -304,6 +317,14 @@ function App() {
             Configuration
           </button>
           <button
+            className={`nav-button ${page === "queue" ? "selected" : ""}`}
+            disabled={!api}
+            onClick={() => setPage("queue")}
+          >
+            <Icon name="review" />
+            Queue
+          </button>
+          <button
             className={`nav-button ${page === "history" ? "selected" : ""}`}
             disabled={!api}
             onClick={() => setPage("history")}
@@ -338,7 +359,11 @@ function App() {
         <header className="topbar">
           <div>
             Workspace <span>/</span>{" "}
-            {page === "history" ? "History" : "Overview"}
+            {page === "history"
+              ? "History"
+              : page === "queue"
+                ? "Queue"
+                : "Overview"}
           </div>
           <span className="version-tag">{version}</span>
         </header>
@@ -369,6 +394,26 @@ function App() {
                 </select>
               </label>
               <History selection={{ runtime, platform }} />
+            </>
+          ) : page === "queue" ? (
+            <>
+              <label className="history-selection">
+                Platform
+                <select
+                  aria-label="Queue platform"
+                  disabled={running}
+                  value={platform}
+                  onChange={(e) => setPlatform(e.target.value)}
+                >
+                  <option value="bluesky">Bluesky</option>
+                  <option value="mastodon">Mastodon</option>
+                </select>
+              </label>
+              <Queue
+                selection={{ runtime, platform }}
+                running={running}
+                onRun={(action, text, target) => run(action, text, target)}
+              />
             </>
           ) : (
             <>
@@ -553,19 +598,66 @@ function App() {
                 </div>
                 {reviewReady && (
                   <div className="review-actions">
-                    <span>Publish the exact draft displayed above?</span>
-                    <button
-                      className="button secondary"
-                      onClick={() => send("d")}
-                    >
-                      Reject draft
-                    </button>
-                    <button
-                      className="button primary"
-                      onClick={() => send("y")}
-                    >
-                      Publish this draft
-                    </button>
+                    {editingReview ? (
+                      <>
+                        <label className="settings-field">
+                          Replacement text
+                          <textarea
+                            aria-label="Replacement draft text"
+                            maxLength={10000}
+                            value={reviewEdit}
+                            onChange={(e) => setReviewEdit(e.target.value)}
+                          />
+                        </label>
+                        <button
+                          className="button secondary"
+                          onClick={() => {
+                            setEditingReview(false);
+                            setReviewEdit("");
+                          }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          className="button primary"
+                          disabled={!reviewEdit.trim()}
+                          onClick={async () => {
+                            const next = reviewEdit.replace(/\s+/g, " ").trim();
+                            setEditingReview(false);
+                            setReviewEdit("");
+                            await send("e");
+                            await send(next, { force: true });
+                          }}
+                        >
+                          Save edit
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <span>Publish the exact draft displayed above?</span>
+                        <button
+                          className="button secondary"
+                          onClick={() => send("d")}
+                        >
+                          Reject draft
+                        </button>
+                        <button
+                          className="button secondary"
+                          onClick={() => {
+                            setEditingReview(true);
+                            setReviewEdit("");
+                          }}
+                        >
+                          Edit text
+                        </button>
+                        <button
+                          className="button primary"
+                          onClick={() => send("y")}
+                        >
+                          Publish this draft
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
                 <form

@@ -36,8 +36,11 @@ use the same script with `--remove` before removing an old download.
 
 Choose Bluesky or Mastodon, click **Set up**, then click **Open configuration** to enter your
 account and AI settings. Click **Create a draft** to draft a post and
-**Open review** to approve or reject it. During review, use **Publish this draft**
-or **Reject draft**. You can also send `y`, `d`, or `q` through the response field.
+**Open review** to approve, edit, or reject it. **Queue** lists pending and
+uncertain drafts, remaining automatic attempts, and freeze state. Edit text
+from Queue or during review; the replacement is screened and still needs
+approval. During review, use **Publish this draft**, **Edit text**, or
+**Reject draft**. You can also send `y`, `e`, `d`, or `q` through the response field.
 Review mode requires individual approval. **Start automatic mode** explicitly
 permits only newly generated originals and eligible incoming mention replies,
 after source, privacy, harassment, opt-out, and publication-budget checks.
@@ -134,7 +137,8 @@ On Windows, replace `./bot` with `.\bot.bat`.
 | `history` | Show locally recorded published posts from the last 10 days |
 | `status` | Show account state and unresolved drafts |
 | `import FILE` | Import compatible state into an empty account store |
-| `reject ID` | Reject a pending draft |
+| `reject ID` | Reject a pending or uncertain draft |
+| `edit ID "TEXT"` | Replace pending draft text; review still required |
 | `help` / `version` | Show command help or the build version |
 
 Existing Elixir flags and the `./bot elixir PLATFORM COMMAND` form remain supported.

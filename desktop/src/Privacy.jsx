@@ -415,3 +415,143 @@ export function History({ selection }) {
     </section>
   );
 }
+export function Queue({ selection, running, onRun }) {
+  const [data, setData] = useState(null),
+    [error, setError] = useState(""),
+    [editing, setEditing] = useState(null),
+    [text, setText] = useState("");
+  const load = () => {
+    if (!window.chorus) return;
+    window.chorus
+      .queue(selection)
+      .then((v) => {
+        setData(v);
+        setError("");
+      })
+      .catch(() =>
+        setError("The local queue could not be read. Check storage permissions."),
+      );
+  };
+  useEffect(() => {
+    load();
+  }, [selection.platform, running]);
+  const save = (item) => {
+    const next = text.trim();
+    if (!next || running) return;
+    setEditing(null);
+    onRun("edit", next, item.id);
+  };
+  return (
+    <section className="history-page" aria-label="Draft queue">
+      <div className="eyebrow">WAITING ON YOU</div>
+      <h1>Queue</h1>
+      <p>
+        Pending drafts stay here until you review, edit, or reject them.
+        Uncertain drafts freeze automatic mode until you reject them after
+        checking the account.
+      </p>
+      {data?.automatic && (
+        <p className={`queue-budget${data.automatic.frozen ? " frozen" : ""}`}>
+          Automatic attempts remaining: {data.automatic.remaining}/
+          {data.automatic.limit}
+          {data.automatic.frozen
+            ? " · frozen while a publishing or uncertain draft is open"
+            : ""}
+        </p>
+      )}
+      {error && (
+        <p className="settings-error" role="alert">
+          {error}
+        </p>
+      )}
+      {data && !data.items.length && (
+        <div className="history-empty">
+          <h2>Queue is empty</h2>
+          <p>New drafts and unresolved publications appear here.</p>
+        </div>
+      )}
+      <div className="history-list">
+        {data?.items.map((item) => (
+          <article className="history-card" key={item.id}>
+            <div className="history-meta">
+              <span className={`queue-status ${item.status}`}>{item.status}</span>
+              <span>{item.action}</span>
+              {item.visibility && <span>{item.visibility}</span>}
+              {item.time > 0 && (
+                <time dateTime={new Date(item.time).toISOString()}>
+                  {new Date(item.time).toLocaleString()}
+                </time>
+              )}
+            </div>
+            {item.account && <p className="history-account">{item.account}</p>}
+            {item.cw && editing !== item.id && (
+              <p>Content warning: {item.cw}</p>
+            )}
+            {editing === item.id ? (
+              <>
+                <label className="settings-field">
+                  Draft text
+                  <textarea
+                    aria-label="Edited draft text"
+                    maxLength={10000}
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                  />
+                </label>
+                <div className="queue-actions">
+                  <button
+                    className="button secondary"
+                    type="button"
+                    onClick={() => setEditing(null)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="button primary"
+                    type="button"
+                    disabled={running || !text.trim()}
+                    onClick={() => save(item)}
+                  >
+                    Save edit
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <pre>{item.text}</pre>
+                <div className="queue-actions">
+                  {item.status === "pending" && (
+                    <button
+                      className="text-button"
+                      disabled={running}
+                      onClick={() => {
+                        setEditing(item.id);
+                        setText(item.text);
+                      }}
+                    >
+                      Edit text
+                    </button>
+                  )}
+                  {item.status !== "publishing" && (
+                    <button
+                      className="text-button"
+                      disabled={running}
+                      onClick={() => onRun("reject", item.id)}
+                    >
+                      Reject
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </article>
+        ))}
+      </div>
+      <p className="history-footnote">
+        Editing re-screens the new text, then leaves the draft pending for
+        review. Rejecting an uncertain draft clears the automatic freeze after
+        you inspect the account.
+      </p>
+    </section>
+  );
+}

@@ -21,7 +21,7 @@ def settings(request):
 
 
 ACTIONS = {'setup', 'draft', 'review', 'start', 'listen', 'replies', 'search', 'post', 'help', 'version'}
-ACTIONS.add('automatic')
+ACTIONS.update({'automatic', 'reject', 'edit', 'status'})
 
 
 def arguments(request):
@@ -29,11 +29,19 @@ def arguments(request):
     if runtime != 'elixir' or platform not in ('bluesky', 'mastodon') or action not in ACTIONS:
         raise ValueError('Choose a valid bot and action.')
     args = [action]
-    if action in ('search', 'post'):
+    if action in ('search', 'post', 'reject'):
         text = request.get('text')
         if not isinstance(text, str) or not text.strip() or len(text) > 10000 or '\x00' in text:
             raise ValueError('Enter text for this action (maximum 10,000 characters).')
         args.append(text)
+    if action == 'edit':
+        target = request.get('target')
+        text = request.get('text')
+        if not isinstance(target, str) or not target.strip() or len(target) > 80 or any(c in target for c in '\r\n\x00'):
+            raise ValueError('Choose a pending draft to edit.')
+        if not isinstance(text, str) or not text.strip() or len(text) > 10000 or '\x00' in text:
+            raise ValueError('Enter replacement text (maximum 10,000 characters).')
+        args.extend([target, text])
     return runtime, platform, args
 
 

@@ -284,31 +284,68 @@ defmodule ChorusDraft.Runner do
     runner.store
     |> Store.drafts()
     |> Enum.filter(&(&1["status"] == "pending"))
-    |> Enum.reduce_while(:ok, fn item, _ ->
-      Store.validate_draft!(item)
-      puts(runner, "\n#{item["id"]} | #{item["action"]} | #{item["visibility"]}")
-      if item["reply_to"], do: puts(runner, "Reply: #{Safety.clean(item["reply_to"])}")
-      if item["quote_to"], do: puts(runner, "Quote: #{Safety.clean(item["quote_to"])}")
-      if item["cw"], do: puts(runner, "Content warning: #{Safety.clean(item["cw"])}")
-      puts(runner, item["text"])
-      write(runner, "Publish this exact draft? [y/N/d=reject/q=quit]: ")
+    |> Enum.reduce_while(:ok, fn item, _ -> review_item(runner, item) end)
+  end
 
-      case runner.input |> IO.gets("") |> to_string() |> String.trim() |> String.downcase() do
-        answer when answer in ["y", "yes"] ->
-          publish_draft(runner, item)
-          {:cont, :ok}
+  def replace_pending(runner, id, text, opts \\ []) do
+    drafts = Store.drafts(runner.store)
+    item = Enum.find(drafts, &(&1["id"] == id and &1["status"] == "pending"))
 
-        "d" ->
-          Store.transition(runner.store, item["id"], "pending", "rejected")
-          {:cont, :ok}
+    if is_nil(item), do: raise(Error, "Draft is unavailable or not pending.")
 
-        "q" ->
-          {:halt, :ok}
+    changed = Map.put(item, "text", text)
 
-        _ ->
-          {:cont, :ok}
-      end
-    end)
+    changed =
+      if Keyword.has_key?(opts, :cw),
+        do: Map.put(changed, "cw", Keyword.get(opts, :cw)),
+        else: changed
+
+    validate_draft!(runner, changed)
+    Store.replace_pending(runner.store, id, Map.take(changed, ["text", "cw"]))
+  end
+
+  defp review_item(runner, item) do
+    Store.validate_draft!(item)
+    puts(runner, "\n#{item["id"]} | #{item["action"]} | #{item["visibility"]}")
+    if item["reply_to"], do: puts(runner, "Reply: #{Safety.clean(item["reply_to"])}")
+    if item["quote_to"], do: puts(runner, "Quote: #{Safety.clean(item["quote_to"])}")
+    if item["cw"], do: puts(runner, "Content warning: #{Safety.clean(item["cw"])}")
+    puts(runner, item["text"])
+    write(runner, "Publish this exact draft? [y/N/e=edit/d=reject/q=quit]: ")
+
+    case runner.input |> IO.gets("") |> to_string() |> String.trim() |> String.downcase() do
+      answer when answer in ["y", "yes"] ->
+        publish_draft(runner, item)
+        {:cont, :ok}
+
+      "e" ->
+        write(runner, "Replacement text (empty cancels): ")
+        replacement = runner.input |> IO.gets("") |> to_string() |> String.trim()
+
+        if replacement == "" do
+          review_item(runner, item)
+        else
+          try do
+            updated = replace_pending(runner, item["id"], replacement)
+            puts(runner, "Draft updated. Review the new text before publishing.")
+            review_item(runner, updated)
+          rescue
+            error in [Error] ->
+              puts(runner, error.message)
+              review_item(runner, item)
+          end
+        end
+
+      "d" ->
+        Store.transition(runner.store, item["id"], "pending", "rejected")
+        {:cont, :ok}
+
+      "q" ->
+        {:halt, :ok}
+
+      _ ->
+        {:cont, :ok}
+    end
   end
 
   def inspect_posts(runner, query, opts \\ []) do

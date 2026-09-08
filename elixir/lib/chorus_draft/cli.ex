@@ -9,6 +9,7 @@ defmodule ChorusDraft.CLI do
     status: :boolean,
     history: :boolean,
     reject: :string,
+    edit: :string,
     reply_cid: :string,
     quote_cid: :string,
     version: :boolean,
@@ -168,6 +169,9 @@ defmodule ChorusDraft.CLI do
   def normalize_short_command(["delete", id | rest]), do: ["--delete", id | rest]
   def normalize_short_command(["status" | rest]), do: ["--status" | rest]
   def normalize_short_command(["reject", id | rest]), do: ["--reject", id | rest]
+
+  def normalize_short_command(["edit", id, text | rest]),
+    do: ["--edit", id, "--text", text | rest]
   def normalize_short_command(["random"]), do: ["--random-post="]
 
   def normalize_short_command(["random", "--" <> _ = option | rest]),
@@ -235,6 +239,7 @@ defmodule ChorusDraft.CLI do
       :status,
       :history,
       :reject,
+      :edit,
       :text,
       :post_only,
       :replies_only,
@@ -248,7 +253,10 @@ defmodule ChorusDraft.CLI do
       :delete
     ]
 
-    mode_count = Enum.count(modes, &Map.has_key?(options, &1))
+    mode_count =
+      Enum.count(modes, fn mode ->
+        Map.has_key?(options, mode) and not (mode == :text and Map.has_key?(options, :edit))
+      end)
 
     cond do
       options[:help] || options[:version] ->
@@ -259,6 +267,12 @@ defmodule ChorusDraft.CLI do
 
       mode_count != 1 ->
         {:error, "Choose one command at a time."}
+
+      options[:edit] && !options[:text] ->
+        {:error, "--edit requires --text."}
+
+      options[:publish] && options[:edit] ->
+        {:error, "--publish cannot be combined with --edit."}
 
       options[:publish] && (!options[:text] || options[:queue]) ->
         {:error, "--publish requires --text and cannot be combined with --queue."}
@@ -377,10 +391,18 @@ defmodule ChorusDraft.CLI do
 
       options[:status] ->
         drafts = Store.drafts(runner.store)
+        budget = Store.automatic_budget(runner.store)
 
         Enum.each(["pending", "publishing", "uncertain", "published", "rejected"], fn status ->
           IO.puts("#{status}: #{Enum.count(drafts, &(&1["status"] == status))}")
         end)
+
+        IO.puts(
+          "automatic: #{budget.remaining}/#{budget.limit} attempts remaining in the rolling 24 hours"
+        )
+
+        if budget.frozen,
+          do: IO.puts("automatic frozen until publishing or uncertain drafts are resolved")
 
         drafts
         |> Enum.filter(&(&1["status"] in ["pending", "publishing", "uncertain"]))
@@ -389,6 +411,11 @@ defmodule ChorusDraft.CLI do
       options[:reject] ->
         Store.transition(runner.store, options.reject, ["pending", "uncertain"], "rejected")
         IO.puts("Rejected draft.")
+
+      options[:edit] ->
+        cw = if Map.has_key?(options, :cw), do: [cw: options.cw], else: []
+        updated = Runner.replace_pending(runner, options.edit, options.text, cw)
+        IO.puts("Updated draft #{updated["id"]}. Use review before publishing.")
 
       options[:text] ->
         manual(runner, options)
@@ -554,7 +581,7 @@ defmodule ChorusDraft.CLI do
 
     Short commands:
       setup, draft, review, start, automatic, listen, replies, status, history
-      post TEXT, reply ID TEXT, quote ID TEXT, search QUERY
+      post TEXT, reply ID TEXT, quote ID TEXT, search QUERY, edit ID TEXT
       random [QUERY], discover [QUERY], targets [HANDLE], delete ID, reject ID
 
       -m, --text TEXT          Stage a manual post
@@ -571,12 +598,13 @@ defmodule ChorusDraft.CLI do
           --automatic          With --daemon, publish new originals/replies after safety checks
           --jetstream          Compatibility no-op; Bluesky listen/start always streams
           --process-queue      Interactively review AI and manual drafts
+          --edit ID            Replace pending draft text; requires --text; then review
           --search QUERY       Display public posts
           --random-post [QUERY] Display a random public search/timeline result
           --delete ID          Interactively delete your own post
           --setup              Create missing configuration files, without login
           --import-state FILE  Copy compatible state into an empty account store
-          --status             Show queue counts and unresolved draft IDs
+          --status             Show queue counts, unresolved IDs, and automatic budget
           --reject ID          Reject one pending or uncertain draft without publishing
           --base PATH          Platform configuration and data directory
           --random-reply QUERY Choose a public reply target for --text

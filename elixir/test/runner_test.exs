@@ -256,4 +256,32 @@ defmodule ChorusDraft.RunnerTest do
     assert Store.drafts(dir) == []
     assert Agent.get(published, & &1) == []
   end
+
+  test "review can edit pending text then publish the replacement", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    Runner.manual(runner(client, dir), "original wording")
+    {:ok, input} = StringIO.open("e\nedited wording\nyes\n")
+    Runner.review(runner(client, dir, interactive: true, input: input))
+    assert hd(Agent.get(published, & &1))["text"] == "edited wording"
+    assert hd(Store.drafts(dir))["status"] == "published"
+    assert hd(Store.drafts(dir))["text"] == "edited wording"
+  end
+
+  test "rejected review edits leave the original pending", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    Process.put({ChorusDraft.TestAI, :text}, "A safe original joke")
+    Runner.original(runner(client, dir))
+    {:ok, input} = StringIO.open("e\nMeet at 123 Example Street\nq\n")
+    Runner.review(runner(client, dir, interactive: true, input: input))
+    assert Agent.get(published, & &1) == []
+    [draft] = Store.drafts(dir)
+    assert draft["status"] == "pending"
+    assert draft["text"] == "A safe original joke"
+  end
 end

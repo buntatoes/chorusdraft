@@ -219,9 +219,25 @@ app
         "post",
         "help",
         "version",
+        "status",
+        "reject",
+        "edit",
       ];
       if (!actions.includes(request.action) || running)
         throw new Error("Choose an action after the current session ends.");
+      if (request.action === "edit") {
+        if (
+          typeof request.target !== "string" ||
+          !request.target.trim() ||
+          request.target.length > 80 ||
+          /[\r\n\0]/.test(request.target) ||
+          typeof request.text !== "string" ||
+          !request.text.trim() ||
+          request.text.length > 10000 ||
+          /[\0]/.test(request.text)
+        )
+          throw new Error("Enter replacement text for a pending draft.");
+      }
       const environment = ["setup", "help", "version"].includes(request.action)
         ? {}
         : vault.values(request.platform);
@@ -236,6 +252,7 @@ app
           platform: request.platform,
           action: request.action,
           text: request.text,
+          target: request.target,
         });
       } catch (error) {
         running = false;
@@ -267,6 +284,9 @@ app
       ...history.list(selection(request).platform, filter),
       failures: maintenanceFailures,
     }));
+    handle("bot:queue", (request) =>
+      history.queue(selection(request).platform),
+    );
     handle("bot:copy", (text) => {
       if (typeof text !== "string" || text.length > 10000)
         throw Error("Invalid post text.");

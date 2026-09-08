@@ -96,9 +96,13 @@ jobs:
       - name: Combined desktop and launcher checks (macOS and Windows)
         if: runner.os != 'Linux'
         run: python scripts/verify_launcher.py
+      - name: Read package version
+        id: version
+        shell: bash
+        run: echo "version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
         with:
           name: chorusdraft-${{ matrix.os }}
-          path: dist/chorusdraft-v0.51.4-*
+          path: dist/chorusdraft-v${{ steps.version.outputs.version }}-*
           if-no-files-found: error
           retention-days: 14

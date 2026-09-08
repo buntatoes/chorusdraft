@@ -551,5 +551,85 @@ class History {
       );
     return { items: items.slice(offset, offset + 50), total: items.length };
   }
+  queue(site) {
+    platform(site);
+    const now = this.now();
+    const cutoff = Math.floor(now / 1000) - 86400;
+    const items = [];
+    const budgets = [];
+    const data = within(
+      this.root,
+      path.join(this.root, "elixir", site, "data"),
+    );
+    if (stat(data)) {
+      if (!fs.lstatSync(data).isDirectory())
+        throw Error("Invalid history directory.");
+      for (const entry of fs.readdirSync(data, { withFileTypes: true })) {
+        if (!entry.isDirectory() || !/^[a-f0-9]{24}$/.test(entry.name))
+          continue;
+        const file = within(
+          this.root,
+          path.join(data, entry.name, "state.json"),
+        );
+        regular(file);
+        if (!stat(file)) continue;
+        const state = JSON.parse(fs.readFileSync(file, "utf8"));
+        if (!state || !Array.isArray(state.drafts))
+          throw Error("Invalid history file.");
+        let used = 0;
+        if (Array.isArray(state.automatic)) {
+          for (const stamp of state.automatic) {
+            if (!Number.isInteger(stamp) || stamp < 0)
+              throw Error("Invalid history file.");
+            if (stamp > cutoff) used += 1;
+          }
+        }
+        let frozen = false;
+        for (const draft of state.drafts) {
+          if (!draft || typeof draft !== "object")
+            throw Error("Invalid history file.");
+          if (!["pending", "publishing", "uncertain"].includes(draft.status))
+            continue;
+          if (typeof draft.id !== "string" || typeof draft.text !== "string")
+            throw Error("Invalid history file.");
+          if (draft.status === "publishing" || draft.status === "uncertain")
+            frozen = true;
+          const time = Date.parse(draft.created_at || draft.finished_at);
+          items.push({
+            id: draft.id,
+            status: draft.status,
+            text: draft.text,
+            account: typeof draft.account === "string" ? draft.account : "",
+            action: typeof draft.action === "string" ? draft.action : "post",
+            cw: typeof draft.cw === "string" ? draft.cw : "",
+            visibility:
+              typeof draft.visibility === "string" ? draft.visibility : "",
+            time: Number.isFinite(time) ? time : 0,
+          });
+        }
+        budgets.push({
+          used,
+          remaining: Math.max(0, 5 - used),
+          frozen,
+        });
+      }
+    }
+    items.sort(
+      (a, b) => a.time - b.time || String(a.id).localeCompare(String(b.id)),
+    );
+    const frozen = budgets.some((budget) => budget.frozen);
+    const used = budgets.reduce((max, budget) => Math.max(max, budget.used), 0);
+    return {
+      items,
+      automatic: {
+        limit: 5,
+        used,
+        remaining: budgets.length
+          ? Math.min(...budgets.map((budget) => budget.remaining))
+          : 5,
+        frozen,
+      },
+    };
+  }
 }
 module.exports = { Vault, History, Redactor, SECRET, DAYS };

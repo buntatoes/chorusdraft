@@ -5,8 +5,9 @@ ChorusDraft's historical Ruby 0.51.1 reference commit
 `68b83694ec34b1161839b5ff62a857a774415ece`. Ruby is no longer part of the active
 0.51.3 application. Compatible legacy JSON state remains importable.
 
-Version 0.51.4 includes short commands, the React desktop interface, protected GUI
-credential entry, and local history retention. The table below describes the
+Version 0.51.5 includes the desktop queue, pending-draft editing, and automatic
+budget visibility, in addition to short commands, protected GUI credential
+entry, and local history retention. The table below describes the
 inherited behavioral baseline.
 
 | Inherited behavior | Elixir implementation | Verification |
@@ -15,7 +16,7 @@ inherited behavioral baseline.
 | Original comic drafts, contextual replies, target and discovery commentary | Shared runner; continues past seen/ineligible candidates | Runner and parity tests |
 | Local OpenAI, Ollama and Gemini | Shared AI adapter; provider credentials stay out of errors | AI adapter fixtures |
 | Manual staging and explicit manual publication | `--text`, `--publish`, reply/quote/CW options | Runner and client tests |
-| Exact interactive approval; rejection; no automatic AI posting | `--process-queue`; `--reject`; claim before publish | Approval, concurrency and failure tests |
+| Exact interactive approval; rejection; no automatic AI posting | `--process-queue`; `--edit`; `--reject`; claim before publish | Approval, concurrency and failure tests |
 | Search, timeline inspection and random reply targets | `--search`, `--random-post [QUERY]`, `--random-reply QUERY` | CLI/runner implementation; parser tests |
 | CLI compatibility aliases | `--reply-uri`, `--quote-only`, `--staging`, `--poll`, CID arguments | Parity tests; supplied CIDs are deliberately re-fetched |
 | Polling, daemon, local active hours and jitter | Foreground loops, monotonic scheduling and isolated job failures | Schedule and HTTP-error regression tests |

@@ -57,9 +57,14 @@ class DesktopTests(unittest.TestCase):
         text = 'quotes "hello" & pipes | $HOME; café'
         self.assertEqual(arguments({'runtime': 'elixir', 'platform': 'bluesky', 'action': 'post', 'text': text}),
                          ('elixir', 'bluesky', ['post', text]))
+        self.assertEqual(arguments({'runtime': 'elixir', 'platform': 'bluesky', 'action': 'edit', 'target': 'draft-id', 'text': text}),
+                         ('elixir', 'bluesky', ['edit', 'draft-id', text]))
+        self.assertEqual(arguments({'runtime': 'elixir', 'platform': 'mastodon', 'action': 'reject', 'text': 'draft-id'}),
+                         ('elixir', 'mastodon', ['reject', 'draft-id']))
         for request in ({'runtime': 'elixir', 'platform': 'bluesky', 'action': '--publish'},
                         {'runtime': 'python', 'platform': 'mastodon', 'action': 'review'},
-                        {'runtime': 'elixir', 'platform': '../bluesky', 'action': 'review'}):
+                        {'runtime': 'elixir', 'platform': '../bluesky', 'action': 'review'},
+                        {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'edit', 'text': text}):
             with self.assertRaises(ValueError):
                 arguments(request)
 

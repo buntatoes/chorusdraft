@@ -4,8 +4,8 @@
 
 | Version | Runtime | Support |
 |---|---|---|
-| 0.51.4 | Elixir | Current |
-| 0.51.3 and earlier | Earlier releases | Unsupported |
+| 0.51.5 | Elixir | Current |
+| 0.51.4 and earlier | Earlier releases | Unsupported |
 
 Report vulnerabilities through GitHub private reporting when it is available,
 or contact the maintainer privately. Do not put credentials, private posts,
@@ -32,6 +32,9 @@ The lock reserves that draft and one of five automatic attempts per rolling
 publish in flight. `publishing` or `uncertain` blocks later claims. A
 publishing claim older than five minutes becomes `uncertain` and is never
 retried automatically.
+
+`edit ID` and review `e` replace pending text after the same screens, then
+leave the draft pending. They cannot publish.
 
 These checks are deterministic. They can miss harm or hold benign text. Review
 is the real control. Do not weaken them to target people.

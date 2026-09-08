@@ -172,4 +172,19 @@ defmodule ChorusDraft.StoreTest do
     assert Enum.count(results, &(&1 == {:ok, {:error, :unavailable}})) == 11
     assert hd(Store.drafts(dir))["status"] == "publishing"
   end
+
+  test "pending drafts can be replaced and automatic budget is visible", %{dir: dir} do
+    item = Store.stage(dir, %{"text" => "hello"})
+    budget = Store.automatic_budget(dir)
+    assert budget.remaining == 5
+    refute budget.frozen
+
+    updated = Store.replace_pending(dir, item["id"], %{"text" => "hello there"})
+    assert updated["text"] == "hello there"
+    assert hd(Store.drafts(dir))["text"] == "hello there"
+
+    Store.transition(dir, item["id"], "pending", "publishing")
+    assert Store.automatic_budget(dir).frozen
+    assert_raise Error, fn -> Store.replace_pending(dir, item["id"], %{"text" => "too late"}) end
+  end
 end
