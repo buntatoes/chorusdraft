@@ -20,6 +20,7 @@ defmodule ChorusDraft.ControlTest do
     assert_raise Error, fn ->
       Control.decode!(Jason.encode!(%{"action" => "edit", "text" => "ok" <> <<1>>}))
     end
+
     assert Control.decode!(~s({"action":"edit","text":"keep\\ttabs"}))["text"] == "keep\ttabs"
   end
 end

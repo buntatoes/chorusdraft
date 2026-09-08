@@ -113,7 +113,7 @@ defmodule ChorusDraft.Streaming do
         {:status, ^ref, _status}, _ ->
           raise Error, "Mastodon streaming handshake failed."
 
-        {:headers, ^ref, headers}, {expect, header_size, parser, ready}
+        {:headers, ^ref, headers}, {expect, header_size, parser, _ready}
         when expect in [:headers, :body] ->
           header_size =
             Enum.reduce(headers, header_size, fn {k, v}, acc ->

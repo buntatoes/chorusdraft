@@ -4,7 +4,7 @@ defmodule ChorusDraft.MixProject do
   def project do
     [
       app: :chorus_draft,
-      version: "0.52",
+      version: "0.52.0",
       elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,
       escript: [main_module: ChorusDraft.CLI, name: "chorusdraft"],

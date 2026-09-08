@@ -11,6 +11,7 @@ defmodule ChorusDraft.CLI do
     Store,
     Streaming
   }
+
   alias ChorusDraft.Clients.{Bluesky, Mastodon}
 
   @switches [
@@ -307,7 +308,7 @@ defmodule ChorusDraft.CLI do
   end
 
   @doc false
-  def streaming_enabled?(platform, options) do
+  def streaming_enabled?(_platform, options) do
     options[:listen] || options[:daemon]
   end
 
@@ -334,8 +335,10 @@ defmodule ChorusDraft.CLI do
     env = Config.load(Path.join(base, ".env"), System.get_env())
     env = Config.load(Path.join([base, "config", ".env"]), env)
     if jetstream_enabled?(platform, options), do: Jetstream.endpoint!(env)
+
     if platform == "mastodon" and streaming_enabled?(platform, options),
       do: Streaming.endpoint!(env)
+
     hours = options[:active_hours] || env["ACTIVE_HOURS"]
     active?(hours)
     client = if platform == "bluesky", do: Bluesky.new(env), else: Mastodon.new(env)

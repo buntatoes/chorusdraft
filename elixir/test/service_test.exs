@@ -5,10 +5,12 @@ defmodule ChorusDraft.ServiceTest do
 
   test "service short commands and help" do
     assert Commands.normalize(["service", "install"]) == ["--service=install"]
+
     assert Commands.normalize(["service", "print", "--automatic"]) == [
              "--service=print",
              "--automatic"
            ]
+
     assert_raise ChorusDraft.Error, ~r/install, uninstall, or print/, fn ->
       Commands.normalize(["service", "start"])
     end

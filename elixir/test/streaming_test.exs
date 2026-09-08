@@ -34,7 +34,9 @@ defmodule ChorusDraft.StreamingTest do
 
   test "SSE parser wakes on notification and ignores the data payload" do
     stream = Jetstream.subscription("mastodon")
-    payload = "event: notification\ndata: {\"type\":\"mention\",\"status\":{\"content\":\"UNTRUSTED STREAM BODY\"}}\n\n"
+
+    payload =
+      "event: notification\ndata: {\"type\":\"mention\",\"status\":{\"content\":\"UNTRUSTED STREAM BODY\"}}\n\n"
 
     {rest, event, size} = Streaming.feed({"", nil, 0}, payload, stream)
     assert rest == ""
@@ -84,7 +86,7 @@ defmodule ChorusDraft.StreamingTest do
     end)
 
     assert_receive {:connected, request}, 2_000
-    assert request =~ "Authorization: Bearer fixture-token"
+    assert request =~ "authorization: Bearer fixture-token"
     refute request =~ "access_token"
     assert Jetstream.wait(stream, 2_000) == :activity
     send(server, :notify)
