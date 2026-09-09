@@ -84,6 +84,20 @@ uncertain draft back to pending.
 Screening is regex on normalized text. Run one daemon per account. Try a
 disposable account first. Details: [SECURITY.md](SECURITY.md).
 
+## Service
+
+`service install` writes a user unit for `start` (add `--automatic` for
+automatic). It does not start the process. Enable it yourself:
+
+```sh
+./run.sh bluesky service install
+systemctl --user enable --now chorusdraft-bluesky.service
+```
+
+macOS uses `launchctl load`; Windows uses `schtasks`. Paths, linger, and
+`--base`: [Elixir service](elixir/README.md#service). Common errors:
+[Troubleshooting](elixir/README.md#troubleshooting).
+
 ## License
 
 Copyright 2026 Buntos. [Apache License 2.0](LICENSE). See [NOTICE](NOTICE).

@@ -35,6 +35,11 @@ Windows), runs setup, and opens the desktop app.
 You can still run `./bot` (or `bot.bat` / `bot.command`) directly from the
 extracted folder without installing.
 
+The installer refuses a path that already exists. Stop the old bot, install
+into a new versioned folder, then copy `.env` and import state. On Linux
+without `DISPLAY` or `WAYLAND_DISPLAY`, install still copies files and
+registers the menu entry; it does not open the GUI.
+
 On Ubuntu 24.04 and other systems that restrict user namespaces, run
 `sudo python3 launcher-source/linux_sandbox.py` once from the **installed**
 folder (or the extracted folder if you did not install) before opening the GUI.
@@ -154,8 +159,38 @@ On Windows, replace `./bot` with `.\bot.bat`.
 
 Existing Elixir flags and `./bot elixir PLATFORM COMMAND` still work.
 Desktop packages use Elixir for `./bot PLATFORM COMMAND`; Ruby is not
-included. See [Elixir usage and live streams](../elixir/README.md) for more
-options.
+included. `service install` is CLI-only; enable the unit yourself. See
+[Elixir service and troubleshooting](../elixir/README.md#service).
+
+## Desktop JSON control
+
+GUI sessions set `CHORUSDRAFT_CONTROL=1` and talk to the bot over JSON lines
+on stdio (binary, not a PTY). The activity log still shows the human `log`
+lines. Publish buttons follow a `review` event, not scraped prompt text.
+
+Bot events, one JSON object per line on stdout:
+
+```json
+{"event":"log","value":"message\n"}
+{"event":"review","draft":{"id":"draft-id","action":"ai_generated","visibility":"public","text":"Exact draft text","cw":null,"reply_to":null,"quote_to":null,"status":"pending"}}
+```
+
+Commands, one JSON object per line on stdin:
+
+```json
+{"action":"approve"}
+{"action":"reject"}
+{"action":"skip"}
+{"action":"quit"}
+{"action":"edit","text":"replacement\nkeeps line breaks"}
+```
+
+`edit` text must be non-empty after trim, at most 10,000 characters, and
+cannot contain NUL or C0 controls other than tab and newline. EOF or a read
+error is `quit`. The desktop rejects a bot line larger than 64 KiB.
+
+There is no `publish` action. Approval is `approve` after a `review` event.
+CLI review without this environment still uses the `[y/N/e/d/q]` prompt.
 
 ## Configuration and upgrades
 
