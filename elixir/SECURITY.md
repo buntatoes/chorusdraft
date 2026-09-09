@@ -126,7 +126,8 @@ Periodic API checks help after disconnects; they do not guarantee delivery.
 
 `service install` writes a user-level unit. It does not start the process,
 enable linger, or put credentials in the unit. `.env` stays beside the bot.
-Enable the unit yourself. Setup still does not start a service.
+Enable the unit yourself. Setup still does not start a service. Paths and
+enable commands: the README Service section.
 
 ## Limits
 

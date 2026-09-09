@@ -93,10 +93,34 @@ Bounds: [SECURITY.md](SECURITY.md).
 ./chorusdraft bluesky service print
 ./chorusdraft bluesky service install
 ./chorusdraft mastodon service install --automatic
+./chorusdraft bluesky service uninstall
 ```
 
-Writes a systemd user unit, LaunchAgent, or Windows task. Does not start it.
-Enable the unit yourself. Setup still does not start a service.
+Writes a user-level systemd unit, LaunchAgent, or Windows scheduled-task XML.
+It does not start the process, enable linger, or put credentials in the file.
+`.env` stays beside the bot. Setup still does not start a service.
+
+Default mode is `start` (review-first). `--automatic` writes `automatic`.
+`--base` is the platform directory the daemon should use (`bluesky/` or
+`mastodon/` in the install). Run install from that package so the unit points
+at its `run.sh` / `run.ps1`. A source checkout without those launchers uses
+`escript` and the built `chorusdraft`.
+
+| OS | Unit | Enable | Disable |
+|---|---|---|---|
+| Linux | `~/.config/systemd/user/chorusdraft-PLATFORM.service` (`$XDG_CONFIG_HOME` if set) | `systemctl --user enable --now chorusdraft-PLATFORM.service` | `systemctl --user disable --now chorusdraft-PLATFORM.service` |
+| macOS | `~/Library/LaunchAgents/org.chorusdraft.PLATFORM.plist` | `launchctl load PATH` | `launchctl unload PATH` |
+| Windows | `%APPDATA%\ChorusDraft\chorusdraft-PLATFORM.xml` | `schtasks /Create /TN "ChorusDraft PLATFORM" /XML PATH` | `schtasks /Delete /TN "ChorusDraft PLATFORM" /F` |
+
+`print` shows the file and the enable line. Linux linger is optional and
+separate: `loginctl enable-linger $USER`. The systemd unit restarts on
+failure after 15 seconds. macOS `RunAtLoad` is false; load the agent when
+you want it. `KeepAlive` restarts it after load. A registered Windows task
+starts at logon and retries a failed start three times. Override the unit
+directory with `CHORUSDRAFT_SERVICE_HOME`.
+
+One unit name per platform per user. One daemon per account. Reinstall after
+moving the package so the command path stays valid.
 
 ## State
 
@@ -123,7 +147,8 @@ auth, bounded output, and `store: false`.
 
 Extract the archive, then run `./install.sh` (or `install.ps1` on Windows).
 With no arguments it installs into a versioned folder under your user data
-directory and runs setup. Pass a path when you want a custom location.
+directory and runs setup. Pass a path when you want a custom location. The
+installer refuses a destination that already exists.
 
 Build: `MIX_ENV=prod mix run scripts/build_release.exs`  
 Verify: `./scripts/check_packages.sh` or `.\scripts\check_packages.ps1`
@@ -142,6 +167,27 @@ Inside a release package use `./run.sh` (or `run.ps1`) in place of
 
 `reject ID` drops a pending or uncertain draft and unfreezes automatic mode.
 Check the live account first. Do not force uncertain back to pending.
+
+## Troubleshooting
+
+| Symptom | What to do |
+|---|---|
+| `Destination already exists` | Install into a new directory. Copy `.env` and import state; do not overwrite. |
+| `automatic frozen` in `status` | A `publishing` or `uncertain` draft is blocking claims. Inspect the live account, then `reject ID`. |
+| `State is busy` / lock timed out | Another process holds the account store. Stop the extra daemon. Linux needs `flock` (`util-linux`). |
+| `State is already locked by this process` | Nested store write. Retry the edit after the outer command finishes. |
+| `Import requires empty destination state` | Import only into a new account store. Source must match platform and account. |
+| `Jetstream cannot be disabled` | `--no-jetstream` is rejected. Bluesky listen/start always stream. |
+| Mastodon streaming handshake / URL error | `MASTODON_STREAMING_URL` must be an HTTPS origin or `/api/v1/streaming` path. No credentials, query, or fragment. The token is an Authorization header. |
+| `LOCAL_LLM_URL` rejected | Local/Ollama must be loopback (`localhost`, `127.0.0.1`, `::1`). |
+| `--publish` refused | Not valid with `--edit`, `--queue`, or `--random-reply`. Owner text only. |
+| `Choose one command at a time` | One short command or option group per invocation. |
+| Desktop install did not open the GUI | Headless Linux (no `DISPLAY` / `WAYLAND_DISPLAY`) skips launch. Open `./bot` later. Ubuntu 24.04 sandbox: `sudo python3 launcher-source/linux_sandbox.py` from the **installed** folder. |
+| Linux **Save securely** fails | Unlock a supported system keyring, or use **Use for this session**. The GUI does not save plaintext. |
+
+`status` prints queue counts, unresolved IDs, remaining automatic attempts,
+and freeze. Details: [SECURITY.md](SECURITY.md). Desktop JSON control is in
+the source-tree desktop guide (`docs/DESKTOP.md`).
 
 ## License
 
