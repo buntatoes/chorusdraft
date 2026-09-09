@@ -54,6 +54,13 @@ with tempfile.TemporaryDirectory(prefix='chorusdraft-bundle-') as temporary:
     launchers = ('bot.bat', 'bot.ps1') if OS == 'windows' else ('bot', 'bot.command')
     for launcher in launchers:
         shutil.copy2(ROOT / launcher, package / launcher)
+    shutil.copy2(ROOT / 'assets' / 'chorusdraft-mark.svg', package / 'chorusdraft.svg')
+    if OS == 'windows':
+        shutil.copy2(ROOT / 'scripts' / 'install_desktop.ps1', package / 'install.ps1')
+        shutil.copy2(ROOT / 'elixir' / 'scripts' / 'verify.ps1', package / 'verify.ps1')
+    else:
+        shutil.copy2(ROOT / 'scripts' / 'install_desktop.sh', package / 'install.sh')
+        (package / 'install.sh').chmod(0o755)
     # Native desktop runtime, plus the corresponding launcher source.
     gui = DIST / 'gui' / ('ChorusDraft.app' if OS == 'macos' else 'ChorusDraft')
     if not gui.exists():

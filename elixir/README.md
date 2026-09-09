@@ -1,7 +1,7 @@
 # ChorusDraft
 
 Elixir app for Linux, macOS, and Windows. One executable, Bluesky and Mastodon
-modes. Version 0.52. See [CHANGELOG.md](CHANGELOG.md).
+modes. Version 0.52.1. See [CHANGELOG.md](CHANGELOG.md).
 
 Review is the default. `automatic` may publish new originals and eligible
 public-mention replies after screening and a source recheck.
@@ -117,9 +117,13 @@ auth, bounded output, and `store: false`.
 
 ## Packages
 
-- `ChorusDraft-elixir-0.52-linux.tar.gz`
-- `ChorusDraft-elixir-0.52-macos.tar.gz`
-- `ChorusDraft-elixir-0.52-windows.zip`
+- `ChorusDraft-elixir-0.52.1-linux.tar.gz`
+- `ChorusDraft-elixir-0.52.1-macos.tar.gz`
+- `ChorusDraft-elixir-0.52.1-windows.zip`
+
+Extract the archive, then run `./install.sh` (or `install.ps1` on Windows).
+With no arguments it installs into a versioned folder under your user data
+directory and runs setup. Pass a path when you want a custom location.
 
 Build: `MIX_ENV=prod mix run scripts/build_release.exs`  
 Verify: `./scripts/check_packages.sh` or `.\scripts\check_packages.ps1`

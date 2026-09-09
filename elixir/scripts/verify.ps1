@@ -8,6 +8,6 @@ foreach ($line in [IO.File]::ReadAllLines((Join-Path $root 'MANIFEST.sha256'))) 
     if ([IO.Path]::IsPathRooted($relative) -or $relative -match '(^|[/\\])\.\.([/\\]|$)') {
         throw 'Invalid manifest path.'
     }
-    $actual = (Get-FileHash -LiteralPath (Join-Path $root $relative) -Algorithm SHA256).Hash
+    $actual = (Get-FileHash -LiteralPath (Join-Path $root $relative) -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($actual -ne $expected) { throw "Package checksum failed: $relative" }
 }

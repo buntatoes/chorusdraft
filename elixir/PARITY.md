@@ -6,7 +6,7 @@ Old JSON state still imports.
 
 0.51.5 adds Queue, pending-draft edit, and automatic budget in `status`.
 0.51.6 is fixes only; see CHANGELOG.
-0.52: desktop JSON control, Mastodon streaming wake-up, `service install`.
+0.52.1: `./install.sh` picks a default install directory; desktop install registers an app and opens the GUI.
 
 | From Ruby 0.51.1 | Elixir | Tests |
 |---|---|---|

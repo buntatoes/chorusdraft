@@ -4,8 +4,8 @@
 
 | Version | Runtime | Support |
 |---|---|---|
-| 0.52 | Elixir | Current |
-| 0.51.6 and earlier | Earlier releases | Unsupported |
+| 0.52.1 | Elixir | Current |
+| 0.52 and earlier | Earlier releases | Unsupported |
 
 Report vulnerabilities through GitHub private reporting when it is available,
 or contact the maintainer privately. Do not put credentials, private posts,

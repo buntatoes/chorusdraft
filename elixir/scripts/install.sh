@@ -1,17 +1,49 @@
 #!/bin/sh
 set -eu
 umask 077
-if [ "$#" -ne 1 ]; then
-  echo 'Usage: ./install.sh NEW_DIRECTORY (must not exist)' >&2
-  exit 1
-fi
 src=$(CDPATH= cd "$(dirname "$0")" && pwd)
-dest=$1
-case "$dest" in /*) ;; *) dest=$PWD/$dest ;; esac
-if [ -e "$dest" ] || [ -L "$dest" ]; then
-  echo 'Destination already exists; install into a new version directory.' >&2
+parent=$(CDPATH= cd "$src/.." && pwd)
+if [ -f "$parent/VERSION" ] && [ -x "$parent/bot" ]; then
+  case $(uname -s) in
+    Darwin)
+      if [ -d "$parent/ChorusDraft.app" ]; then
+        exec "$parent/install.sh" "$@"
+      fi
+      ;;
+    *)
+      if [ -x "$parent/launcher/ChorusDraft" ]; then
+        exec "$parent/install.sh" "$@"
+      fi
+      ;;
+  esac
+fi
+
+default_dest() {
+  version=$(tr -d '[:space:]' < "$src/VERSION")
+  case $(uname -s) in
+    Darwin) root="$HOME/Library/Application Support" ;;
+    *) root="${XDG_DATA_HOME:-$HOME/.local/share}" ;;
+  esac
+  printf '%s/chorusdraft-%s' "$root" "$version"
+}
+
+if [ "$#" -eq 0 ]; then
+  dest=$(default_dest)
+elif [ "$#" -eq 1 ]; then
+  dest=$1
+  case "$dest" in /*) ;; *) dest=$PWD/$dest ;; esac
+else
+  echo 'Usage: ./install.sh [NEW_DIRECTORY]' >&2
+  echo '  With no argument, installs to a versioned folder under your user data directory.' >&2
   exit 1
 fi
+
+if [ -e "$dest" ] || [ -L "$dest" ]; then
+  echo "Destination already exists: $dest" >&2
+  echo 'Choose another directory or remove the old install first.' >&2
+  exit 1
+fi
+
 verify() {
   manifest=$1
   if command -v sha256sum >/dev/null 2>&1; then
@@ -20,7 +52,9 @@ verify() {
     shasum -a 256 --check "$manifest" >/dev/null
   fi
 }
+
 (cd "$src" && verify MANIFEST.sha256)
+mkdir -p "$(dirname "$dest")"
 mkdir -m 700 "$dest"
 for item in chorusdraft run.sh setup.sh install.sh bluesky mastodon source README.md RELEASE_NOTES.md CHANGELOG.md SECURITY.md LICENSE NOTICE THIRD_PARTY_NOTICES.md VERSION MANIFEST.sha256; do
   cp -R "$src/$item" "$dest/$item"

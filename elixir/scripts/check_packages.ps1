@@ -62,6 +62,15 @@ try {
     $installed = Join-Path $work "installed-$name"
     & (Join-Path $package 'install.ps1') $installed
     Assert-Exit 'Package installation failed.'
+
+    $autoHome = Join-Path $work 'auto-home'
+    $null = New-Item -ItemType Directory -Path $autoHome
+    $autoOut = ((& { $env:LOCALAPPDATA = $autoHome; & (Join-Path $package 'install.ps1') }) | Out-String).TrimEnd()
+    if ($autoOut -notmatch 'Installed ChorusDraft in (.+)\. Edit') { throw 'Automatic install did not report a destination.' }
+    $autoInstalled = $Matches[1]
+    if (-not (Test-Path -LiteralPath $autoInstalled)) { throw 'Automatic install directory is missing.' }
+    if (-not (Test-Path -LiteralPath (Join-Path $autoInstalled 'run.ps1'))) { throw 'Automatic install is incomplete.' }
+
     Set-Content -LiteralPath (Join-Path $installed 'bluesky/.env') -NoNewline -Encoding utf8 -Value 'SENTINEL=$(do-not-execute)'
     & (Join-Path $installed 'setup.ps1')
     Assert-Exit 'Installed setup command failed.'

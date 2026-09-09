@@ -36,6 +36,14 @@ fi
 "$package/run.sh" mastodon --help
 "$package/install.sh" "$work/installed-$name"
 installed=$work/installed-$name
+auto_home=$work/auto-home
+mkdir -p "$auto_home"
+auto_out=$(HOME="$auto_home" "$package/install.sh")
+echo "$auto_out" | grep -q 'Installed ChorusDraft in '
+auto_installed=$(echo "$auto_out" | sed -n 's/^Installed ChorusDraft in \(.*\)\. Edit.*/\1/p')
+test -n "$auto_installed"
+test -d "$auto_installed"
+test -x "$auto_installed/run.sh"
 printf '%s\n' 'SENTINEL=$(do-not-execute)' > "$installed/bluesky/.env"
 "$installed/setup.sh"
 test "$(cat "$installed/bluesky/.env")" = 'SENTINEL=$(do-not-execute)'
