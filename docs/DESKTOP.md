@@ -20,17 +20,27 @@ artifacts from
 Each archive has the Elixir bot, both social platforms, the desktop launcher,
 source, a SHA-256 sidecar, and a checksum manifest.
 
+**Install (recommended):** extract the archive, then run `./install.sh` (or
+`install.ps1` on Windows) with no arguments. ChorusDraft installs into a
+versioned folder under your user data directory, adds an application entry
+(Applications on macOS, your applications menu on Linux, Start menu on
+Windows), runs setup, and opens the desktop app.
+
 | Operating system | Open the launcher |
 | --- | --- |
-| Linux | Open a terminal in the extracted folder and run `./bot` |
-| macOS | Double-click `bot.command`, or run `./bot` in Terminal |
-| Windows | Double-click `bot.bat`, or run `.\bot.bat` in PowerShell |
+| Linux | Run `./install.sh`, or open ChorusDraft from your applications menu |
+| macOS | Run `./install.sh`, or open ChorusDraft from Applications |
+| Windows | Run `install.ps1`, or open ChorusDraft from the Start menu |
+
+You can still run `./bot` (or `bot.bat` / `bot.command`) directly from the
+extracted folder without installing.
 
 On Ubuntu 24.04 and other systems that restrict user namespaces, run
-`sudo python3 launcher-source/linux_sandbox.py` once from the extracted folder
-before opening the GUI. That enables Electron's sandbox for that download's
-exact path. Run `./bot` as your normal user afterward. Repeat if you move the
-folder; use the same script with `--remove` before removing an old download.
+`sudo python3 launcher-source/linux_sandbox.py` once from the **installed**
+folder (or the extracted folder if you did not install) before opening the GUI.
+That enables Electron's sandbox for that download's exact path. Run `./bot` as
+your normal user afterward. Repeat if you move the install; use the same script
+with `--remove` before removing an old copy.
 
 Choose Bluesky or Mastodon, click **Set up**, then **Open configuration**.
 **Create a draft** stages a post. **Open review** approves, edits, or rejects

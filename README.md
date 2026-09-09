@@ -21,7 +21,7 @@ Providers: local/Ollama, Gemini, or ChatGPT/OpenAI.
 
 ## Latest
 
-**[v0.52](https://github.com/buntatoes/chorusdraft/releases/tag/v0.52)**
+**[v0.52.1](https://github.com/buntatoes/chorusdraft/releases/tag/v0.52.1)**
 
 Desktop review talks to the bot over JSON. Mastodon listen/start uses the user
 streaming API as a wake-up. `service install` writes a user unit; it does not

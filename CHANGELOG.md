@@ -2,6 +2,17 @@
 
 Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
+## 0.52.1 — 2026-09-08
+
+Desktop `./install.sh` and `install.ps1` install ChorusDraft into a versioned
+folder under your user data directory, register an application entry
+(applications menu on Linux, Applications on macOS, Start menu on Windows),
+run setup, and open the desktop app. With no argument the default locations
+are `~/.local/share/chorusdraft-0.52.1` on Linux, `~/Library/Application
+Support/chorusdraft-0.52.1` on macOS, and `%LOCALAPPDATA%\ChorusDraft-0.52.1`
+on Windows. You can still pass a path when you want a custom location. CLI-only
+packages use the same scripts for the bot; they do not launch a GUI.
+
 ## 0.52 — 2026-09-08
 
 Desktop review talks to the bot over JSON. Mastodon listen/start uses the user
