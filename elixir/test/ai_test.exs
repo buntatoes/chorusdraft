@@ -187,4 +187,65 @@ defmodule ChorusDraft.AITest do
       assert_raise Error, fn -> AI.generate(env, "Draft", %{}, 300, http: TestHTTP) end
     end
   end
+
+  test "AI HTTP 404 names the provider and model without remote bodies" do
+    TestHTTP.set_responses([ChorusDraft.HTTPError.exception(404)])
+
+    error =
+      assert_raise Error, fn ->
+        AI.generate(
+          %{"LOCAL_LLM_MODEL" => "llama3.2:3b"},
+          "Draft",
+          %{},
+          300,
+          http: TestHTTP
+        )
+      end
+
+    assert Exception.message(error) =~ "Local AI returned HTTP 404"
+    assert Exception.message(error) =~ "llama3.2:3b"
+    assert Exception.message(error) =~ "ollama pull llama3.2:3b"
+    refute Exception.message(error) =~ "omitted to protect"
+
+    TestHTTP.set_responses([ChorusDraft.HTTPError.exception(404)])
+
+    gemini = %{
+      "AI_PROVIDER" => "gemini",
+      "GEMINI_API_KEY" => "fixture-secret",
+      "GEMINI_MODEL" => "gemini-pro"
+    }
+
+    error = assert_raise Error, fn -> AI.generate(gemini, "Draft", %{}, 300, http: TestHTTP) end
+    assert Exception.message(error) =~ "Gemini returned HTTP 404"
+    assert Exception.message(error) =~ "gemini-pro"
+
+    TestHTTP.set_responses([ChorusDraft.HTTPError.exception(404)])
+
+    openai = %{
+      "AI_PROVIDER" => "openai",
+      "OPENAI_API_KEY" => "fixture-secret",
+      "OPENAI_MODEL" => "gpt-4o-mini"
+    }
+
+    error = assert_raise Error, fn -> AI.generate(openai, "Draft", %{}, 300, http: TestHTTP) end
+    assert Exception.message(error) =~ "OpenAI returned HTTP 404"
+    assert Exception.message(error) =~ "gpt-4o-mini"
+    refute Exception.message(error) =~ "fixture-secret"
+  end
+
+  test "a local AI URL without an API path is refused before the request" do
+    error =
+      assert_raise Error, fn ->
+        AI.generate(
+          %{"LOCAL_LLM_URL" => "http://localhost:11434"},
+          "Draft",
+          %{},
+          300,
+          http: TestHTTP
+        )
+      end
+
+    assert Exception.message(error) =~ "API path"
+    assert TestHTTP.calls() == []
+  end
 end

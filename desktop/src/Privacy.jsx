@@ -187,6 +187,11 @@ export function Settings({ selection, onClose, onSaved }) {
                 <>
                   {field("LOCAL_LLM_URL", "AI endpoint URL", "url")}
                   {field("LOCAL_LLM_MODEL", "Local AI model")}
+                  <p className="settings-hint">
+                    Draft and automatic mode call this URL. Ollama needs a
+                    pulled model and a path such as{" "}
+                    <code>/v1/chat/completions</code>.
+                  </p>
                 </>
               )}
               {field("STATUS_LANGUAGE", "Post language")}
