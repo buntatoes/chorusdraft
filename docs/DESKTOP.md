@@ -17,36 +17,41 @@ Packages are on
 [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases) and as
 artifacts from
 [desktop checks](https://github.com/buntatoes/chorusdraft/actions/workflows/bot-testing.yml).
-Download `chorusdraft-v0.53.1-<os>-<arch>` (Desktop). The
+Download `chorusdraft-v0.53.2-<os>-<arch>` (Desktop). The
 `ChorusDraft-elixir-*` files on the same page are **CLI only (no GUI)**.
 Each desktop archive has the Elixir bot, both social platforms, the desktop
-launcher, source, a SHA-256 sidecar, and a checksum manifest.
+launcher, licenses, a SHA-256 sidecar, and a checksum manifest.
 
-**Install (recommended):** extract the archive, then run `./install.sh` (or
-`install.ps1` on Windows) with no arguments. ChorusDraft installs into a
-versioned folder under your user data directory, adds an application entry
-(Applications on macOS, your applications menu on Linux, Start menu on
-Windows), runs setup, and opens the desktop app. Default locations for 0.53.1:
+**Install (recommended):** extract the archive, then run `./install.sh`,
+double-click `Install ChorusDraft.command` on macOS, or `install.cmd` on
+Windows. No path is required. ChorusDraft installs into a stable per-user
+folder, adds an application entry (Applications on macOS, your applications
+menu on Linux, Start menu on Windows), runs setup, and opens the desktop app.
+Run the installer again to update; account `.env` files, queues, and block
+lists are kept. Default locations:
 
-- Linux: `~/.local/share/chorusdraft-0.53.1`
-- macOS: `~/Library/Application Support/chorusdraft-0.53.1`
-- Windows: `%LOCALAPPDATA%\ChorusDraft-0.53.1`
+- Linux: `~/.local/share/chorusdraft`
+- macOS: `~/Library/Application Support/chorusdraft-app`
+- Windows: `%LOCALAPPDATA%\Programs\ChorusDraft`
 
 Pass a path when you want a custom install directory.
 
 | Operating system | Open the launcher |
 | --- | --- |
 | Linux | Run `./install.sh`, or open ChorusDraft from your applications menu |
-| macOS | Run `./install.sh`, or open ChorusDraft from Applications |
-| Windows | Run `install.ps1`, or open ChorusDraft from the Start menu |
+| macOS | Double-click `Install ChorusDraft.command`, or open ChorusDraft from Applications |
+| Windows | Double-click `install.cmd`, or open ChorusDraft from the Start menu |
 
 You can still run `./bot` (or `bot.bat` / `bot.command`) directly from the
 extracted folder without installing.
 
-The installer refuses a path that already exists. Stop the old bot, install
-into a new versioned folder, then copy `.env` and import state. On Linux
-without `DISPLAY` or `WAYLAND_DISPLAY`, install still copies files and
-registers the menu entry; it does not open the GUI.
+The installer updates an existing ChorusDraft folder in place. 0.52 through
+0.53.1 used a versioned folder (`chorusdraft-0.53.1`, `ChorusDraft-0.53.1`,
+and the like). Pass that old path to the installer to update it, or install
+to the new default and copy `.env` plus `data/`. To move to a new location,
+stop the old bot, install into the new folder, then copy `.env` and import
+state. On Linux without `DISPLAY` or `WAYLAND_DISPLAY`, install still copies
+files and registers the menu entry; it does not open the GUI.
 
 On Ubuntu 24.04 and other systems that restrict user namespaces, run
 `sudo python3 launcher-source/linux_sandbox.py` once from the **installed**

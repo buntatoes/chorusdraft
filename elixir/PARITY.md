@@ -8,7 +8,8 @@ Old JSON state still imports.
 0.51.6 is fixes only; see CHANGELOG.
 0.52.1: `./install.sh` picks a default install directory; desktop install registers an app and opens the GUI.
 0.53.0: publication screening lives in proprietary ChorusDraft Guard; the bot refuses to run if Guard is missing. Earlier GitHub Releases were withdrawn.
-0.53.1 is the current published GitHub Release: review fixes only — no new workflows. Crash dumps disabled, streaming backoff reset, lock-free `--history`, control-plane delete confirmation, installer and packaging hardening; see CHANGELOG.
+0.53.1 is review fixes only; see CHANGELOG.
+0.53.2 is the current published GitHub Release: Bluesky draft/automatic AppView+PDS routing, clearer AI HTTP errors, simpler GUI install into a stable folder, slimmer desktop archives; see CHANGELOG.
 
 | From Ruby 0.51.1 | Elixir | Tests |
 |---|---|---|

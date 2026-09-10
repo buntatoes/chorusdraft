@@ -3,7 +3,10 @@ defmodule ChorusDraft.Clients.Bluesky do
 
   @facet ~r/https:\/\/[^\s<>]+|(?<![\w@])@[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}|(?<!\w)#[\p{L}\p{N}_]+/u
   @uri ~r/\Aat:\/\/[^\/\s]+\/app\.bsky\.feed\.post\/[a-zA-Z0-9._~:-]+\z/
-  defstruct [:base, :env, :http, :identity, :session]
+  # bsky.social is an entryway. app.bsky.* lives on the AppView; com.atproto.*
+  # after login must use the account PDS from the session DID document.
+  @appview "https://public.api.bsky.app"
+  defstruct [:base, :pds, :env, :http, :identity, :session]
 
   def new(env, opts \\ []) do
     http = Keyword.get(opts, :http, HTTP)
@@ -15,7 +18,7 @@ defmodule ChorusDraft.Clients.Bluesky do
     end
 
     {:ok, session} = Agent.start_link(fn -> %{token: nil, refresh: nil} end)
-    %__MODULE__{base: base, env: env, http: http, session: session}
+    %__MODULE__{base: base, pds: base, env: env, http: http, session: session}
   end
 
   def login(client) do
@@ -33,7 +36,7 @@ defmodule ChorusDraft.Clients.Bluesky do
       %{token: Map.fetch!(response, "accessJwt"), refresh: Map.fetch!(response, "refreshJwt")}
     end)
 
-    %{client | identity: identity}
+    %{client | identity: identity, pds: pds_endpoint(client, response)}
   end
 
   def identity(client), do: client.identity
@@ -221,7 +224,7 @@ defmodule ChorusDraft.Clients.Bluesky do
 
     client.http.request(
       method,
-      "#{client.base}/xrpc/#{endpoint}",
+      "#{xrpc_host(client, endpoint)}/xrpc/#{endpoint}",
       Keyword.put(opts, :headers, headers)
     )
   rescue
@@ -233,7 +236,7 @@ defmodule ChorusDraft.Clients.Bluesky do
 
         client.http.request(
           method,
-          "#{client.base}/xrpc/#{endpoint}",
+          "#{xrpc_host(client, endpoint)}/xrpc/#{endpoint}",
           Keyword.put(opts, :headers, headers)
         )
       else
@@ -241,11 +244,52 @@ defmodule ChorusDraft.Clients.Bluesky do
       end
   end
 
+  defp xrpc_host(_client, "app.bsky." <> _), do: @appview
+  defp xrpc_host(client, _endpoint), do: client.pds || client.base
+
+  defp pds_endpoint(client, response) do
+    services = get_in(response, ["didDoc", "service"])
+
+    origin =
+      services
+      |> List.wrap()
+      |> Enum.find_value(fn service ->
+        if is_map(service) and pds_service?(service) do
+          service["serviceEndpoint"]
+        end
+      end)
+
+    if is_binary(origin) do
+      https_origin!(client.http, origin)
+    else
+      client.pds || client.base
+    end
+  end
+
+  defp pds_service?(service) do
+    id = service |> Map.get("id", "") |> to_string()
+    type = service |> Map.get("type", "") |> to_string()
+    type == "AtprotoPersonalDataServer" or String.ends_with?(id, "#atproto_pds")
+  end
+
+  defp https_origin!(http, url) do
+    origin = url |> to_string() |> String.trim() |> String.trim_trailing("/")
+    uri = http.validate_url!(origin)
+
+    unless uri.path in [nil, "", "/"] and is_nil(uri.query) do
+      raise Error, "Bluesky PDS URL must be an HTTPS origin."
+    end
+
+    origin
+  end
+
   defp refresh(client) do
     %{refresh: refresh} = Agent.get(client.session, & &1)
 
     response =
-      client.http.request(:post, "#{client.base}/xrpc/com.atproto.server.refreshSession",
+      client.http.request(
+        :post,
+        "#{client.pds || client.base}/xrpc/com.atproto.server.refreshSession",
         headers: %{"Authorization" => "Bearer #{refresh}"}
       )
 

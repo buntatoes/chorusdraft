@@ -906,6 +906,16 @@ h1 {
 .remove-secret input {
   padding: 0;
 }
+.settings-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #53546a;
+}
+.settings-hint code {
+  font-size: 11px;
+}
 .storage-note {
   background: #f5f2fc;
   border: 1px solid #e4ddf4;

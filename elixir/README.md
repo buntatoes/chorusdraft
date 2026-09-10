@@ -1,7 +1,7 @@
 # ChorusDraft
 
 Elixir app for Linux, macOS, and Windows. One executable, Bluesky and Mastodon
-modes. Version 0.53.1. See [CHANGELOG.md](CHANGELOG.md).
+modes. Version 0.53.2. See [CHANGELOG.md](CHANGELOG.md).
 
 Review is the default. `automatic` may publish new originals and eligible
 public-mention replies after screening and a source recheck.
@@ -142,22 +142,24 @@ auth, bounded output, and `store: false`.
 ## Packages
 
 Downloads: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases)
-(0.53.1 is the current published release; earlier GitHub Releases were withdrawn).
+(0.53.2 is the current published release; earlier GitHub Releases were withdrawn).
 
 CLI only (no GUI):
 
-- `ChorusDraft-elixir-0.53.1-linux.tar.gz`
-- `ChorusDraft-elixir-0.53.1-macos.tar.gz`
-- `ChorusDraft-elixir-0.53.1-windows.zip`
+- `ChorusDraft-elixir-0.53.2-linux.tar.gz`
+- `ChorusDraft-elixir-0.53.2-macos.tar.gz`
+- `ChorusDraft-elixir-0.53.2-windows.zip`
 
 These archives are the bot and terminal launchers only. They do not include
-the desktop app. For the GUI, download `chorusdraft-v0.53.1-<os>-<arch>` from
-the same release.
+the desktop app. For the GUI, download `chorusdraft-v0.53.2-<os>-<arch>` and
+follow [docs/DESKTOP.md](../docs/DESKTOP.md): `./install.sh`, macOS
+`Install ChorusDraft.command`, or Windows `install.cmd`. Desktop install uses
+a stable folder and can be run again to update.
 
-Extract the archive, then run `./install.sh` (or `install.ps1` on Windows).
-With no arguments it installs into a versioned folder under your user data
-directory and runs setup. Pass a path when you want a custom location. The
-installer refuses a destination that already exists.
+CLI: extract the archive, then run `./install.sh` (or `install.ps1` on
+Windows). With no arguments it installs into a versioned folder under your
+user data directory and runs setup. Pass a path when you want a custom
+location. The CLI installer refuses a destination that already exists.
 
 Build: `MIX_ENV=prod mix run scripts/build_release.exs`  
 Verify: `./scripts/check_packages.sh` or `.\scripts\check_packages.ps1`
@@ -188,7 +190,8 @@ Check the live account first. Do not force uncertain back to pending.
 | `Import requires empty destination state` | Import only into a new account store. Source must match platform and account. |
 | `Jetstream cannot be disabled` | `--no-jetstream` is rejected. Bluesky listen/start always stream. |
 | Mastodon streaming handshake / URL error | `MASTODON_STREAMING_URL` must be an HTTPS origin or `/api/v1/streaming` path. No credentials, query, or fragment. The token is an Authorization header. |
-| `LOCAL_LLM_URL` rejected | Local/Ollama must be loopback (`localhost`, `127.0.0.1`, `::1`). |
+| `LOCAL_LLM_URL` rejected | Local/Ollama must be loopback (`localhost`, `127.0.0.1`, `::1`) and include an API path such as `/v1/chat/completions` or `/api/generate`. |
+| Bluesky draft/automatic HTTP 404 | 0.53.2 sends `app.bsky.*` to the AppView and `com.atproto.*` to the account PDS. If the error names a local/Gemini/OpenAI model, pull or correct that model instead. |
 | `--publish` refused | Not valid with `--edit`, `--queue`, or `--random-reply`. Owner text only. |
 | `Choose one command at a time` | One short command or option group per invocation. |
 | Desktop install did not open the GUI | Headless Linux (no `DISPLAY` / `WAYLAND_DISPLAY`) skips launch. Open `./bot` later. Ubuntu 24.04 sandbox: `sudo python3 launcher-source/linux_sandbox.py` from the **installed** folder. |
