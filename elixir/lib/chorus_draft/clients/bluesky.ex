@@ -309,9 +309,27 @@ defmodule ChorusDraft.Clients.Bluesky do
     if MapSet.member?(seen, parent_uri) do
       turns
     else
-      parent = get_post(client, parent_uri)
-      turns = if Safety.eligible?(parent), do: [parent | turns], else: turns
-      context(client, parent, MapSet.put(seen, parent_uri), turns, remaining - 1)
+      case fetch_parent(client, parent_uri) do
+        nil ->
+          turns
+
+        parent ->
+          turns = if Safety.eligible?(parent), do: [parent | turns], else: turns
+          context(client, parent, MapSet.put(seen, parent_uri), turns, remaining - 1)
+      end
+    end
+  end
+
+  defp fetch_parent(_client, uri) when uri in [nil, ""], do: nil
+
+  defp fetch_parent(client, uri) do
+    if Regex.match?(@uri, to_string_or_empty(uri)) do
+      post =
+        call(client, :get, "app.bsky.feed.getPosts", query: %{"uris" => uri})
+        |> Map.get("posts", [])
+        |> List.first()
+
+      if post, do: normalize(post)
     end
   end
 
