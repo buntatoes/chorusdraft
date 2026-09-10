@@ -48,6 +48,9 @@ with tempfile.TemporaryDirectory(prefix='chorusdraft-bundle-') as temporary:
     package.mkdir()
     unpack(elixir_archive, work)
     shutil.move(str(work / elixir_name), package / 'elixir')
+    source = package / 'elixir' / 'source'
+    if source.exists():
+        shutil.rmtree(source)
     for doc in ('README.md', 'RELEASE_NOTES.md', 'CHANGELOG.md', 'SECURITY.md', 'LICENSE', 'NOTICE', 'VERSION'):
         shutil.copy2(ROOT / doc, package / doc)
     (package / 'docs').mkdir()
@@ -58,26 +61,26 @@ with tempfile.TemporaryDirectory(prefix='chorusdraft-bundle-') as temporary:
     shutil.copy2(ROOT / 'assets' / 'chorusdraft-mark.svg', package / 'chorusdraft.svg')
     if OS == 'windows':
         shutil.copy2(ROOT / 'scripts' / 'install_desktop.ps1', package / 'install.ps1')
+        shutil.copy2(ROOT / 'scripts' / 'install_desktop.cmd', package / 'install.cmd')
         shutil.copy2(ROOT / 'elixir' / 'scripts' / 'verify.ps1', package / 'verify.ps1')
     else:
         shutil.copy2(ROOT / 'scripts' / 'install_desktop.sh', package / 'install.sh')
         (package / 'install.sh').chmod(0o755)
-    # Native desktop runtime, plus the corresponding launcher source.
+        if OS == 'macos':
+            command = package / 'Install ChorusDraft.command'
+            shutil.copy2(ROOT / 'scripts' / 'install_desktop.command', command)
+            command.chmod(0o755)
+    # Native desktop runtime. Keep only the Linux sandbox helper and launcher
+    # notices; rebuild the GUI from the git tree, not from this archive.
     gui = DIST / 'gui' / ('ChorusDraft.app' if OS == 'macos' else 'ChorusDraft')
     if not gui.exists():
         raise SystemExit('Build the desktop launcher with scripts/build_gui.py first')
     shutil.copytree(gui, package / ('ChorusDraft.app' if OS == 'macos' else 'launcher'), symlinks=True)
-    for source in ('bridge.py', 'process.py', 'terminal_child.py', 'test_gui.py', 'requirements-build.txt', 'linux_sandbox.py', 'NOTICE'):
-        destination = package / 'launcher-source' / source
-        destination.parent.mkdir(exist_ok=True)
-        shutil.copy2(ROOT / 'launcher' / source, destination)
-    for folder in ('src', 'electron', 'test'):
-        shutil.copytree(ROOT / 'desktop' / folder, package / 'desktop-source' / folder)
-    for file in ('package.json', 'package-lock.json', 'package.cjs', 'vite.config.mjs', 'index.html'):
-        shutil.copy2(ROOT / 'desktop' / file, package / 'desktop-source' / file)
-    (package / 'build-scripts').mkdir()
-    for script in ('build_gui.py', 'build_bundle.py'):
-        shutil.copy2(ROOT / 'scripts' / script, package / 'build-scripts' / script)
+    launcher_source = package / 'launcher-source'
+    launcher_source.mkdir()
+    shutil.copy2(ROOT / 'launcher' / 'NOTICE', launcher_source / 'NOTICE')
+    if OS == 'linux':
+        shutil.copy2(ROOT / 'launcher' / 'linux_sandbox.py', launcher_source / 'linux_sandbox.py')
     files = sorted(p for p in package.rglob('*') if p.is_file())
     if not all(p.resolve().is_relative_to(package.resolve()) for p in package.rglob('*') if p.is_symlink()):
         raise SystemExit('The package contains a link that points outside it')

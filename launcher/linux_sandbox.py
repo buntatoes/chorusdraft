@@ -14,7 +14,7 @@ def main():
     root = Path(__file__).resolve().parent.parent
     executable = (root / 'launcher/ChorusDraft').resolve()
     if not executable.is_file():
-        raise SystemExit('Run this script from an extracted combined Linux download.')
+        raise SystemExit('Run this script from an installed or extracted Linux desktop download.')
     # AppArmor paths support glob syntax; only allow an exact literal attachment.
     if any(char in str(executable) for char in '\n\r"\\*?[]{}^@'):
         raise SystemExit('Move the download to a folder without special filename characters first.')
