@@ -1,0 +1,80 @@
+name: Bug report
+description: Something is broken or wrong
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Public issues are public. Do not paste tokens, `.env` files, private
+        posts, personal information, or exploit details. Security reports go
+        through [private reporting](https://github.com/buntatoes/chorusdraft/security/advisories/new).
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: From `chorusdraft --help`, the desktop About screen, or the `VERSION` file.
+      placeholder: "0.52"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: how
+    attributes:
+      label: How you ran it
+      options:
+        - Desktop app
+        - Release package (`./run.sh`)
+        - Source checkout (`elixir/chorusdraft`)
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Service
+      options:
+        - Bluesky
+        - Mastodon
+        - Both
+        - Not sure / not service-specific
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened
+      description: What you did, then what went wrong. Commands, button names, and the exact error help.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you submit
+      options:
+        - label: This issue does not contain tokens, private posts, or personal information.
+          required: true
+        - label: I searched existing issues and this is not a duplicate.
+          required: true

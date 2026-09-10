@@ -1,0 +1,14 @@
+ChorusDraft desktop launcher
+
+The launcher source is distributed under Apache License 2.0 with ChorusDraft.
+The desktop interface uses React (MIT) and Electron (MIT and included Chromium
+third-party licenses). The packaged terminal bridge includes Python (PSF License)
+and PyInstaller's bootloader (GPLv2 with its distribution exception).
+Windows builds additionally include pywinpty (MIT License).
+
+Project and license information:
+https://github.com/facebook/react/blob/main/LICENSE
+https://github.com/electron/electron/blob/main/LICENSE
+https://docs.python.org/3/license.html
+https://pyinstaller.org/en/stable/license.html
+https://github.com/andfoy/pywinpty/blob/main/LICENSE.txt

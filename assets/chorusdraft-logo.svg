@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2160" height="640" viewBox="0 0 2160 640" role="img" aria-label="ChorusDraft">
+  <defs>
+    <linearGradient id="mark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7a63d6"/>
+      <stop offset="0.55" stop-color="#6851c9"/>
+      <stop offset="1" stop-color="#5c46bc"/>
+    </linearGradient>
+  </defs>
+  <rect width="2160" height="640" fill="#12141c"/>
+  <g transform="translate(538 236)">
+    <rect width="168" height="168" rx="42" fill="url(#mark)"/>
+    <g transform="translate(25 25) scale(3.6875)" fill="none" stroke="#fff" stroke-linejoin="round">
+      <path d="M7 12c0-4 4-7 9-7s9 3 9 7v6c0 4-4 7-9 7h-3l-6 3V12Z" stroke-width="2.4"/>
+      <path d="M12 13v5m4-8v11m4-8v5" stroke-width="2" stroke-linecap="round"/>
+    </g>
+    <text x="212" y="116" fill="#fff" font-family="Inter, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="128" font-weight="700" letter-spacing="-3.2">Chorus<tspan font-weight="600">Draft</tspan></text>
+  </g>
+</svg>

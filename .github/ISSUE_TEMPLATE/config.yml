@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security report
+    url: https://github.com/buntatoes/chorusdraft/security/advisories/new
+    about: Private vulnerability reports. Do not file those as public issues.

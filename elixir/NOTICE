@@ -1,0 +1,15 @@
+ChorusDraft 0.53.0
+Copyright 2026 Buntos
+
+The ChorusDraft application is licensed under the Apache License 2.0,
+except ChorusDraft Guard (`guard/`), which is proprietary.
+See LICENSE and guard/LICENSE.
+
+Official builds include Guard (packaged as GUARD_LICENSE) and refuse to run
+if it is missing.
+
+Dependency licenses: THIRD_PARTY_NOTICES.md and source/deps/.
+
+Bluesky, Mastodon, and OpenAI are third-party services. ChorusDraft is not
+endorsed by Bluesky Social PBC, Mastodon gGmbH, OpenAI, or operators of
+independent Mastodon servers.

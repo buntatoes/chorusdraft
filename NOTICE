@@ -1,0 +1,11 @@
+ChorusDraft
+Copyright 2026 Buntos
+
+The ChorusDraft application is licensed under the Apache License 2.0,
+except ChorusDraft Guard (`elixir/guard/`), which is proprietary.
+See LICENSE and elixir/guard/LICENSE.
+
+Official builds include Guard (packaged as GUARD_LICENSE) and refuse to run
+if it is missing.
+
+Third-party notices: elixir/THIRD_PARTY_NOTICES.md

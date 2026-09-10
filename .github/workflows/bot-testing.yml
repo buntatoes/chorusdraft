@@ -1,0 +1,111 @@
+# Desktop CI (filename is historical; this is not a branch-specific workflow).
+name: Elixir desktop checks
+
+on:
+  push:
+    branches: [main, 'v0.*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025, macos-15, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124
+        with:
+          otp-version: '25.3'
+          elixir-version: '1.15.8'
+      - name: Elixir dependencies and tests
+        working-directory: elixir
+        shell: bash
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get
+          git diff --exit-code -- mix.lock
+          mix format --check-formatted
+          mix test --warnings-as-errors
+      - name: Build Elixir package
+        working-directory: elixir
+        shell: bash
+        run: MIX_ENV=prod mix run scripts/build_release.exs
+      - name: Elixir native package checks
+        if: runner.os != 'Windows'
+        working-directory: elixir
+        run: ./scripts/check_packages.sh
+      - name: Elixir Windows package checks
+        if: runner.os == 'Windows'
+        working-directory: elixir
+        run: ./scripts/check_packages.ps1
+      - name: Desktop build dependencies
+        run: |
+          python -m pip install -r launcher/requirements-build.txt
+          npm ci --prefix desktop
+          npm run build --prefix desktop
+      - name: Terminal bridge tests
+        run: python launcher/test_gui.py
+      - name: Desktop tests (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gnome-keyring dbus-x11
+          export XDG_DATA_HOME="$(mktemp -d)"
+          export XDG_CURRENT_DESKTOP=GNOME
+          export CHORUSDRAFT_TEST_KEYRING=1
+          dbus-run-session -- bash -c 'printf "%s" "fixture-keyring-password" | gnome-keyring-daemon --unlock --components=secrets; xvfb-run -a npm test --prefix desktop'
+      - name: Isolated macOS test keychain
+        if: runner.os == 'macOS'
+        run: |
+          security create-keychain -p fixture-keyring-password "$RUNNER_TEMP/chorusdraft.keychain-db"
+          security default-keychain -s "$RUNNER_TEMP/chorusdraft.keychain-db"
+          security unlock-keychain -p fixture-keyring-password "$RUNNER_TEMP/chorusdraft.keychain-db"
+          security set-keychain-settings -lut 21600 "$RUNNER_TEMP/chorusdraft.keychain-db"
+      - name: Desktop tests (macOS and Windows)
+        timeout-minutes: 5
+        if: runner.os != 'Linux'
+        run: npm test --prefix desktop
+      - name: Build desktop launcher
+        run: python scripts/build_gui.py
+      - name: Build and test combined package
+        run: |
+          python scripts/build_bundle.py
+      - name: Combined desktop and launcher checks (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a python scripts/verify_launcher.py
+        env:
+          CHORUSDRAFT_TEST_SANDBOX: '1'
+      - name: Combined desktop and launcher checks (macOS and Windows)
+        if: runner.os != 'Linux'
+        run: python scripts/verify_launcher.py
+      - name: Read package version
+        id: version
+        shell: bash
+        run: echo "version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: chorusdraft-${{ matrix.os }}
+          path: dist/chorusdraft-v${{ steps.version.outputs.version }}-*
+          if-no-files-found: error
+          retention-days: 14

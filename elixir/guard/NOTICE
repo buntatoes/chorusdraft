@@ -1,0 +1,8 @@
+ChorusDraft Guard
+Copyright 2026 Buntos
+
+Proprietary. Not licensed under Apache License 2.0.
+See LICENSE in this directory.
+
+The rest of ChorusDraft remains Apache License 2.0. Official builds require
+this module and refuse to draft or publish if it is missing.

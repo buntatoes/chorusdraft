@@ -1,0 +1,24 @@
+ChorusDraft Guard License
+Copyright 2026 Buntos
+
+This directory ("Guard") is proprietary software. It is NOT licensed under
+the Apache License 2.0 that covers the rest of ChorusDraft.
+
+Permission is granted to use Guard solely as part of an official ChorusDraft
+distribution, including to run, copy, and install unmodified official builds
+that contain Guard.
+
+You may not:
+
+- modify, replace, disable, bypass, or extract Guard in order to run
+  ChorusDraft without these safeguards;
+- use Guard as a standalone library or in another product;
+- sublicense, relicense, or release Guard under an open-source license;
+- distribute Guard except as part of an official ChorusDraft release.
+
+Earlier published ChorusDraft versions remain under Apache License 2.0.
+This license applies to Guard in ChorusDraft 0.53.0 and later.
+
+NO WARRANTY. Guard is provided "AS IS", without warranties or conditions
+of any kind. See also the disclaimer in the Apache License 2.0 for the
+rest of the project.
