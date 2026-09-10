@@ -7,9 +7,12 @@ Erlang/OTP 25 or later. Linux also needs util-linux (`flock`); macOS and
 Windows need Python 3 for account-state locking. Windows launchers use
 PowerShell. Building the bot from source requires Elixir 1.15+ and Mix.
 
-Connect with a Bluesky app password or Mastodon access token. AI drafting
-needs a local Ollama/OpenAI-compatible endpoint, Gemini, or ChatGPT/OpenAI
-API key and model.
+Connect with a Bluesky app password or Mastodon access token. The Bluesky
+server URL is the login entryway (`BLUESKY_PDS_URL`, default
+`https://bsky.social`). After login, feeds, search, and notifications use
+the AppView automatically. Do not enter `https://public.api.bsky.app` there.
+AI drafting needs a local Ollama/OpenAI-compatible endpoint, Gemini, or
+ChatGPT/OpenAI API key and model.
 
 ## Download and launch
 
@@ -162,7 +165,7 @@ On Windows, replace `./bot` with `.\bot.bat`.
 | `automatic` | Like `start`, but may publish new originals and eligible mention replies |
 | `listen` | Keep checking mentions |
 | `delete ID` | Delete your own post after confirmation |
-| `history` | Show locally recorded published posts from the last 10 days |
+| `history` | Print published posts from the last 10 days as JSON (lock-free; safe while a daemon is running) |
 | `status` | Show queue counts, unresolved drafts, automatic budget, and freeze |
 | `import FILE` | Import compatible state into an empty account store |
 | `reject ID` | Reject a pending or uncertain draft |
@@ -186,6 +189,7 @@ Bot events, one JSON object per line on stdout:
 ```json
 {"event":"log","value":"message\n"}
 {"event":"review","draft":{"id":"draft-id","action":"ai_generated","visibility":"public","text":"Exact draft text","cw":null,"reply_to":null,"quote_to":null,"status":"pending"}}
+{"event":"confirm","action":"delete","id":"at://did:plc:example/app.bsky.feed.post/abc"}
 ```
 
 Commands, one JSON object per line on stdin:
@@ -203,20 +207,27 @@ cannot contain NUL or C0 controls other than tab and newline. EOF or a read
 error is `quit`. The desktop rejects a bot line larger than 64 KiB.
 
 There is no `publish` action. Approval is `approve` after a `review` event.
-CLI review without this environment still uses the `[y/N/e/d/q]` prompt.
+`approve` after `confirm`/`delete` deletes that post; any other action leaves
+it. The desktop window does not start `delete`; CLI `delete ID` still prompts
+you to type `delete` unless `CHORUSDRAFT_CONTROL=1`. CLI review without this
+environment still uses the `[y/N/e/d/q]` prompt.
 
 ## Configuration and upgrades
 
 Each platform uses its own configuration and account state under
-`elixir/bluesky/` or `elixir/mastodon/`. Setup preserves existing files. Stop
-the old bot before upgrading and install into a new directory. Keep the
-complete account state so pending drafts, opt-outs, and uncertain publications
-survive the move. Backups can hold secrets; treat them like credentials.
+`elixir/bluesky/` or `elixir/mastodon/`. Setup preserves existing files.
 
-When migrating from the Ruby release, follow the
-[state import instructions](../elixir/README.md#upgrade).
-Run only one bot per social account. The desktop does not migrate an older
-installation's state automatically.
+Stop the running bot, then run the installer again on the same folder to
+update. The installer copies account `.env` files, `data/`, logs, and
+`do_not_contact.txt` / `target_accounts.txt` into the new files. 0.52
+through 0.53.1 used a versioned folder; pass that path, or install to the
+new default and copy `.env` plus `data/`. Backups can hold secrets; treat
+them like credentials.
+
+CLI-only packages still install into a new versioned directory and refuse an
+existing destination. After that move, import state:
+[Elixir upgrade](../elixir/README.md#upgrade). Ruby releases use the same
+import. Run only one bot per social account.
 
 ## Build from source
 

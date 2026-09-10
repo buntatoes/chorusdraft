@@ -28,10 +28,10 @@ Old JSON state still imports.
 | Jetstream | Bluesky notification wake-up only; periodic API catch-up; no history replay | Protocol, reconnect, coalescing, oversized/fragment, handshake, heartbeat, timeout tests |
 | Mastodon streaming | User-stream wake-up only; token in Authorization header; periodic API catch-up | Endpoint checks, SSE notification wake-up, local fixture |
 
-The bot needs Erlang/OTP. Desktop downloads include the GUI runtime. Install
-into a new directory; copy state after stopping the old process. HTTP
-redirects and automatic retries are off, including 503 Retry-After. Still no
-auto likes, boosts, or reposts.
+The bot needs Erlang/OTP. Desktop downloads include the GUI runtime. Desktop
+install updates a stable per-user folder in place. CLI-only packages still
+install into a new versioned directory. HTTP redirects and automatic retries
+are off, including 503 Retry-After. Still no auto likes, boosts, or reposts.
 
 Published post records expire after 10 days. Pending drafts, uncertain
 publications, and account safety state stay. Desktop credential storage

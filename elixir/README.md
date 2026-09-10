@@ -37,6 +37,7 @@ overwrite existing config. Run one daemon per account.
 ./chorusdraft bluesky review
 ./chorusdraft bluesky edit DRAFT_ID "replacement text"
 ./chorusdraft bluesky status
+./chorusdraft bluesky history
 ./chorusdraft bluesky start
 ./chorusdraft bluesky automatic
 ./chorusdraft mastodon reply STATUS_ID "Thanks for the context."
@@ -72,6 +73,10 @@ in flight. `publishing` or `uncertain` blocks later claims. A stranded claim
 ages to `uncertain` and is not retried. `reject ID` clears it after you inspect
 the account.
 
+`--active-hours` / `ACTIVE_HOURS` use local `HH:MM-HH:MM`. Overnight ranges
+work. Equal start and end (for example `09:00-09:00`) keep the bot always
+active. `--ignore-active-hours` bypasses the schedule for that invocation.
+
 ## Live streams
 
 On for Bluesky and Mastodon `listen` and daemon. `--jetstream` does nothing;
@@ -86,6 +91,15 @@ Mastodon uses `GET /api/v1/streaming/user` on the instance. Override with
 query string.
 
 Bounds: [SECURITY.md](SECURITY.md).
+
+## Bluesky hosts
+
+`BLUESKY_PDS_URL` (default `https://bsky.social`) is the login entryway.
+After session create, `com.atproto.*` (publish, delete, refresh, handle
+resolve) uses the account PDS from the session DID document
+(`AtprotoPersonalDataServer` or `#atproto_pds`). Feeds, search, and
+notifications (`app.bsky.*`) always use `https://public.api.bsky.app`. Do
+not point `BLUESKY_PDS_URL` at the AppView.
 
 ## Service
 
@@ -128,6 +142,15 @@ Per platform `data/` directory, split by platform, origin, and account.
 Do-not-contact and public opt-outs apply. Ambiguous publishes become
 `uncertain`. Screens are regex. They miss things. Review is what matters.
 
+`history` / `--history` prints published drafts from those stores as JSON.
+It is a lock-free read: no directory creation, store lock, or write. Stale
+`publishing` recovery and the 10-day published/rejected prune run in memory
+only. You can run it while a daemon holds the lock. Missing `data/` prints
+`[]`.
+
+On Windows, releasing `state.lock` waits up to 5 seconds for the Python
+helper to exit so the next store write is not stalled by a leftover handle.
+
 ## Providers
 
 | Value | Settings | Destination |
@@ -166,7 +189,10 @@ Verify: `./scripts/check_packages.sh` or `.\scripts\check_packages.ps1`
 
 ## Upgrade
 
-Stop the old process, install into a new directory, copy `.env` and config:
+Desktop install updates a stable folder in place; see
+[docs/DESKTOP.md](../docs/DESKTOP.md). CLI-only packages still install into
+a new versioned directory and refuse an existing destination. Stop the old
+process, copy `.env` and config, then import:
 
 ```sh
 ./chorusdraft bluesky import /absolute/path/to/old/data/ACCOUNT_HASH/state.json
@@ -185,13 +211,14 @@ Check the live account first. Do not force uncertain back to pending.
 |---|---|
 | `ChorusDraft Guard is required` | Official source includes `guard/`. Do not delete or replace it. |
 | `automatic frozen` in `status` | A `publishing` or `uncertain` draft is blocking claims. Inspect the live account, then `reject ID`. |
-| `State is busy` / lock timed out | Another process holds the account store. Stop the extra daemon. Linux needs `flock` (`util-linux`). |
+| `State is busy` / lock timed out | Another process holds the account store. Stop the extra daemon. Linux needs `flock` (`util-linux`). macOS/Windows need Python 3 on PATH. On Windows the helper is waited out for up to 5 seconds after release; if busy persists, something else still holds `state.lock`. |
 | `State is already locked by this process` | Nested store write. Retry the edit after the outer command finishes. |
+| `history` prints `[]` | No published records in the last 10 days under `--base` (default `./bluesky` or `./mastodon`). The command does not create `data/`. |
 | `Import requires empty destination state` | Import only into a new account store. Source must match platform and account. |
 | `Jetstream cannot be disabled` | `--no-jetstream` is rejected. Bluesky listen/start always stream. |
 | Mastodon streaming handshake / URL error | `MASTODON_STREAMING_URL` must be an HTTPS origin or `/api/v1/streaming` path. No credentials, query, or fragment. The token is an Authorization header. |
 | `LOCAL_LLM_URL` rejected | Local/Ollama must be loopback (`localhost`, `127.0.0.1`, `::1`) and include an API path such as `/v1/chat/completions` or `/api/generate`. |
-| Bluesky draft/automatic HTTP 404 | 0.53.2 sends `app.bsky.*` to the AppView and `com.atproto.*` to the account PDS. If the error names a local/Gemini/OpenAI model, pull or correct that model instead. |
+| Bluesky draft/automatic HTTP 404 | 0.53.2 sends `app.bsky.*` to the AppView and `com.atproto.*` to the account PDS. Do not set `BLUESKY_PDS_URL` to `https://public.api.bsky.app`. If the error names a local/Gemini/OpenAI model, pull or correct that model instead. |
 | `--publish` refused | Not valid with `--edit`, `--queue`, or `--random-reply`. Owner text only. |
 | `Choose one command at a time` | One short command or option group per invocation. |
 | Desktop install did not open the GUI | Headless Linux (no `DISPLAY` / `WAYLAND_DISPLAY`) skips launch. Open `./bot` later. Ubuntu 24.04 sandbox: `sudo python3 launcher-source/linux_sandbox.py` from the **installed** folder. |

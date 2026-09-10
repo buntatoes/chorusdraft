@@ -64,6 +64,10 @@ logs, or state. No automatic likes, favourites, boosts, or reposts.
 Credentials live in local `.env` or the process environment. Setup never
 overwrites an existing `.env`, executes it, starts a service, or contacts a
 provider. Release packages exclude `.env`, state, logs, and build caches.
+Interactive CLI and service units disable Erlang crash dumps
+(`ERL_CRASH_DUMP_SECONDS=0`; service units also set
+`ERL_CRASH_DUMP=/dev/null`) so a crash cannot write credentials or session
+tokens into `erl_crash.dump`.
 
 Local/Ollama stays on the configured loopback endpoint. Gemini and OpenAI
 receive the drafting task and selected cleaned public context. OpenAI uses the

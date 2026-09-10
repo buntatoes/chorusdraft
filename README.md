@@ -67,6 +67,7 @@ use `elixir/chorusdraft` after `mix escript.build`.
 | `post` / `reply` / `quote` | Owner-written text |
 | `search` / `random` / `discover` / `targets` | Read or stage commentary |
 | `status` | Queue counts, unresolved IDs, automatic budget, freeze |
+| `history` | Locally recorded published posts as JSON (last 10 days; lock-free) |
 | `reject ID` | Drop one pending or uncertain draft |
 | `edit ID TEXT` | Replace pending draft text; still review before publish |
 | `delete ID` | Delete one of your posts |
