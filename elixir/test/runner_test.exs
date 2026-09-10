@@ -452,4 +452,82 @@ defmodule ChorusDraft.RunnerTest do
     assert hd(Store.drafts(dir))["text"] == "reply wording"
     assert hd(Store.drafts(dir))["status"] == "pending"
   end
+
+  test "control review drives skip, reject, and quit commands", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    Runner.manual(runner(client, dir), "first")
+    Runner.manual(runner(client, dir), "second")
+    Runner.manual(runner(client, dir), "third")
+
+    {:ok, input} =
+      StringIO.open(
+        ~s({"action":"skip"}\n{"action":"reject"}\n{"action":"quit"}\n{"action":"approve"}\n)
+      )
+
+    Runner.review(runner(client, dir, interactive: true, control: true, input: input))
+
+    assert Enum.map(Store.drafts(dir), & &1["status"]) == ["pending", "rejected", "pending"]
+    assert Agent.get(published, & &1) == []
+  end
+
+  test "control delete confirms with approve and cancels otherwise", %{
+    dir: dir,
+    client: client
+  } do
+    Process.put({TestClient, :notify_delete}, true)
+    {:ok, output} = StringIO.open("")
+    {:ok, input} = StringIO.open(~s({"action":"approve"}\n))
+
+    Runner.delete(
+      runner(client, dir, interactive: true, control: true, input: input, output: output),
+      "post-1"
+    )
+
+    assert_received {:deleted, "post-1"}
+    {_, shown} = StringIO.contents(output)
+    assert shown =~ ~s("event":"confirm")
+    assert shown =~ ~s("action":"delete")
+    refute shown =~ "Type delete"
+
+    {:ok, input} = StringIO.open(~s({"action":"reject"}\n))
+
+    Runner.delete(
+      runner(client, dir, interactive: true, control: true, input: input, output: output),
+      "post-2"
+    )
+
+    refute_received {:deleted, "post-2"}
+  end
+
+  test "terminal delete still requires typing delete", %{dir: dir, client: client} do
+    Process.put({TestClient, :notify_delete}, true)
+    {:ok, input} = StringIO.open("delete\n")
+    Runner.delete(runner(client, dir, interactive: true, input: input), "post-1")
+    assert_received {:deleted, "post-1"}
+
+    {:ok, input} = StringIO.open("yes\n")
+    Runner.delete(runner(client, dir, interactive: true, input: input), "post-2")
+    refute_received {:deleted, "post-2"}
+  end
+
+  test "Bluesky drafts are public-only and reject content warnings", %{
+    dir: dir,
+    client: client
+  } do
+    run = Runner.new(client, dir, "bluesky", %{}, ai: ChorusDraft.TestAI)
+    item = Runner.draft(run, "A calm observation.", "manual")
+    assert item["visibility"] == "public"
+    assert Runner.validate_draft!(run, item)
+
+    assert_raise Error, ~r/public feed posts only/, fn ->
+      Runner.validate_draft!(run, Map.put(item, "visibility", "unlisted"))
+    end
+
+    assert_raise Error, ~r/Content warnings are supported only for Mastodon/, fn ->
+      Runner.validate_draft!(run, Map.put(item, "cw", "spoiler"))
+    end
+  end
 end

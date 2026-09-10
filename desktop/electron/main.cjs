@@ -73,6 +73,8 @@ function selection(request) {
 }
 // One request per line; the bridge reads lines of at most 64 KiB.
 const REQUEST_LIMIT = 65536;
+// One response per line; never buffer more than 1 MiB of a single bridge line.
+const RESPONSE_LIMIT = 1048576;
 // Anything the bot reads as a line; tabs are the only control allowed.
 const CONTROL = /[\x00-\x08\x0a-\x1f\x7f]/;
 function send(request) {
@@ -142,6 +144,22 @@ function startBridge() {
     ),
     stdio: ["pipe", "pipe", "pipe"],
   });
+  // readline buffers a line without bound; refuse to grow memory for a
+  // bridge that stops terminating its messages.
+  let buffered = 0;
+  bridge.stdout.on("data", (chunk) => {
+    const newline = chunk.lastIndexOf(0x0a);
+    buffered =
+      newline === -1 ? buffered + chunk.length : chunk.length - newline - 1;
+    if (buffered > RESPONSE_LIMIT) {
+      bridge.stdout.destroy();
+      emit({
+        type: "error",
+        value: "The bot service returned an oversized response.",
+        active: running,
+      });
+    }
+  });
   readline.createInterface({ input: bridge.stdout }).on("line", (line) => {
     try {
       const message = JSON.parse(line);
@@ -162,6 +180,7 @@ function startBridge() {
       emit({
         type: "error",
         value: "The bot service returned an invalid response.",
+        active: running,
       });
     }
   });
@@ -228,6 +247,11 @@ app
     });
     window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
     window.webContents.on("will-navigate", (event) => event.preventDefault());
+    // The UI requests no web permissions; deny every one by default.
+    window.webContents.session.setPermissionRequestHandler(
+      (_webContents, _permission, callback) => callback(false),
+    );
+    window.webContents.session.setPermissionCheckHandler(() => false);
     handle("bot:info", () => ({
       version: fs.readFileSync(path.join(root, "VERSION"), "utf8").trim(),
     }));
@@ -262,7 +286,9 @@ app
         request.action === "edit" &&
         (!validId(request.target) || !validDraft(request.text, 10000))
       )
-        throw new Error("Enter replacement text for a pending draft.");
+        throw new Error(
+          "Enter replacement text for a pending draft (maximum 10,000 characters).",
+        );
       const environment = ["setup", "help", "version"].includes(request.action)
         ? {}
         : vault.values(request.platform);
@@ -293,8 +319,10 @@ app
       if (action) {
         if (!["approve", "reject", "quit", "skip", "edit"].includes(action))
           throw new Error("Enter one response at a time.");
-        if (action === "edit" && !validDraft(text, 20000))
-          throw new Error("Enter replacement text for a pending draft.");
+        if (action === "edit" && !validDraft(text, 10000))
+          throw new Error(
+            "Enter replacement text for a pending draft (maximum 10,000 characters).",
+          );
         send({ type: "input", action, text });
         return;
       }
@@ -342,9 +370,16 @@ app
         if (result.response !== 1) return;
       }
       closing = true;
-      if (bridge && !bridge.killed && bridge.stdin.writable)
+      if (bridge && !bridge.killed && bridge.stdin.writable) {
         send({ type: "quit" });
-      else app.quit();
+        // The bridge should exit on quit or stdin EOF; do not let a wedged
+        // process keep the app open.
+        const kill = setTimeout(() => {
+          if (bridge.exitCode === null) bridge.kill("SIGTERM");
+        }, 3000);
+        kill.unref();
+        bridge.once("exit", () => clearTimeout(kill));
+      } else app.quit();
     });
     await window.loadFile(path.join(__dirname, "../dist/index.html"));
     if (smoke) {

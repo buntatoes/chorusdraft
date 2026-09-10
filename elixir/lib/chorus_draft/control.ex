@@ -4,6 +4,9 @@ defmodule ChorusDraft.Control do
 
   @actions ~w(approve reject quit skip edit)
   @max_text 10_000
+  # Commands are small (text is capped at @max_text); a 64 KiB line cap stops a
+  # broken or hostile client from growing the heap with an unterminated line.
+  @max_line 65_536
 
   def enabled?, do: System.get_env("CHORUSDRAFT_CONTROL") == "1"
 
@@ -77,12 +80,38 @@ defmodule ChorusDraft.Control do
 
   defp validate!(action, _command), do: %{"action" => action}
 
-  defp line(device) do
-    try do
-      IO.binread(device, :line)
-    rescue
-      _ -> IO.read(device, :line)
+  defp line(device), do: line(device, [], 0)
+
+  defp line(device, acc, size) do
+    case read_byte(device) do
+      :eof ->
+        if acc == [], do: :eof, else: finish_line(acc)
+
+      {:error, _} = error ->
+        error
+
+      "\n" ->
+        finish_line(acc)
+
+      _ when size >= @max_line ->
+        raise Error, "Control command exceeded the 64 KiB line limit."
+
+      byte ->
+        line(device, [byte | acc], size + 1)
     end
+  end
+
+  defp finish_line(acc), do: acc |> Enum.reverse() |> IO.iodata_to_binary()
+
+  defp read_byte(device) do
+    data =
+      try do
+        IO.binread(device, 1)
+      rescue
+        _ -> IO.read(device, 1)
+      end
+
+    if is_list(data), do: List.to_string(data), else: data
   end
 
   defp normalize(data) when is_binary(data), do: data

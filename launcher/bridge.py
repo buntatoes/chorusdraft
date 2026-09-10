@@ -168,7 +168,7 @@ def serve(root):
                         raise ValueError('Enter one response at a time.')
                     command = {'action': action}
                     if action == 'edit':
-                        if (not isinstance(text, str) or not text.strip() or len(text) > 20000 or
+                        if (not isinstance(text, str) or not text.strip() or len(text) > 10000 or
                                 has_control(text, newline=True)):
                             raise ValueError('Enter replacement text (maximum 10,000 characters).')
                         command['text'] = text

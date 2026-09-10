@@ -3,11 +3,14 @@ defmodule ChorusDraft.JetstreamTransportTest do
   alias ChorusDraft.Jetstream
   alias ChorusDraft.Jetstream.Socket
 
-  defp connect(extra_headers \\ "", accept_override \\ nil) do
+  defp connect(extra_headers \\ "", accept_override \\ nil, opts \\ []) do
     {:ok, listener} = :gen_tcp.listen(0, [:binary, active: false, ip: {127, 0, 0, 1}])
     {:ok, port} = :inet.port(listener)
     stream = Jetstream.subscription("did:plc:me")
-    {:ok, client} = Socket.start_link(url: "ws://127.0.0.1:#{port}/", stream: stream)
+
+    {:ok, client} =
+      Socket.start_link([url: "ws://127.0.0.1:#{port}/", stream: stream] ++ opts)
+
     Process.unlink(client)
 
     on_exit(fn ->
@@ -64,16 +67,16 @@ defmodule ChorusDraft.JetstreamTransportTest do
   end
 
   test "a partial frame cannot hold the receive loop indefinitely" do
-    {socket, stream, _} = connect()
+    {socket, stream, _} = connect("", nil, read_timeout: 500)
     assert Jetstream.wait(stream, 2_000) == :activity
     :ok = :gen_tcp.send(socket, <<0x81>>)
-    assert :gen_tcp.recv(socket, 0, 12_000) == {:error, :closed}
+    assert :gen_tcp.recv(socket, 0, 3_000) == {:error, :closed}
   end
 
   test "an idle healthy connection receives masked heartbeats and accepts a pong" do
-    {socket, stream, client} = connect()
+    {socket, stream, client} = connect("", nil, heartbeat: 1_500)
     assert Jetstream.wait(stream, 2_000) == :activity
-    assert {:ok, <<0x89, 0x80, _mask::32>>} = :gen_tcp.recv(socket, 6, 32_000)
+    assert {:ok, <<0x89, 0x80, _mask::32>>} = :gen_tcp.recv(socket, 6, 5_000)
     :ok = :gen_tcp.send(socket, <<0x8A, 0, 0x89, 0>>)
     assert {:ok, <<0x8A, 0x80, _mask::32>>} = :gen_tcp.recv(socket, 6, 2_000)
     assert Process.alive?(client)

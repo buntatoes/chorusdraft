@@ -2,10 +2,71 @@
 
 Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
-## 0.53.0 — 2026-09-10
+## 0.53.1 — 2026-09-10
 
 Current published GitHub Release. Earlier GitHub Releases and tags
 (v0.50 through v0.52.1) were withdrawn and are not downloadable.
+
+Patch release: a full code review's worth of fixes and hardening. No behavior
+or interface changes for normal use.
+
+Bot:
+
+- The CLI disables Erlang crash dumps, so an interactive crash can no longer
+  write credentials and session tokens into `erl_crash.dump`.
+- Mastodon streaming resets its reconnect backoff after a stable session
+  instead of staying at the ~30-second ceiling forever.
+- `--history` is now a lock-free read; it no longer creates directories,
+  takes the store lock, or writes state.
+- The control plane caps command lines at 64 KiB, and draft deletion can be
+  confirmed through the structured control protocol (used by the desktop
+  app), not only by typing `delete` at a terminal.
+- Unsolicited posts without an author no longer share one per-author
+  cooldown entry.
+- Generated systemd units escape `%` specifiers and reject paths containing
+  line breaks.
+- `--active-hours` with equal start and end (for example `09:00-09:00`) is
+  documented as keeping the bot always active.
+
+Desktop app:
+
+- The publish button arms only from the bot's structured review event. A
+  crafted content warning can no longer spoof the terminal approval prompt.
+- Activity-history pruning no longer re-reads every retained file on each
+  bot output line.
+- Bridge responses are capped at 1 MiB per line, a malformed bridge response
+  no longer desynchronizes the session state, quitting force-closes a wedged
+  bridge process, and all renderer permission requests are denied.
+
+Installers and packaging:
+
+- The Linux applications-menu entry now works from install paths containing
+  spaces or other special characters.
+- The macOS installer refuses to replace a real `~/Applications/ChorusDraft.app`
+  folder instead of failing midway.
+- Desktop installers re-verify the installed copy against the package
+  manifest, and no longer launch the app under CI.
+- Release archives are reproducible: fixed timestamps and no builder user
+  identity in tar/zip headers.
+- Package checks now exercise `run.ps1` on Windows, match the full
+  runtime-data denylist (`credentials/`, `activity/`, `erl_crash.dump`), and
+  the Windows check restores `LOCALAPPDATA` afterwards.
+- `rewrite_email.py` rejects whitespace and control characters in addresses,
+  the GUI build fails loudly if a license file promised by `launcher/NOTICE`
+  is missing, and the Linux sandbox setup prefers system AppArmor paths and
+  explains AppArmor 3.x systems.
+
+Tests: broader screening-variant coverage (token/JWT/identifier PII classes,
+harassment, opt-out, and injection phrasing), AST-based proof that the
+Apache-licensed facades contain no screening logic, Guard fail-closed cases,
+automatic-budget and author-cooldown expiry, lock-free history, control
+protocol limits, Bluesky session-refresh account mismatch, streaming
+reconnect, and Jetstream timer tests that no longer wait on wall-clock time.
+
+## 0.53.0 — 2026-09-10
+
+Earlier GitHub Releases and tags (v0.50 through v0.52.1) were withdrawn and
+are not downloadable.
 
 Publication screening is now a proprietary module. Opt-out, injection,
 harassment, automatic-output, and personal-information checks moved out of the

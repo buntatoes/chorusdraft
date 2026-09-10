@@ -52,6 +52,29 @@ defmodule ChorusDraft.PIITest do
     refute PII.sensitive?("read the changelog, then run mix test")
   end
 
+  test "provider tokens, JWTs, and labeled identifiers are detected and redacted" do
+    jwt =
+      "eyJ" <>
+        String.duplicate("a", 12) <>
+        "." <> String.duplicate("b", 12) <> "." <> String.duplicate("c", 12)
+
+    for value <- [
+          jwt,
+          "ghp_" <> String.duplicate("a", 24),
+          "github_pat_" <> String.duplicate("a", 24),
+          "AIza" <> String.duplicate("a", 35),
+          "-----BEGIN EC PRIVATE KEY-----",
+          "SSN: 123-45-6789",
+          "IBAN: DE89370400440532013000",
+          "driver's license: X1234567"
+        ] do
+      assert PII.sensitive?(value), value
+      redacted = PII.redact("token: " <> value)
+      refute redacted =~ value
+      refute PII.sensitive?(redacted)
+    end
+  end
+
   test "ordinary discussion and public social mentions remain usable" do
     for text <- [
           "Ruby 4.0 and Elixir 1.15 run on Linux.",

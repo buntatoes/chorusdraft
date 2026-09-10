@@ -272,6 +272,24 @@ test("activity retention uses event timestamps at the exact ten-day boundary, in
   assert.equal(history.list("bluesky", { kind: "activity" }).total, 1);
   assert.equal(history.list("mastodon", { kind: "activity" }).total, 1);
 });
+test("append skips a prune that ran within the last minute", (t) => {
+  const root = fixture(t),
+    dir = path.join(root, "activity");
+  let now = Date.UTC(2026, 8, 6, 12);
+  const history = new History(root, dir, () => now);
+  history.append("bluesky", "first line");
+  const expired = path.join(dir, `${now - DAYS - 3600000}-bluesky.jsonl`);
+  fs.writeFileSync(
+    expired,
+    JSON.stringify({ time: now - DAYS - 3600000, text: "expired" }) + "\n",
+  );
+  history.append("bluesky", "second line");
+  assert.ok(fs.existsSync(expired));
+  now += 60000;
+  history.append("bluesky", "third line");
+  assert.ok(!fs.existsSync(expired));
+  assert.equal(history.list("bluesky", { kind: "activity" }).total, 3);
+});
 test("history exposes only recent published drafts and never edits pending, uncertain, or corrupt posting state", (t) => {
   const root = fixture(t),
     now = Date.UTC(2026, 8, 6),

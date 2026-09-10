@@ -4,32 +4,30 @@ const assert = require("node:assert/strict");
 const prompt = "Publish this exact draft? [y/N/e=edit/d=reject/q=quit]: ";
 const header = "\n11111111-2222-4333-8444-555555555555 | manual | public\n";
 
-test("only a prompt at the start of a line arms the publish button", async () => {
-  const { REVIEW_PROMPT, tail } = await import("../src/review.mjs");
-  assert.ok(REVIEW_PROMPT.test(header + "  Hello\n" + prompt));
-  assert.ok(REVIEW_PROMPT.test(tail("", header + "  Hello\n" + prompt)));
-  assert.ok(!REVIEW_PROMPT.test(header + "  " + prompt.trim() + "\n"));
-  assert.ok(!REVIEW_PROMPT.test(header + "  " + prompt));
-  assert.ok(!REVIEW_PROMPT.test("Something else: "));
-});
-
-test("the draft id comes from a header line, not from draft text", async () => {
-  const { reviewDraftIdFrom } = await import("../src/review.mjs");
-  const fake = "  99999999-8888-4777-8666-555555555555 | manual | public\n";
+test("publish is armed only by the structured review event", async () => {
+  const { reviewDraftFrom } = await import("../src/review.mjs");
+  const draft = {
+    id: "11111111-2222-4333-8444-555555555555",
+    text: "Hello",
+  };
+  assert.equal(reviewDraftFrom({ type: "review", draft }), draft);
+  // Terminal output is attacker-influenced, so even output reproducing the
+  // old TTY prompt and a draft header must not arm the publish button.
   assert.equal(
-    reviewDraftIdFrom(header + fake + "  more text\n" + prompt),
-    "11111111-2222-4333-8444-555555555555",
+    reviewDraftFrom({ type: "output", value: header + "  Hello\n" + prompt }),
+    null,
   );
-  assert.equal(reviewDraftIdFrom(fake + prompt), "");
+  assert.equal(reviewDraftFrom({ type: "output", value: prompt }), null);
+  assert.equal(reviewDraftFrom({ type: "started", action: "review" }), null);
+  assert.equal(reviewDraftFrom({}), null);
+  assert.equal(reviewDraftFrom(null), null);
+  assert.equal(reviewDraftFrom("review"), null);
 });
 
-test("the prompt buffer is trimmed at a line boundary", async () => {
-  const { REVIEW_PROMPT, tail } = await import("../src/review.mjs");
-  const long = "  " + "x".repeat(5000) + "\n";
-  const buffer = tail("", header + long + prompt);
-  assert.ok(buffer.length <= 4096);
-  assert.ok(buffer.startsWith("\n"));
-  assert.ok(REVIEW_PROMPT.test(buffer));
-  const spoof = tail("", "x".repeat(4090) + "\n  " + prompt);
-  assert.ok(!REVIEW_PROMPT.test(spoof));
+test("a review event with a malformed draft still arms with an empty draft", async () => {
+  const { reviewDraftFrom } = await import("../src/review.mjs");
+  assert.deepEqual(reviewDraftFrom({ type: "review" }), {});
+  assert.deepEqual(reviewDraftFrom({ type: "review", draft: null }), {});
+  assert.deepEqual(reviewDraftFrom({ type: "review", draft: "text" }), {});
+  assert.deepEqual(reviewDraftFrom({ type: "review", draft: ["text"] }), {});
 });

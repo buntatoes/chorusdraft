@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Package the Elixir bot with the desktop launcher."""
+import gzip
 import hashlib
 from pathlib import Path
 import platform
@@ -90,9 +91,27 @@ with tempfile.TemporaryDirectory(prefix='chorusdraft-bundle-') as temporary:
     if OS == 'windows':
         with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as packed:
             for p in files:
-                packed.write(p, p.relative_to(work))
+                # Fixed timestamp plus recorded permissions keep repacks reproducible.
+                info = zipfile.ZipInfo(p.relative_to(work).as_posix(), date_time=(2020, 1, 1, 0, 0, 0))
+                info.external_attr = (p.stat().st_mode & 0xFFFF) << 16
+                info.compress_type = zipfile.ZIP_DEFLATED
+                packed.writestr(info, p.read_bytes())
     else:
-        with tarfile.open(archive, 'w:gz') as packed:
-            packed.add(package, arcname=name)
+        def normalize(member):
+            # Stay within what the extraction-side 'data' filter accepts (relative
+            # names, no device nodes) and strip builder identity and timestamps so
+            # repeated builds are byte-identical.
+            if member.isdev():
+                raise SystemExit(f'Cannot package device member {member.name}')
+            member.mtime = 0
+            member.uid = member.gid = 0
+            member.uname = member.gname = ''
+            return member
+        with gzip.GzipFile(filename=str(archive), mode='wb', mtime=0) as compressed:
+            with tarfile.open(fileobj=compressed, mode='w') as packed:
+                packed.add(package, arcname=name, recursive=False, filter=normalize)
+                for member_path in sorted(package.rglob('*')):
+                    packed.add(member_path, arcname=member_path.relative_to(work).as_posix(),
+                               recursive=False, filter=normalize)
     Path(str(archive) + '.sha256').write_text(f'{hashlib.sha256(archive.read_bytes()).hexdigest()}  {archive.name}\n')
     print(f'Built {archive.name}')

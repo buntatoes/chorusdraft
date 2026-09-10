@@ -71,4 +71,20 @@ defmodule ChorusDraft.ServiceTest do
     refute joined =~ "TOKEN"
     refute joined =~ "API_KEY"
   end
+
+  test "systemd units escape percent specifiers and reject line breaks" do
+    if ChorusDraft.Platform.os() == "linux" do
+      base = Path.join(System.tmp_dir!(), "100% certain")
+      spec = Service.spec("bluesky", base, false)
+      assert spec.contents =~ "100%% certain"
+
+      assert_raise ChorusDraft.Error, ~r/line breaks/, fn ->
+        Service.spec("bluesky", "/tmp/bad\nWantedBy=evil.target", false)
+      end
+
+      assert_raise ChorusDraft.Error, ~r/line breaks/, fn ->
+        Service.spec("bluesky", "/tmp/bad\rpath", false)
+      end
+    end
+  end
 end

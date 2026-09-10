@@ -242,6 +242,12 @@ defmodule ChorusDraft.Service do
   end
 
   defp escape_systemd(value) do
+    if String.contains?(value, ["\n", "\r"]),
+      do: raise(Error, "Service paths cannot contain line breaks.")
+
+    # "%" starts a specifier in unit files; double it to keep paths literal.
+    value = String.replace(value, "%", "%%")
+
     if String.contains?(value, [" ", "\t", "\"", "'", "\\"]) do
       "\"" <> String.replace(value, ~r/["\\]/, fn c -> "\\" <> c end) <> "\""
     else

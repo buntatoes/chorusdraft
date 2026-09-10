@@ -11,6 +11,7 @@ const path = require("node:path");
       recursive: true,
     });
   const metadata = { ...require("./package.json") };
+  const electronVersion = metadata.devDependencies.electron;
   delete metadata.dependencies;
   delete metadata.devDependencies;
   delete metadata.scripts;
@@ -31,9 +32,7 @@ const path = require("node:path");
     out: path.join(root, "dist", "electron"),
     overwrite: true,
     asar: true,
-    electronVersion:
-      metadata.devDependencies?.electron ||
-      require("./package.json").devDependencies.electron,
+    electronVersion,
     platform: process.platform,
     arch: process.arch,
     appBundleId: "org.chorusdraft.desktop",
