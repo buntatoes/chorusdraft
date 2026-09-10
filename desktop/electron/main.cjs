@@ -185,12 +185,14 @@ function startBridge() {
     }
   });
   bridge.stderr.on("data", () => {}); // Bot output travels through the structured terminal channel.
-  bridge.on("error", () =>
+  bridge.on("error", () => {
+    running = false;
     emit({
       type: "error",
       value: "The bot service could not start. Check the desktop installation.",
-    }),
-  );
+      active: false,
+    });
+  });
   bridge.on("exit", () => {
     running = false;
     if (closing) app.exit(0);
@@ -198,6 +200,7 @@ function startBridge() {
       emit({
         type: "error",
         value: "The bot service stopped. Reopen ChorusDraft to continue.",
+        active: false,
       });
   });
 }
@@ -311,6 +314,7 @@ app
       }
     });
     handle("bot:input", (payload) => {
+      if (!running) throw new Error("The bot session has already ended.");
       if (typeof payload === "string") payload = { text: payload };
       if (!payload || typeof payload !== "object")
         throw new Error("Enter one response at a time.");

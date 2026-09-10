@@ -40,6 +40,12 @@ def valid_id(value):
     return isinstance(value, str) and value.strip() and len(value) <= 80 and not has_control(value)
 
 
+def require_live_session(session):
+    if not session or session.finished:
+        raise ValueError('The bot session has already ended.')
+    return session
+
+
 def arguments(request):
     runtime, platform, action = (request.get(key) for key in ('runtime', 'platform', 'action'))
     if runtime != 'elixir' or platform not in ('bluesky', 'mastodon') or action not in ACTIONS:
@@ -139,6 +145,8 @@ def serve(root):
                     break
                 if kind == 'review':
                     emit('review', draft=value)
+                elif kind == 'error':
+                    emit('error', value=value, active=False)
                 else:
                     emit(kind, value=value)
             if quitting and session.finished:
@@ -172,13 +180,11 @@ def serve(root):
                                 has_control(text, newline=True)):
                             raise ValueError('Enter replacement text (maximum 10,000 characters).')
                         command['text'] = text
-                    if session and not session.finished:
-                        session.send(json.dumps(command, ensure_ascii=True))
+                    require_live_session(session).send(json.dumps(command, ensure_ascii=True))
                 else:
                     if not isinstance(text, str) or len(text) > 20000 or has_control(text):
                         raise ValueError('Enter one response at a time.')
-                    if session and not session.finished:
-                        session.send(text)
+                    require_live_session(session).send(text)
             elif kind == 'stop':
                 if session:
                     session.stop()
@@ -193,7 +199,8 @@ def serve(root):
         except (ValueError, OSError) as error:
             emit('error', value=str(error), active=bool(session and not session.finished))
         except Exception:
-            emit('error', value='Unable to start the session. Check the selected runtime installation.')
+            emit('error', value='Unable to start the session. Check the selected runtime installation.',
+                 active=False)
 
 
 if __name__ == '__main__':

@@ -246,6 +246,10 @@ function App() {
         "",
       );
       setError(message);
+      if (message === "The bot session has already ended.") {
+        setRunning(false);
+        return false;
+      }
       if (
         !opts.keepRunning &&
         message !== "Choose an action after the current session ends."

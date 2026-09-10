@@ -126,6 +126,7 @@ class Session:
             self.events.put(('exit', code))
         except Exception:
             self.events.put(('error', 'The bot session ended unexpectedly. Check the account before retrying a publication.'))
+            self.events.put(('exit', 1))
         finally:
             self.finished = True
             if self.master is not None:
@@ -166,6 +167,7 @@ class Session:
             self.events.put(('exit', code))
         except Exception:
             self.events.put(('error', 'The bot session ended unexpectedly. Check the account before retrying a publication.'))
+            self.events.put(('exit', 1))
         finally:
             self.finished = True
 
