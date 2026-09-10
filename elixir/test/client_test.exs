@@ -187,6 +187,45 @@ defmodule ChorusDraft.ClientTest do
              "https://pds.example/xrpc/com.atproto.repo.createRecord"
   end
 
+  test "Bluesky thread context keeps gathered ancestors when a parent is gone" do
+    session = %{"did" => "did:plc:me", "accessJwt" => "access", "refreshJwt" => "refresh"}
+
+    parent = %{
+      "uri" => "at://did:plc:bob/app.bsky.feed.post/parent",
+      "cid" => "bafy-parent",
+      "author" => %{"did" => "did:plc:bob", "handle" => "bob.test"},
+      "record" => %{
+        "text" => "hello",
+        "reply" => %{"parent" => %{"uri" => "at://did:plc:carol/app.bsky.feed.post/gone"}}
+      }
+    }
+
+    child = %{
+      "uri" => "at://did:plc:alice/app.bsky.feed.post/child",
+      "cid" => "bafy-child",
+      "author" => %{"did" => "did:plc:alice", "handle" => "alice.test"},
+      "record" => %{
+        "text" => "reply",
+        "reply" => %{"parent" => %{"uri" => parent["uri"]}}
+      }
+    }
+
+    TestHTTP.set_responses([session, %{"posts" => [parent]}, %{"posts" => []}])
+    client = bluesky() |> Bluesky.login()
+    turns = Bluesky.context(client, Bluesky.normalize(child))
+    assert Enum.map(turns, & &1["id"]) == [parent["uri"]]
+  end
+
+  test "Bluesky get_post still fails closed when the post is gone" do
+    session = %{"did" => "did:plc:me", "accessJwt" => "access", "refreshJwt" => "refresh"}
+    TestHTTP.set_responses([session, %{"posts" => []}])
+    client = bluesky() |> Bluesky.login()
+
+    assert_raise Error, ~r/unavailable/, fn ->
+      Bluesky.get_post(client, "at://did:plc:alice/app.bsky.feed.post/gone")
+    end
+  end
+
   test "Bluesky rejects a DID document PDS that is not an HTTPS origin" do
     session = %{
       "did" => "did:plc:me",
