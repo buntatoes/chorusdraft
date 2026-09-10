@@ -4,12 +4,14 @@ umask 077
 src=$(CDPATH= cd "$(dirname "$0")" && pwd)
 
 default_dest() {
-  version=$(tr -d '[:space:]' < "$src/VERSION")
   case $(uname -s) in
-    Darwin) root="$HOME/Library/Application Support" ;;
-    *) root="${XDG_DATA_HOME:-$HOME/.local/share}" ;;
+    Darwin) printf '%s/Library/Application Support/chorusdraft-app' "$HOME" ;;
+    *) printf '%s/chorusdraft' "${XDG_DATA_HOME:-$HOME/.local/share}" ;;
   esac
-  printf '%s/chorusdraft-%s' "$root" "$version"
+}
+
+chorusdraft_install() {
+  [ -f "$1/VERSION" ] && [ -f "$1/elixir/chorusdraft" ]
 }
 
 if [ "$#" -eq 0 ]; then
@@ -18,15 +20,21 @@ elif [ "$#" -eq 1 ]; then
   dest=$1
   case "$dest" in /*) ;; *) dest=$PWD/$dest ;; esac
 else
-  echo 'Usage: ./install.sh [NEW_DIRECTORY]' >&2
-  echo '  With no argument, installs to a versioned folder under your user data directory.' >&2
+  echo 'Usage: ./install.sh [DIRECTORY]' >&2
+  echo '  With no argument, installs to a per-user ChorusDraft folder and opens the app.' >&2
+  echo '  Run again to update that folder. Account data and .env files are kept.' >&2
   exit 1
 fi
 
 if [ -e "$dest" ] || [ -L "$dest" ]; then
-  echo "Destination already exists: $dest" >&2
-  echo 'Choose another directory or remove the old install first.' >&2
-  exit 1
+  if [ -L "$dest" ] || [ ! -d "$dest" ] || ! chorusdraft_install "$dest"; then
+    echo "Destination already exists and is not a ChorusDraft install: $dest" >&2
+    echo 'Choose another directory or remove that path first.' >&2
+    exit 1
+  fi
+  upgrade=1
+else
+  upgrade=0
 fi
 
 if [ "$(uname -s)" = Darwin ]; then
@@ -113,24 +121,75 @@ launch_gui() {
   esac
 }
 
+copy_account_state() {
+  from=$1
+  to=$2
+  for platform in bluesky mastodon; do
+    mkdir -p "$to/elixir/$platform/config"
+    if [ -f "$from/elixir/$platform/.env" ]; then
+      cp "$from/elixir/$platform/.env" "$to/elixir/$platform/.env"
+    fi
+    if [ -d "$from/elixir/$platform/data" ]; then
+      rm -rf "$to/elixir/$platform/data"
+      cp -R "$from/elixir/$platform/data" "$to/elixir/$platform/data"
+    fi
+    if [ -d "$from/elixir/$platform/logs" ]; then
+      rm -rf "$to/elixir/$platform/logs"
+      cp -R "$from/elixir/$platform/logs" "$to/elixir/$platform/logs"
+    fi
+    for file in do_not_contact.txt target_accounts.txt; do
+      if [ -f "$from/elixir/$platform/config/$file" ]; then
+        cp "$from/elixir/$platform/config/$file" "$to/elixir/$platform/config/$file"
+      fi
+    done
+  done
+}
+
 (cd "$src" && verify MANIFEST.sha256)
 mkdir -p "$(dirname "$dest")"
-mkdir -m 700 "$dest"
+staging=$(mktemp -d "$(dirname "$dest")/chorusdraft-staging.XXXXXX")
+cleanup() {
+  if [ ! -d "$staging" ]; then
+    return
+  fi
+  # If an upgrade already moved the old folder aside, keep the staged copy.
+  if [ "$upgrade" -eq 1 ] && [ ! -e "$dest" ]; then
+    return
+  fi
+  rm -rf "$staging"
+}
+trap cleanup EXIT HUP INT TERM
+
 for item in "$src"/*; do
   base=$(basename "$item")
-  case "$base" in desktop-source|build-scripts) continue ;; esac
-  cp -R "$item" "$dest/$base"
+  cp -R "$item" "$staging/$base"
 done
-# Re-verify the installed copy; desktop-source/ and build-scripts/ are
-# intentionally not copied, so check the manifest without their entries.
-installed_manifest=$(mktemp "${TMPDIR:-/tmp}/chorusdraft-manifest.XXXXXX")
-grep -vE '  (desktop-source|build-scripts)/' "$dest/MANIFEST.sha256" > "$installed_manifest"
-(cd "$dest" && verify "$installed_manifest")
-rm -f "$installed_manifest"
-chmod 755 "$dest/bot" "$dest/install.sh" 2>/dev/null || true
-chmod 755 "$dest/bot.command" 2>/dev/null || true
-chmod 755 "$dest/launcher/ChorusDraft" 2>/dev/null || true
-"$dest/elixir/setup.sh"
+(cd "$staging" && verify MANIFEST.sha256)
+chmod 755 "$staging/bot" "$staging/install.sh" 2>/dev/null || true
+chmod 755 "$staging/bot.command" 2>/dev/null || true
+chmod 755 "$staging/Install ChorusDraft.command" 2>/dev/null || true
+chmod 755 "$staging/launcher/ChorusDraft" 2>/dev/null || true
+
+if [ "$upgrade" -eq 1 ]; then
+  copy_account_state "$dest" "$staging"
+fi
+
+"$staging/elixir/setup.sh"
+
+if [ "$upgrade" -eq 1 ]; then
+  backup="${dest}.replacing"
+  rm -rf "$backup"
+  mv "$dest" "$backup"
+  if mv "$staging" "$dest"; then
+    rm -rf "$backup"
+  else
+    mv "$backup" "$dest"
+    exit 1
+  fi
+else
+  mv "$staging" "$dest"
+fi
+
 register_application "$dest"
 if launch_gui "$dest"; then
   echo "Installed ChorusDraft in $dest and opened the desktop app."
@@ -141,4 +200,4 @@ else
     *) echo "Open ChorusDraft from your applications menu or run: $dest/bot" ;;
   esac
 fi
-echo 'Edit elixir/bluesky/.env and/or elixir/mastodon/.env before use.'
+echo 'Use Open configuration in the app to add your account and AI provider.'

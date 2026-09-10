@@ -44,8 +44,9 @@ with tempfile.TemporaryDirectory(prefix='chorusdraft-combined-') as temporary:
     install_home = work / 'install-home'
     install_home.mkdir()
     install_env = os.environ.copy()
+    install_env['CI'] = 'true'
     if OS == 'windows':
-        install_dest = install_home / f'ChorusDraft-{VERSION}'
+        install_dest = install_home / 'Programs' / 'ChorusDraft'
         install_env['LOCALAPPDATA'] = str(install_home)
         install_env['APPDATA'] = str(install_home / 'Roaming')
         install_env['USERPROFILE'] = str(install_home)
@@ -55,7 +56,7 @@ with tempfile.TemporaryDirectory(prefix='chorusdraft-combined-') as temporary:
             '-Destination', str(install_dest),
         ]
     else:
-        install_dest = install_home / f'chorusdraft-{VERSION}'
+        install_dest = install_home / 'chorusdraft'
         install_env['HOME'] = str(install_home)
         install_cmd = [str(root / 'install.sh'), str(install_dest)]
     install_result = subprocess.run(
@@ -72,6 +73,7 @@ with tempfile.TemporaryDirectory(prefix='chorusdraft-combined-') as temporary:
     default_home = work / 'default-home'
     default_home.mkdir()
     default_env = os.environ.copy()
+    default_env['CI'] = 'true'
     default_env.pop('XDG_DATA_HOME', None)
     if OS == 'windows':
         default_env['LOCALAPPDATA'] = str(default_home)
@@ -81,12 +83,12 @@ with tempfile.TemporaryDirectory(prefix='chorusdraft-combined-') as temporary:
             'pwsh', '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass',
             '-File', str(root / 'install.ps1'),
         ]
-        default_dest = default_home / f'ChorusDraft-{VERSION}'
+        default_dest = default_home / 'Programs' / 'ChorusDraft'
     else:
         default_env['HOME'] = str(default_home)
         default_cmd = [str(root / 'install.sh')]
-        default_dest = (default_home / 'Library' / 'Application Support' if OS == 'macos'
-                        else default_home / '.local' / 'share') / f'chorusdraft-{VERSION}'
+        default_dest = (default_home / 'Library' / 'Application Support' / 'chorusdraft-app' if OS == 'macos'
+                        else default_home / '.local' / 'share' / 'chorusdraft')
     default_result = subprocess.run(
         default_cmd, cwd=root, env=default_env, capture_output=True,
         text=True, encoding='utf-8', errors='replace', timeout=120,
@@ -96,6 +98,22 @@ with tempfile.TemporaryDirectory(prefix='chorusdraft-combined-') as temporary:
     assert 'Installed ChorusDraft in ' in default_output, default_output
     assert default_dest.is_dir(), default_output
     assert (default_dest / 'elixir' / ('run.ps1' if OS == 'windows' else 'run.sh')).is_file()
+    sentinel = default_dest / 'elixir' / 'bluesky' / '.env'
+    sentinel.write_text('KEEP=please\n', encoding='utf-8')
+    upgrade = subprocess.run(
+        default_cmd, cwd=root, env=default_env, capture_output=True,
+        text=True, encoding='utf-8', errors='replace', timeout=120,
+    )
+    assert upgrade.returncode == 0, (default_cmd, upgrade.stdout, upgrade.stderr)
+    assert sentinel.read_text(encoding='utf-8') == 'KEEP=please\n'
+    assert not (root / 'desktop-source').exists(), 'Desktop package still contains GUI source'
+    assert not (root / 'build-scripts').exists(), 'Desktop package still contains build scripts'
+    assert not (root / 'elixir' / 'source').exists(), 'Desktop package still contains Elixir rebuild source'
+    assert not list(root.rglob('test_gui.py')), 'Desktop package still contains launcher tests'
+    if OS == 'windows':
+        assert (root / 'install.cmd').is_file()
+    elif OS == 'macos':
+        assert (root / 'Install ChorusDraft.command').is_file()
     if OS == 'linux':
         desktop = install_home / '.local/share/applications/chorusdraft.desktop'
         assert desktop.is_file(), 'Application menu entry is missing'
