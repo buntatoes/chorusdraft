@@ -144,9 +144,15 @@ auth, bounded output, and `store: false`.
 Downloads: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases)
 (0.53.1 is the current published release; earlier GitHub Releases were withdrawn).
 
+CLI only (no GUI):
+
 - `ChorusDraft-elixir-0.53.1-linux.tar.gz`
 - `ChorusDraft-elixir-0.53.1-macos.tar.gz`
 - `ChorusDraft-elixir-0.53.1-windows.zip`
+
+These archives are the bot and terminal launchers only. They do not include
+the desktop app. For the GUI, download `chorusdraft-v0.53.1-<os>-<arch>` from
+the same release.
 
 Extract the archive, then run `./install.sh` (or `install.ps1` on Windows).
 With no arguments it installs into a versioned folder under your user data

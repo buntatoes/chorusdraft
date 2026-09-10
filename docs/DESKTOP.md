@@ -17,8 +17,10 @@ Packages are on
 [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases) and as
 artifacts from
 [desktop checks](https://github.com/buntatoes/chorusdraft/actions/workflows/bot-testing.yml).
-Each archive has the Elixir bot, both social platforms, the desktop launcher,
-source, a SHA-256 sidecar, and a checksum manifest.
+Download `chorusdraft-v0.53.1-<os>-<arch>` (Desktop). The
+`ChorusDraft-elixir-*` files on the same page are **CLI only (no GUI)**.
+Each desktop archive has the Elixir bot, both social platforms, the desktop
+launcher, source, a SHA-256 sidecar, and a checksum manifest.
 
 **Install (recommended):** extract the archive, then run `./install.sh` (or
 `install.ps1` on Windows) with no arguments. ChorusDraft installs into a
