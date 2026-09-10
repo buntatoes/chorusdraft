@@ -2,6 +2,9 @@
 
 Downloads: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
+0.53.0 is the current published GitHub Release. Earlier GitHub Releases and
+tags were withdrawn and are not downloadable.
+
 Publication screening is now proprietary ChorusDraft Guard. Official builds
 include it. The Apache-licensed bot loads Guard through `ChorusDraft.Safety`
 and `ChorusDraft.PII` and refuses to run if Guard is missing.

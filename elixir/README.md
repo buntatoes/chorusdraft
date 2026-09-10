@@ -141,6 +141,9 @@ auth, bounded output, and `store: false`.
 
 ## Packages
 
+Downloads: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases)
+(0.53.0 is the current published release; earlier GitHub Releases were withdrawn).
+
 - `ChorusDraft-elixir-0.53.0-linux.tar.gz`
 - `ChorusDraft-elixir-0.53.0-macos.tar.gz`
 - `ChorusDraft-elixir-0.53.0-windows.zip`

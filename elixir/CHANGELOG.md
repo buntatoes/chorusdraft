@@ -4,6 +4,9 @@ Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/r
 
 ## 0.53.0 — 2026-09-10
 
+Current published GitHub Release. Earlier GitHub Releases and tags
+(v0.50 through v0.52.1) were withdrawn and are not downloadable.
+
 Publication screening is now a proprietary module. Opt-out, injection,
 harassment, automatic-output, and personal-information checks moved out of the
 Apache-licensed Elixir tree into ChorusDraft Guard (`elixir/guard/`). The
@@ -13,8 +16,17 @@ Official source trees and release packages include Guard (`GUARD_LICENSE` in
 the archive). If Guard is missing or replaced with an unlicensed stub, the bot
 refuses to draft or publish instead of running without screens.
 
-Earlier ChorusDraft releases stay Apache 2.0, including the screening code
-those versions shipped.
+Desktop `./install.sh` and `install.ps1` install ChorusDraft into a versioned
+folder under your user data directory, register an application entry
+(applications menu on Linux, Applications on macOS, Start menu on Windows),
+run setup, and open the desktop app. With no argument the default locations
+are `~/.local/share/chorusdraft-0.53.0` on Linux, `~/Library/Application
+Support/chorusdraft-0.53.0` on macOS, and `%LOCALAPPDATA%\ChorusDraft-0.53.0`
+on Windows. You can still pass a path when you want a custom location. CLI-only
+packages use the same scripts for the bot; they do not launch a GUI.
+
+Anyone who still has an older ChorusDraft copy retains that copy's original
+Apache 2.0 license, including screening code those versions shipped.
 
 ## 0.52.1 — 2026-09-08
 

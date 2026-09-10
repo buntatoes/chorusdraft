@@ -14,7 +14,7 @@ body:
     attributes:
       label: Version
       description: From `chorusdraft --help`, the desktop About screen, or the `VERSION` file.
-      placeholder: "0.52"
+      placeholder: "0.53.0"
     validations:
       required: true
 

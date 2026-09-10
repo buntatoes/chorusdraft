@@ -24,7 +24,13 @@ source, a SHA-256 sidecar, and a checksum manifest.
 `install.ps1` on Windows) with no arguments. ChorusDraft installs into a
 versioned folder under your user data directory, adds an application entry
 (Applications on macOS, your applications menu on Linux, Start menu on
-Windows), runs setup, and opens the desktop app.
+Windows), runs setup, and opens the desktop app. Default locations for 0.53.0:
+
+- Linux: `~/.local/share/chorusdraft-0.53.0`
+- macOS: `~/Library/Application Support/chorusdraft-0.53.0`
+- Windows: `%LOCALAPPDATA%\ChorusDraft-0.53.0`
+
+Pass a path when you want a custom install directory.
 
 | Operating system | Open the launcher |
 | --- | --- |
