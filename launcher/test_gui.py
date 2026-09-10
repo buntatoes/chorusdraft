@@ -8,7 +8,7 @@ import tempfile
 import time
 import unittest
 from unittest.mock import patch
-from bridge import arguments, has_control
+from bridge import arguments, has_control, require_live_session
 from process import Session, bot_command
 
 
@@ -135,6 +135,15 @@ class DesktopTests(unittest.TestCase):
                         {'runtime': 'elixir', 'platform': 'mastodon', 'action': 'reject', 'text': 'draft\nid'}):
             with self.assertRaises(ValueError):
                 arguments(request)
+
+    def test_review_input_requires_a_live_session(self):
+        class Finished:
+            finished = True
+
+        with self.assertRaisesRegex(ValueError, 'already ended'):
+            require_live_session(None)
+        with self.assertRaisesRegex(ValueError, 'already ended'):
+            require_live_session(Finished())
 
     def test_missing_executable_has_a_clear_error(self):
         with tempfile.TemporaryDirectory() as folder, patch('process.shutil.which', return_value='/fake/escript'):
