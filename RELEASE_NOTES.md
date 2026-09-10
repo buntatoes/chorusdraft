@@ -8,7 +8,11 @@ tags were withdrawn and are not downloadable.
 Draft and automatic mode talk to Bluesky’s AppView and the account PDS from
 the session DID document, so creating a draft no longer 404s against
 `bsky.social`. If a local, Gemini, or OpenAI request still fails, the error
-names the provider and model.
+names the provider and model. A deleted post in a thread no longer aborts
+mention drafting; the missing parent is skipped. The desktop app rejects
+review input after the bot session ends instead of leaving the UI stuck on
+"Session running". `service install` writes Windows Task Scheduler XML as
+UTF-16 LE with a BOM so `schtasks /Create /XML` accepts it.
 
 **Desktop (recommended).** Extract the archive, then run `./install.sh`
 (double-click `Install ChorusDraft.command` on macOS) or `install.cmd` on
