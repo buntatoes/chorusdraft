@@ -68,8 +68,26 @@ defmodule ChorusDraft.Lock do
       {^port, {:exit_status, _}} -> raise Error, "State is busy or could not be locked."
     after
       10_000 ->
-        if Port.info(port), do: Port.close(port)
+        release(port)
         raise Error, "State lock timed out."
+    end
+  end
+
+  # Close stdin so the helper drops the OS lock. On Windows the Python
+  # process can keep `state.lock` open after Port.close; wait for it to
+  # exit. Linux flock is killed with the port and does not emit exit_status.
+  def release(port) do
+    if Port.info(port), do: Port.close(port)
+    if Platform.os() == "windows", do: drain(port)
+    :ok
+  end
+
+  defp drain(port) do
+    receive do
+      {^port, {:exit_status, _}} -> :ok
+      {^port, {:data, _}} -> drain(port)
+    after
+      5_000 -> :ok
     end
   end
 end

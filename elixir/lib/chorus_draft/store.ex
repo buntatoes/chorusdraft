@@ -54,7 +54,7 @@ defmodule ChorusDraft.Store do
       result
     after
       Process.put(key, holding)
-      if Port.info(lock), do: Port.close(lock)
+      Lock.release(lock)
     end
   end
 

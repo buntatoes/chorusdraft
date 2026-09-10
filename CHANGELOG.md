@@ -24,6 +24,9 @@ Double-click `Install ChorusDraft.command` on macOS or `install.cmd` on
 Windows. The desktop archive no longer ships GUI source, build scripts, or the
 Elixir rebuild tree.
 
+Windows state-lock helpers are waited out after release so a still-open
+`state.lock` handle cannot stall the next store operation.
+
 ## 0.53.1 — 2026-09-10
 
 Patch release: a full code review's worth of fixes and hardening. No behavior
