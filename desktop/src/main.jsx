@@ -1,6 +1,6 @@
 import { Settings, History, Queue } from "./Privacy.jsx";
 import { TerminalText } from "./terminal.mjs";
-import { REVIEW_PROMPT, reviewDraftIdFrom, tail } from "./review.mjs";
+import { reviewDraftFrom } from "./review.mjs";
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
@@ -140,13 +140,11 @@ function App() {
   const [result, setResult] = useState("");
   const logRef = useRef(null);
   const terminalText = useRef(new TerminalText());
-  const promptBuffer = useRef("");
   const approvalAvailable = useRef(false);
   const [reviewPrompt, setReviewPrompt] = useState(false);
   const [editingReview, setEditingReview] = useState(false);
   const [reviewEdit, setReviewEdit] = useState("");
   const [savingReview, setSavingReview] = useState(false);
-  const reviewDraftId = useRef("");
   const [reviewDraft, setReviewDraft] = useState(null);
   const savingReviewLock = useRef(false);
   const runningLock = useRef(false);
@@ -163,14 +161,6 @@ function App() {
       if (event.type === "output") {
         const output = terminalText.current.push(event.value);
         if (output) {
-          promptBuffer.current = tail(promptBuffer.current, output);
-          const ready = REVIEW_PROMPT.test(promptBuffer.current);
-          if (ready) {
-            approvalAvailable.current = true;
-            setReviewPrompt(true);
-            const id = reviewDraftIdFrom(promptBuffer.current);
-            if (id) reviewDraftId.current = id;
-          }
           const now = Date.now();
           activityParts.current = activityParts.current.filter(
             (p) => p.time > now - 10 * 86400000,
@@ -190,10 +180,9 @@ function App() {
           );
         }
       }
-      if (event.type === "review") {
-        const draft = event.draft || {};
+      const draft = reviewDraftFrom(event);
+      if (draft) {
         setReviewDraft(draft);
-        if (draft.id) reviewDraftId.current = draft.id;
         approvalAvailable.current = true;
         setReviewPrompt(true);
         setEditingReview(false);
@@ -212,7 +201,8 @@ function App() {
       if (event.type === "notice") setNotice(event.value);
       if (event.type === "error") {
         setError(event.value);
-        setRunning(Boolean(event.active));
+        // An error without an active field says nothing about the session.
+        if (typeof event.active === "boolean") setRunning(event.active);
       }
     });
   }, []);
@@ -227,7 +217,6 @@ function App() {
         if (!fresh.length) {
           approvalAvailable.current = false;
           setReviewPrompt(false);
-          promptBuffer.current = "";
         }
       }
     }, 60000);
@@ -282,14 +271,12 @@ function App() {
     setResult("");
     setResponse("");
     terminalText.current.reset();
-    promptBuffer.current = "";
     approvalAvailable.current = false;
     setReviewPrompt(false);
     setEditingReview(false);
     setReviewEdit("");
     setSavingReview(false);
     savingReviewLock.current = false;
-    reviewDraftId.current = "";
     setReviewDraft(null);
     await invoke(() =>
       api.run({
@@ -327,7 +314,6 @@ function App() {
     approvalAvailable.current = false;
     const ok = await invoke(() => api.respond(payload), { keepRunning: true });
     if (ok) {
-      promptBuffer.current = "";
       setReviewPrompt(false);
       setResponse("");
       // Prevent repeated approval clicks before the next prompt arrives.

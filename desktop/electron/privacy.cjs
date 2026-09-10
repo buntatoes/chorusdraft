@@ -2,6 +2,9 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 const DAYS = 10 * 86400000;
+// Pruning re-reads every retained activity file, far too costly to run on
+// each bot output line; the main process also prunes on a 60-second timer.
+const PRUNE_INTERVAL = 60000;
 const AUTOMATIC_LIMIT = 5;
 const PUBLICATION_LEASE_SECONDS = 300;
 // Bot state and activity files are read whole; anything larger is not ours.
@@ -386,6 +389,7 @@ class History {
     this.root = fs.realpathSync(root);
     this.dir = directory(dir);
     this.now = now;
+    this.lastPrune = 0;
   }
   files() {
     within(this.dir, this.dir);
@@ -427,6 +431,8 @@ class History {
       });
   }
   prune() {
+    // Mark even a failed prune so a broken file is not re-scanned per line.
+    this.lastPrune = this.now();
     const cutoff = this.now() - DAYS;
     let bytes = 0;
     for (const item of this.files().sort((a, b) => b.time - a.time)) {
@@ -474,7 +480,7 @@ class History {
     platform(site);
     if (!text) return;
     if (typeof text !== "string") throw Error("Invalid activity.");
-    this.prune();
+    if (this.now() - this.lastPrune >= PRUNE_INTERVAL) this.prune();
     const time = this.now(),
       bucket = Math.floor(time / 3600000) * 3600000;
     const file = within(
