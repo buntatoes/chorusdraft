@@ -5,7 +5,7 @@ Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/r
 ## 0.53.1 — 2026-09-10
 
 Current published GitHub Release. Earlier GitHub Releases and tags
-(v0.50 through v0.52.1) were withdrawn and are not downloadable.
+(v0.50 through v0.53.0) were withdrawn and are not downloadable.
 
 Patch release: a full code review's worth of fixes and hardening. No behavior
 or interface changes for normal use.
