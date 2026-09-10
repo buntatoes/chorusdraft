@@ -1,8 +1,12 @@
-ChorusDraft 0.52.1
+ChorusDraft 0.53.0
 Copyright 2026 Buntos
 
-Licensed under the Apache License, Version 2.0.
+Except for ChorusDraft Guard, licensed under the Apache License 2.0.
 See LICENSE.
+
+ChorusDraft Guard (`guard/`, packaged as GUARD_LICENSE) is proprietary and is
+not Apache 2.0. Official builds require it and refuse to draft or publish if
+it is missing. See guard/LICENSE.
 
 Dependency licenses: THIRD_PARTY_NOTICES.md and source/deps/.
 

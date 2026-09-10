@@ -13,5 +13,6 @@ Linux, macOS, and Windows builds use:
   2.0. Version pinned in `mix.lock`. ChorusDraft uses HTTP/1 only.
 
 Packages include each dependency's source and license files under
-`source/deps/`. ChorusDraft is Apache 2.0; dependencies keep their own
-licenses. Erlang/OTP is a separate runtime.
+`source/deps/`. ChorusDraft application code is Apache 2.0 except ChorusDraft
+Guard (`guard/`), which is proprietary. Dependencies keep their own licenses.
+Erlang/OTP is a separate runtime.

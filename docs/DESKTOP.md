@@ -238,6 +238,8 @@ See [SECURITY.md](../SECURITY.md) for limits and how to report issues.
 
 ## License
 
-ChorusDraft is licensed under the [Apache License 2.0](../LICENSE).
+ChorusDraft application code is licensed under the [Apache License 2.0](../LICENSE),
+except ChorusDraft Guard (`elixir/guard/`), which is
+[proprietary](../elixir/guard/LICENSE). Official builds require Guard.
 See [NOTICE](../NOTICE) and [Elixir third-party notices](../elixir/THIRD_PARTY_NOTICES.md)
 for attribution and dependency licenses.

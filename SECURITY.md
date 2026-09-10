@@ -4,8 +4,8 @@
 
 | Version | Runtime | Support |
 |---|---|---|
-| 0.52.1 | Elixir | Current |
-| 0.52 and earlier | Earlier releases | Unsupported |
+| 0.53.0 | Elixir | Current |
+| 0.52.1 and earlier | Earlier releases | Unsupported |
 
 Report vulnerabilities through GitHub private reporting when it is available,
 or contact the maintainer privately. Do not put credentials, private posts,
@@ -46,8 +46,10 @@ Review indents draft text. The desktop lights the publish buttons from a JSON
 `review` event, not from matching prompt text. CLI review still uses the
 line-anchored prompt.
 
-These are regex checks. They miss some bad text and block some fine text.
-Do not loosen them to chase people.
+These checks live in proprietary ChorusDraft Guard. Official builds include
+it. The bot refuses to draft or publish if Guard is missing. The checks are
+regex. They miss some bad text and block some fine text. Do not loosen them
+to chase people.
 
 Public stop-contact requests are handled before reply generation. Do-not-contact
 covers source handles, IDs, and mentioned accounts. Harassment, threats,

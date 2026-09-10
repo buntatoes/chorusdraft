@@ -61,6 +61,7 @@ defmodule ChorusDraft.CLI do
 
   def run(argv, io_opts \\ []) do
     Control.setup!()
+    ChorusDraft.Guard.required!()
 
     with {:ok, platform, argv} <- platform(argv),
          {:ok, options} <- parse(argv),

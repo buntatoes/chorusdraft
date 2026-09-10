@@ -59,6 +59,15 @@ try {
     & escript (Join-Path $package 'chorusdraft') mastodon --help
     Assert-Exit 'Packaged Mastodon command failed.'
 
+    if (-not (Test-Path -LiteralPath (Join-Path $package 'GUARD_LICENSE'))) { throw 'Package is missing GUARD_LICENSE.' }
+    if (-not (Test-Path -LiteralPath (Join-Path $package 'source/guard/LICENSE'))) { throw 'Package source is missing Guard.' }
+    if (-not (Test-Path -LiteralPath (Join-Path $package 'source/guard/lib/chorus_draft/guard/safety.ex'))) { throw 'Package source is missing Guard safety.' }
+    if (-not (Test-Path -LiteralPath (Join-Path $package 'source/guard/lib/chorus_draft/guard/pii.ex'))) { throw 'Package source is missing Guard PII.' }
+    $safetyFacade = Get-Content -LiteralPath (Join-Path $package 'source/lib/chorus_draft/safety.ex') -Raw
+    if ($safetyFacade -match '@opt_out') { throw 'Safeguard implementation leaked into the Apache-licensed Safety facade.' }
+    $piiFacade = Get-Content -LiteralPath (Join-Path $package 'source/lib/chorus_draft/pii.ex') -Raw
+    if ($piiFacade -match '@credential') { throw 'Safeguard implementation leaked into the Apache-licensed PII facade.' }
+
     $installed = Join-Path $work "installed-$name"
     & (Join-Path $package 'install.ps1') $installed
     Assert-Exit 'Package installation failed.'

@@ -22,6 +22,7 @@ defmodule ChorusDraft.Package do
 
       for file <- @documents, do: copy(root, package, file)
       File.cp!(Path.join(root, license), Path.join(package, "LICENSE"))
+      File.cp!(Path.join(root, "guard/LICENSE"), Path.join(package, "GUARD_LICENSE"))
       copy(root, package, "chorusdraft")
 
       if os == "windows" do
@@ -52,7 +53,7 @@ defmodule ChorusDraft.Package do
           do: copy(root, source, file)
 
       File.cp!(Path.join(root, license), Path.join(source, "LICENSE"))
-      for dir <- ~w(lib test scripts), do: copy_tree(root, source, dir)
+      for dir <- ~w(lib test scripts guard), do: copy_tree(root, source, dir)
 
       for platform <- @platforms do
         copy(root, source, platform <> "/.env.example")

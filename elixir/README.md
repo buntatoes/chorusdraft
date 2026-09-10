@@ -1,7 +1,7 @@
 # ChorusDraft
 
 Elixir app for Linux, macOS, and Windows. One executable, Bluesky and Mastodon
-modes. Version 0.52.1. See [CHANGELOG.md](CHANGELOG.md).
+modes. Version 0.53.0. See [CHANGELOG.md](CHANGELOG.md).
 
 Review is the default. `automatic` may publish new originals and eligible
 public-mention replies after screening and a source recheck.
@@ -141,9 +141,9 @@ auth, bounded output, and `store: false`.
 
 ## Packages
 
-- `ChorusDraft-elixir-0.52.1-linux.tar.gz`
-- `ChorusDraft-elixir-0.52.1-macos.tar.gz`
-- `ChorusDraft-elixir-0.52.1-windows.zip`
+- `ChorusDraft-elixir-0.53.0-linux.tar.gz`
+- `ChorusDraft-elixir-0.53.0-macos.tar.gz`
+- `ChorusDraft-elixir-0.53.0-windows.zip`
 
 Extract the archive, then run `./install.sh` (or `install.ps1` on Windows).
 With no arguments it installs into a versioned folder under your user data
@@ -172,7 +172,7 @@ Check the live account first. Do not force uncertain back to pending.
 
 | Symptom | What to do |
 |---|---|
-| `Destination already exists` | Install into a new directory. Copy `.env` and import state; do not overwrite. |
+| `ChorusDraft Guard is required` | Official source includes `guard/`. Do not delete or replace it. |
 | `automatic frozen` in `status` | A `publishing` or `uncertain` draft is blocking claims. Inspect the live account, then `reject ID`. |
 | `State is busy` / lock timed out | Another process holds the account store. Stop the extra daemon. Linux needs `flock` (`util-linux`). |
 | `State is already locked by this process` | Nested store write. Retry the edit after the outer command finishes. |
@@ -191,4 +191,7 @@ the source-tree desktop guide (`docs/DESKTOP.md`).
 
 ## License
 
-Apache 2.0. See LICENSE, [NOTICE](NOTICE), and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Application code is Apache 2.0 except ChorusDraft Guard (`guard/`), which is
+proprietary. Official builds require Guard and refuse to run without it. See
+LICENSE, [guard/LICENSE](guard/LICENSE), [NOTICE](NOTICE), and
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

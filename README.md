@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml"><img alt="Elixir checks" src="https://github.com/buntatoes/chorusdraft/actions/workflows/elixir.yml/badge.svg?branch=main"></a>
   <a href="https://github.com/buntatoes/chorusdraft/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/buntatoes/chorusdraft?display_name=tag&sort=semver"></a>
-  <a href="LICENSE"><img alt="License: Apache 2.0" src="https://img.shields.io/badge/license-Apache%202.0-blue.svg"></a>
+  <a href="LICENSE"><img alt="License: Apache 2.0 plus proprietary Guard" src="https://img.shields.io/badge/license-Apache%202.0%20%2B%20Guard-blue.svg"></a>
   <img alt="Top language" src="https://img.shields.io/github/languages/top/buntatoes/chorusdraft">
   <img alt="Platforms: Linux, macOS, Windows" src="https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20Windows-6f42c1">
   <img alt="Services: Bluesky and Mastodon" src="https://img.shields.io/badge/services-Bluesky%20%2B%20Mastodon-0ea5e9">
@@ -21,11 +21,11 @@ Providers: local/Ollama, Gemini, or ChatGPT/OpenAI.
 
 ## Latest
 
-**[v0.52.1](https://github.com/buntatoes/chorusdraft/releases/tag/v0.52.1)**
+**[v0.53.0](https://github.com/buntatoes/chorusdraft/releases/tag/v0.53.0)**
 
-Desktop review talks to the bot over JSON. Mastodon listen/start uses the user
-streaming API as a wake-up. `service install` writes a user unit; it does not
-start it. Details in [RELEASE_NOTES.md](RELEASE_NOTES.md).
+Publication screening now lives in proprietary ChorusDraft Guard. Official
+builds include it; the bot refuses to run if Guard is missing. Details in
+[RELEASE_NOTES.md](RELEASE_NOTES.md).
 
 [Changelog](CHANGELOG.md) · [Releases](https://github.com/buntatoes/chorusdraft/releases) · [Build](elixir/README.md) · [Security](SECURITY.md)
 
@@ -100,6 +100,9 @@ macOS uses `launchctl load`; Windows uses `schtasks`. Paths, linger, and
 
 ## License
 
-Copyright 2026 Buntos. [Apache License 2.0](LICENSE). See [NOTICE](NOTICE).
+Copyright 2026 Buntos. Application code is [Apache License 2.0](LICENSE)
+except ChorusDraft Guard (`elixir/guard/`), which is
+[proprietary](elixir/guard/LICENSE). Official builds require Guard. See
+[NOTICE](NOTICE).
 
 Issues and pull requests follow the [code of conduct](CODE_OF_CONDUCT.md).

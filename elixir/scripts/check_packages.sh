@@ -34,6 +34,18 @@ if tar -tzf "$archive" | grep -E '(^|/)(\.env|data|logs|_build|\.git)(/|$)'; the
 fi
 "$package/run.sh" bluesky --help
 "$package/run.sh" mastodon --help
+test -f "$package/GUARD_LICENSE"
+test -f "$package/source/guard/LICENSE"
+test -f "$package/source/guard/lib/chorus_draft/guard/safety.ex"
+test -f "$package/source/guard/lib/chorus_draft/guard/pii.ex"
+if grep -q '@opt_out' "$package/source/lib/chorus_draft/safety.ex"; then
+  echo 'Safeguard implementation leaked into the Apache-licensed Safety facade' >&2
+  exit 1
+fi
+if grep -q '@credential' "$package/source/lib/chorus_draft/pii.ex"; then
+  echo 'Safeguard implementation leaked into the Apache-licensed PII facade' >&2
+  exit 1
+fi
 "$package/install.sh" "$work/installed-$name"
 installed=$work/installed-$name
 auto_home=$work/auto-home

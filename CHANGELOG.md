@@ -2,6 +2,20 @@
 
 Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
+## 0.53.0 — 2026-09-10
+
+Publication screening is now a proprietary module. Opt-out, injection,
+harassment, automatic-output, and personal-information checks moved out of the
+Apache-licensed Elixir tree into ChorusDraft Guard (`elixir/guard/`). The
+public `ChorusDraft.Safety` and `ChorusDraft.PII` APIs remain, and call Guard.
+
+Official source trees and release packages include Guard (`GUARD_LICENSE` in
+the archive). If Guard is missing or replaced with an unlicensed stub, the bot
+refuses to draft or publish instead of running without screens.
+
+Earlier ChorusDraft releases stay Apache 2.0, including the screening code
+those versions shipped.
+
 ## 0.52.1 — 2026-09-08
 
 Desktop `./install.sh` and `install.ps1` install ChorusDraft into a versioned
