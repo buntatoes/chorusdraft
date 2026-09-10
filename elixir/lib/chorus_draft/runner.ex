@@ -447,11 +447,23 @@ defmodule ChorusDraft.Runner do
 
   def delete(runner, id) do
     unless runner.interactive, do: raise(Error, "Deletion requires an interactive terminal.")
-    write(runner, "Delete #{Safety.clean(id)} from your account? Type delete: ")
 
-    if runner.input |> IO.gets("") |> to_string() |> String.trim() == "delete" do
-      client_call(runner, :delete, [id])
-      puts(runner, "Deleted.")
+    if runner.control do
+      # Control clients cannot answer a raw IO.gets prompt; reuse the review
+      # protocol: a structured prompt event, and "approve" means confirm.
+      Control.emit_to(runner.output, %{"event" => "confirm", "action" => "delete", "id" => id})
+
+      if Control.read(runner.input)["action"] == "approve" do
+        client_call(runner, :delete, [id])
+        puts(runner, "Deleted.")
+      end
+    else
+      write(runner, "Delete #{Safety.clean(id)} from your account? Type delete: ")
+
+      if runner.input |> IO.gets("") |> to_string() |> String.trim() == "delete" do
+        client_call(runner, :delete, [id])
+        puts(runner, "Deleted.")
+      end
     end
   end
 

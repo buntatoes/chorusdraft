@@ -5,7 +5,12 @@ defmodule ChorusDraft.Jetstream.Socket do
   def start_link(options) do
     uri = URI.parse(Keyword.fetch!(options, :url))
     conn = WebSockex.Conn.new(uri, connection_options(uri))
-    Transport.start_link(conn, Keyword.fetch!(options, :stream))
+
+    Transport.start_link(
+      conn,
+      Keyword.fetch!(options, :stream),
+      Keyword.take(options, [:heartbeat, :read_timeout])
+    )
   end
 
   def connection_options(uri) do

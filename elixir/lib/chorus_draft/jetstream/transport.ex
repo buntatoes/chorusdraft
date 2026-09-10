@@ -15,26 +15,41 @@ defmodule ChorusDraft.Jetstream.Transport do
 
   # The socket stays passive. Read lengths before payloads, and never hand an
   # unbounded network buffer to the WebSocket parser or a process mailbox.
-  def start_link(conn, stream), do: Task.start_link(fn -> reconnect(conn, stream, 0) end)
+  # :heartbeat and :read_timeout (milliseconds) exist so tests can shrink the
+  # timers; production callers keep the defaults.
+  def start_link(conn, stream, opts \\ []) do
+    config = %{
+      heartbeat: Keyword.get(opts, :heartbeat, @heartbeat),
+      read_timeout: Keyword.get(opts, :read_timeout, @read_timeout)
+    }
+
+    Task.start_link(fn -> reconnect(conn, stream, 0, config) end)
+  end
 
   # A session that drops right after the handshake counts as a failure, so a
   # server that accepts and closes cannot hold the client in a one-second loop.
-  defp reconnect(conn, stream, attempt) do
+  defp reconnect(conn, stream, attempt, config) do
     started = now()
-    stable? = session(conn, stream) and now() - started >= @stable_session
+    stable? = session(conn, stream, config) and now() - started >= @stable_session
     Process.sleep(Socket.reconnect_delay(if stable?, do: 0, else: attempt))
-    reconnect(conn, stream, if(stable?, do: 1, else: min(attempt + 1, 5)))
+    reconnect(conn, stream, if(stable?, do: 1, else: min(attempt + 1, 5)), config)
   end
 
-  defp session(conn, stream) do
+  defp session(conn, stream, config) do
     case Conn.open_socket(conn) do
       {:ok, conn} ->
         try do
-          handshake!(conn)
+          handshake!(conn, config)
           Jetstream.notify(stream)
 
           try do
-            loop(conn, stream, %{last_frame: now(), next_ping: now() + @heartbeat}, nil)
+            loop(
+              conn,
+              stream,
+              %{last_frame: now(), next_ping: now() + config.heartbeat},
+              nil,
+              config
+            )
           rescue
             _ -> :ok
           end
@@ -51,12 +66,12 @@ defmodule ChorusDraft.Jetstream.Transport do
     end
   end
 
-  defp handshake!(conn) do
+  defp handshake!(conn, config) do
     key = :crypto.strong_rand_bytes(16) |> Base.encode64()
     {:ok, request} = Conn.build_request(conn, key)
     :ok = Conn.socket_send(conn, request)
     :ok = setopts(conn, packet: :http_bin, packet_size: @max_headers)
-    deadline = now() + @read_timeout
+    deadline = now() + config.read_timeout
     {:http_response, _, 101, _} = recv!(conn, 0, deadline)
     headers = headers!(conn, deadline, [], 0)
     expected = :crypto.hash(:sha, key <> @guid) |> Base.encode64()
@@ -94,9 +109,9 @@ defmodule ChorusDraft.Jetstream.Transport do
     values |> Enum.join(",") |> String.downcase() |> String.split(",") |> Enum.map(&String.trim/1)
   end
 
-  defp loop(conn, stream, clock, fragment) do
-    {first, clock} = first_byte!(conn, clock, fragment)
-    deadline = now() + @read_timeout
+  defp loop(conn, stream, clock, fragment, config) do
+    {first, clock} = first_byte!(conn, clock, fragment, config)
+    deadline = now() + config.read_timeout
     deadline = if fragment, do: min(deadline, fragment.deadline), else: deadline
     <<fin::1, reserved::3, opcode::4>> = first
     <<masked::1, short_length::7>> = recv!(conn, 1, deadline)
@@ -109,7 +124,7 @@ defmodule ChorusDraft.Jetstream.Transport do
     payload = if length == 0, do: "", else: recv!(conn, length, deadline)
     {:ok, frame, ""} = Frame.parse_frame(first <> <<short_length>> <> extension <> payload)
     fragment = accept_frame!(conn, stream, frame, fragment)
-    loop(conn, stream, %{clock | last_frame: now()}, fragment)
+    loop(conn, stream, %{clock | last_frame: now()}, fragment, config)
   end
 
   defp length!(conn, 126, deadline) do
@@ -200,14 +215,14 @@ defmodule ChorusDraft.Jetstream.Transport do
     end
   end
 
-  defp first_byte!(conn, clock, fragment) do
+  defp first_byte!(conn, clock, fragment, config) do
     if now() >= clock.last_frame + @idle_timeout or (fragment && now() >= fragment.deadline),
       do: raise(Error, "Jetstream timed out.")
 
     clock =
       if now() >= clock.next_ping do
         send_frame!(conn, :ping)
-        %{clock | next_ping: now() + @heartbeat}
+        %{clock | next_ping: now() + config.heartbeat}
       else
         clock
       end
@@ -225,7 +240,7 @@ defmodule ChorusDraft.Jetstream.Transport do
           do: raise(Error, "Jetstream timed out.")
 
         send_frame!(conn, :ping)
-        first_byte!(conn, %{clock | next_ping: now() + @heartbeat}, fragment)
+        first_byte!(conn, %{clock | next_ping: now() + config.heartbeat}, fragment, config)
 
       _ ->
         raise Error, "Jetstream receive failed."

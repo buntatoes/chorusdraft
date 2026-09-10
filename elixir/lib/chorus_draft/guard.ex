@@ -54,6 +54,9 @@ defmodule ChorusDraft.Guard do
     "ChorusDraft Guard is required and was not loaded. Official builds include the proprietary safeguard module; refusing to continue without it."
   end
 
+  # The id check proves a Guard beam is present and matches this release, not
+  # that it is authentic: anyone who can swap beams already controls the
+  # runtime. The fail-closed property is what matters.
   defp valid_id?(id) when is_binary(id),
     do: id == @id_prefix <> ChorusDraft.version()
 

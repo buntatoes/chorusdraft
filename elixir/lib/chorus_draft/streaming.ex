@@ -38,7 +38,7 @@ defmodule ChorusDraft.Streaming do
     token = env |> Map.get("MASTODON_ACCESS_TOKEN", "") |> String.trim()
     if token == "", do: raise(Error, "Mastodon streaming requires an access token.")
     stream = Jetstream.subscription("mastodon")
-    {:ok, task} = Task.start_link(fn -> reconnect(url, token, stream, 0) end)
+    {:ok, task} = Task.start_link(fn -> reconnect(url, token, stream, 0, []) end)
 
     try do
       fun.(stream)
@@ -48,18 +48,19 @@ defmodule ChorusDraft.Streaming do
     end
   end
 
-  def start_link(url, token, stream) do
-    Task.start_link(fn -> reconnect(url, token, stream, 0) end)
+  def start_link(url, token, stream, opts \\ []) do
+    Task.start_link(fn -> reconnect(url, token, stream, 0, opts) end)
   end
 
   def decode_event(type) when type in ["notification"], do: :activity
   def decode_event(_type), do: :ignore
 
-  defp reconnect(url, token, stream, attempt) do
+  defp reconnect(url, token, stream, attempt, opts) do
+    stable_after = Keyword.get(opts, :stable_session, @stable_session)
     started = now()
-    stable? = session(url, token, stream) and now() - started >= @stable_session
+    stable? = session(url, token, stream) and now() - started >= stable_after
     Process.sleep(Socket.reconnect_delay(if stable?, do: 0, else: attempt))
-    reconnect(url, token, stream, if(stable?, do: 1, else: min(attempt + 1, 5)))
+    reconnect(url, token, stream, if(stable?, do: 1, else: min(attempt + 1, 5)), opts)
   end
 
   defp session(url, token, stream) do
@@ -75,7 +76,15 @@ defmodule ChorusDraft.Streaming do
 
           {conn, parser} = handshake!(conn, ref, stream)
           Jetstream.notify(stream)
-          loop(conn, ref, stream, now(), parser)
+
+          # The loop only exits by raising; a session that completed the
+          # handshake still counts as established so the backoff can reset.
+          try do
+            loop(conn, ref, stream, now(), parser)
+          rescue
+            _ -> :ok
+          end
+
           true
         rescue
           _ -> false

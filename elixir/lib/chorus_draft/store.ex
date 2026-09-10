@@ -360,7 +360,8 @@ defmodule ChorusDraft.Store do
 
   defp unsolicited_unavailable?(state, author, now) do
     recent = Enum.count(state["daily"], &(&1 > now - 86_400))
-    recent >= 5 or Map.get(state["authors"], author, 0) > now - 2_592_000
+    # Author-less posts have no per-author cooldown key; the daily cap still applies.
+    recent >= 5 or (author != "" and Map.get(state["authors"], author, 0) > now - 2_592_000)
   end
 
   def history(base) do
@@ -378,12 +379,25 @@ defmodule ChorusDraft.Store do
 
         if File.lstat!(folder).type == :directory and
              File.regular?(Path.join(folder, "state.json")),
-           do: folder |> new() |> drafts() |> Enum.filter(&(&1["status"] == "published")),
+           do: history_drafts(folder),
            else: []
       end)
     else
       []
     end
+  end
+
+  # History is a lock-free read: no directory creation, chmod, lock, or write.
+  # Stale-publication recovery and retention pruning are applied in memory only.
+  defp history_drafts(dir) do
+    dir
+    |> Path.join("state.json")
+    |> read_state()
+    |> recover_stale_publications(System.system_time(:second))
+    |> prune_history()
+    |> Map.get("drafts")
+    |> Enum.map(&Map.new/1)
+    |> Enum.filter(&(&1["status"] == "published"))
   end
 
   # Check the account/data/base boundary before creating or pruning anything.
@@ -433,10 +447,14 @@ defmodule ChorusDraft.Store do
   end
 
   defp record_interaction(state, author, now) do
-    state
-    |> prune_interactions(now)
-    |> Map.update!("daily", &(&1 ++ [now]))
-    |> Map.update!("authors", &Map.put(&1, author, now))
+    state =
+      state
+      |> prune_interactions(now)
+      |> Map.update!("daily", &(&1 ++ [now]))
+
+    if author == "",
+      do: state,
+      else: Map.update!(state, "authors", &Map.put(&1, author, now))
   end
 
   defp default_state do

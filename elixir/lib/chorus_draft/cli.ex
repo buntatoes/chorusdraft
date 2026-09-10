@@ -57,7 +57,14 @@ defmodule ChorusDraft.CLI do
   ]
   @aliases [h: :help, v: :version, m: :text]
 
-  def main(argv), do: System.halt(run(argv))
+  def main(argv) do
+    # An interactive crash would otherwise write erl_crash.dump with the process
+    # environment, including credentials and session JWTs. The VM reads this at
+    # crash time, so setting it here still works; unlike ERL_CRASH_DUMP=/dev/null
+    # (used by the service units), a zero-second dump is also valid on Windows.
+    System.put_env("ERL_CRASH_DUMP_SECONDS", "0")
+    System.halt(run(argv))
+  end
 
   def run(argv, io_opts \\ []) do
     Control.setup!()
@@ -557,7 +564,8 @@ defmodule ChorusDraft.CLI do
     |> String.trim()
   end
 
-  defp load_do_not_contact(store, path), do: Enum.each(read_list(path), &Store.block(store, &1))
+  @doc false
+  def load_do_not_contact(store, path), do: Enum.each(read_list(path), &Store.block(store, &1))
 
   defp read_list(path) do
     if File.regular?(path) do
@@ -617,7 +625,7 @@ defmodule ChorusDraft.CLI do
           --poll-interval N    Poll seconds, 10–3600 (default 60)
           --interval N         Daemon original interval in minutes (default 120)
           --jitter N           Random delay up to N minutes, 0–60
-          --active-hours RANGE Local HH:MM-HH:MM, including overnight ranges
+          --active-hours RANGE Local HH:MM-HH:MM, including overnight ranges; equal endpoints (e.g. 09:00-09:00) keep the bot always active
           --ignore-active-hours Bypass the schedule for this invocation
           --queue              Stage manual text (the default)
           --service ACTION     install, uninstall, or print a user service (not started)
