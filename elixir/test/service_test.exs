@@ -51,7 +51,7 @@ defmodule ChorusDraft.ServiceTest do
 
     spec = Service.spec("bluesky", dir, false)
     assert File.regular?(spec.path)
-    unit = File.read!(spec.path)
+    unit = spec.path |> File.read!() |> decode_unit!()
     assert unit =~ "start"
     refute unit =~ "BLUESKY_APP_PASSWORD"
 
@@ -105,4 +105,9 @@ defmodule ChorusDraft.ServiceTest do
       end
     end
   end
+
+  defp decode_unit!(<<0xFF, 0xFE, rest::binary>>),
+    do: :unicode.characters_to_binary(rest, {:utf16, :little}, :utf8)
+
+  defp decode_unit!(contents), do: contents
 end
