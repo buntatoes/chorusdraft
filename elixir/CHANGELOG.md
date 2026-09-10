@@ -24,8 +24,19 @@ Double-click `Install ChorusDraft.command` on macOS or `install.cmd` on
 Windows. The desktop archive no longer ships GUI source, build scripts, or the
 Elixir rebuild tree.
 
-Windows state-lock helpers are waited out after release so a still-open
-`state.lock` handle cannot stall the next store operation.
+A deleted Bluesky post in a thread no longer aborts the whole mention batch:
+a missing parent is skipped and the remaining ancestors are still gathered.
+
+The desktop app rejects review input once the bot session has ended, and
+fatal bot errors mark the session inactive so the UI no longer stays stuck
+on "Session running".
+
+`service install` writes the Windows Task Scheduler XML as UTF-16 LE with a
+BOM, matching its `encoding="UTF-16"` declaration, so
+`schtasks /Create /XML` accepts it.
+
+Releasing the account-state lock closes the helper's stdin pipe; no extra
+wait remains that could stall store operations on Windows.
 
 ## 0.53.1 — 2026-09-10
 
