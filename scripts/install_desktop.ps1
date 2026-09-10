@@ -11,11 +11,12 @@ if (Test-Path -LiteralPath $dest) {
     throw "Destination already exists: $dest. Choose another directory or remove the old install first."
 }
 
-function Verify-Package($root) {
+function Verify-Package($root, [string]$Exclude) {
     foreach ($line in [IO.File]::ReadAllLines((Join-Path $root 'MANIFEST.sha256'))) {
         if ($line -notmatch '^([0-9a-f]{64})  (.+)$') { throw 'Invalid package manifest.' }
         $expected = $Matches[1]
         $relative = $Matches[2]
+        if ($Exclude -and $relative -match $Exclude) { continue }
         if ([IO.Path]::IsPathRooted($relative) -or $relative -match '(^|[/\\])\.\.([/\\]|$)') {
             throw 'Invalid manifest path.'
         }
@@ -63,6 +64,7 @@ foreach ($item in Get-ChildItem -LiteralPath $src) {
     if ($item.Name -in @('desktop-source', 'build-scripts')) { continue }
     Copy-Item -LiteralPath $item.FullName -Destination $dest -Recurse
 }
+Verify-Package $dest '^(desktop-source|build-scripts)/'
 & (Join-Path $dest 'elixir\setup.ps1')
 if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 Register-Application $dest

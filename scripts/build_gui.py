@@ -18,18 +18,27 @@ command += [str(root / 'launcher' / 'bridge.py')]
 subprocess.run(command, check=True)
 licenses = root / 'dist' / 'gui-backend' / 'chorus-bridge' / 'licenses'
 licenses.mkdir(exist_ok=True)
+missing = []
 for name in ['pyinstaller'] + (['pywinpty'] if sys.platform == 'win32' else []):
     distribution = importlib.metadata.distribution(name)
+    bundled = False
     for file in distribution.files or []:
         if Path(file).name.lower().startswith(('license', 'copying')):
             source = distribution.locate_file(file)
             if source.is_file():
                 shutil.copy2(source, licenses / (name + '-' + source.name))
+                bundled = True
+    if not bundled:
+        missing.append(f'{name} (no license*/copying* file in the installed distribution)')
 for candidate in [Path(sys.base_prefix) / 'LICENSE.txt', Path(sysconfig.get_path('stdlib')) / 'LICENSE.txt',
                   Path('/usr/share/doc/python3.12/copyright')]:
     if candidate.is_file():
         shutil.copy2(candidate, licenses / 'PYTHON-LICENSE.txt')
         break
+else:
+    missing.append('Python itself (none of the expected LICENSE.txt/copyright candidates exist)')
+if missing:
+    raise SystemExit('Cannot ship the licenses promised by launcher/NOTICE; missing: ' + '; '.join(missing))
 node = shutil.which('node')
 if not node:
     raise SystemExit('Install Node.js 24 to build the desktop application.')

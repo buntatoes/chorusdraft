@@ -20,7 +20,13 @@ verify() {
     shasum -a 256 --check "$1"
   fi
 }
-(cd dist && verify "$(basename "$archive").sha256")
+sidecar=$(basename "$archive").sha256
+read -r checksum recorded < "dist/$sidecar"
+if [ "$recorded" != "$(basename "$archive")" ]; then
+  echo 'Archive checksum names a different file.' >&2
+  exit 1
+fi
+(cd dist && verify "$sidecar")
 tar -xzf "$archive" -C "$work"
 name=$(basename "$archive" .tar.gz)
 package=$work/$name
@@ -28,7 +34,7 @@ package=$work/$name
 for dep in mint websockex jason telemetry hpax; do
   find "$package/source/deps/$dep" -type f | grep -Ei '/(license|copying)(\.[^/]*)?$' >/dev/null
 done
-if tar -tzf "$archive" | grep -E '(^|/)(\.env|data|logs|_build|\.git)(/|$)'; then
+if tar -tzf "$archive" | grep -E '(^|/)(\.env|data|logs|credentials|activity|erl_crash\.dump|_build|\.git)(/|$)'; then
   echo 'Runtime data leaked into package' >&2
   exit 1
 fi

@@ -11,15 +11,6 @@ import sys
 import threading
 
 
-def application_root():
-    if getattr(sys, 'frozen', False):
-        executable = Path(sys.executable).resolve()
-        if sys.platform == 'darwin' and '.app' in str(executable):
-            return executable.parents[3]
-        return executable.parent.parent
-    return Path(__file__).resolve().parent.parent
-
-
 def bot_command(root, runtime, platform, arguments):
     root = Path(root)
     if runtime != 'elixir' or platform not in ('bluesky', 'mastodon'):

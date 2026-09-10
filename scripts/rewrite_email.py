@@ -18,7 +18,8 @@ def run(*args, cwd=None, data=None):
 def rewrite(repository, old_email, new_email, apply=False):
     if not old_email or old_email == new_email:
         raise ValueError("Provide distinct old and new email addresses.")
-    if any(c in old_email + new_email for c in "\r\n<>"):
+    if any(c in "\r\n<>" or c.isspace() or ord(c) < 0x20 or ord(c) == 0x7f
+           for c in old_email + new_email):
         raise ValueError("Invalid email address.")
     directory = Path(tempfile.mkdtemp(prefix="chorusdraft-email-"))
     mirror = directory / "mirror.git"

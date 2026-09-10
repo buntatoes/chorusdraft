@@ -68,6 +68,34 @@ with tempfile.TemporaryDirectory(prefix='chorusdraft-combined-') as temporary:
     installed_root = install_dest
     assert installed_root.is_dir(), install_output
     assert (installed_root / 'elixir' / 'run.sh' if OS != 'windows' else installed_root / 'elixir' / 'run.ps1').is_file()
+    # A no-argument install must land in the per-user default location.
+    default_home = work / 'default-home'
+    default_home.mkdir()
+    default_env = os.environ.copy()
+    default_env.pop('XDG_DATA_HOME', None)
+    if OS == 'windows':
+        default_env['LOCALAPPDATA'] = str(default_home)
+        default_env['APPDATA'] = str(default_home / 'Roaming')
+        default_env['USERPROFILE'] = str(default_home)
+        default_cmd = [
+            'pwsh', '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass',
+            '-File', str(root / 'install.ps1'),
+        ]
+        default_dest = default_home / f'ChorusDraft-{VERSION}'
+    else:
+        default_env['HOME'] = str(default_home)
+        default_cmd = [str(root / 'install.sh')]
+        default_dest = (default_home / 'Library' / 'Application Support' if OS == 'macos'
+                        else default_home / '.local' / 'share') / f'chorusdraft-{VERSION}'
+    default_result = subprocess.run(
+        default_cmd, cwd=root, env=default_env, capture_output=True,
+        text=True, encoding='utf-8', errors='replace', timeout=120,
+    )
+    assert default_result.returncode == 0, (default_cmd, default_result.stdout, default_result.stderr)
+    default_output = default_result.stdout + default_result.stderr
+    assert 'Installed ChorusDraft in ' in default_output, default_output
+    assert default_dest.is_dir(), default_output
+    assert (default_dest / 'elixir' / ('run.ps1' if OS == 'windows' else 'run.sh')).is_file()
     if OS == 'linux':
         desktop = install_home / '.local/share/applications/chorusdraft.desktop'
         assert desktop.is_file(), 'Application menu entry is missing'
@@ -82,17 +110,24 @@ with tempfile.TemporaryDirectory(prefix='chorusdraft-combined-') as temporary:
         assert shortcut.is_file() or command.is_file(), 'Start menu shortcut is missing'
     gui = root / ('ChorusDraft.app/Contents/MacOS/ChorusDraft' if OS == 'macos' else
                   'launcher/ChorusDraft.exe' if OS == 'windows' else 'launcher/ChorusDraft')
+    installed_gui = installed_root / ('ChorusDraft.app/Contents/MacOS/ChorusDraft' if OS == 'macos' else
+                                      'launcher/ChorusDraft.exe' if OS == 'windows' else 'launcher/ChorusDraft')
     assert gui.is_file(), 'Desktop executable is missing'
+    assert installed_gui.is_file(), 'Installed desktop executable is missing'
     assert not list(root.rglob('*.rb')), 'Desktop package contains obsolete Ruby source'
     configure_sandbox = OS == 'linux' and os.environ.get('CHORUSDRAFT_TEST_SANDBOX') == '1'
     sandbox = ["sudo", __import__('sys').executable, str(root / 'launcher-source/linux_sandbox.py')]
+    installed_sandbox = ["sudo", __import__('sys').executable, str(installed_root / 'launcher-source/linux_sandbox.py')]
     try:
         if configure_sandbox:
             subprocess.run(sandbox, check=True)
+            subprocess.run(installed_sandbox, check=True)
         run([str(gui), '--smoke-test'], work)
+        run([str(installed_gui), '--smoke-test'], work)
     finally:
         if configure_sandbox:
             subprocess.run(sandbox + ['--remove'], check=True)
+            subprocess.run(installed_sandbox + ['--remove'], check=True)
     command = [str(root / ('bot.bat' if OS == 'windows' else 'bot'))]
     assert 'desktop launcher' in run(command + ['help'], work)
     assert 'interactive terminal' in run(command + ['menu'], work, code=1)

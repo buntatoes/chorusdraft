@@ -18,8 +18,11 @@ def main():
     # AppArmor paths support glob syntax; only allow an exact literal attachment.
     if any(char in str(executable) for char in '\n\r"\\*?[]{}^@'):
         raise SystemExit('Move the download to a folder without special filename characters first.')
-    parser = shutil.which('apparmor_parser') or '/sbin/apparmor_parser'
-    if not Path(parser).is_file():
+    # This script runs as root, so resolve the parser from fixed system paths
+    # first: a preserved PATH could otherwise substitute a user-writable binary.
+    parser = next((candidate for candidate in ('/sbin/apparmor_parser', '/usr/sbin/apparmor_parser')
+                   if os.access(candidate, os.X_OK)), None) or shutil.which('apparmor_parser')
+    if not parser or not Path(parser).is_file():
         raise SystemExit('AppArmor is not installed; this setup is not required.')
     if os.geteuid() != 0:
         raise SystemExit('Run with sudo to install the AppArmor profile for this launcher only.')
@@ -35,7 +38,15 @@ def main():
     content = f'abi <abi/4.0>,\ninclude <tunables/global>\nprofile {name} "{executable}" flags=(unconfined) {{\n  userns,\n}}\n'
     profile.write_text(content)
     profile.chmod(0o644)
-    subprocess.run([parser, '-r', str(profile)], check=True)
+    try:
+        subprocess.run([parser, '-r', str(profile)], check=True)
+    except subprocess.CalledProcessError as error:
+        profile.unlink(missing_ok=True)
+        raise SystemExit(
+            'Could not load the AppArmor profile. The profile uses policy abi 4.0, '
+            'which requires AppArmor 4; on AppArmor 3.x systems unprivileged user '
+            'namespaces are not restricted, so this setup is unnecessary.'
+        ) from error
     print('Sandbox configured for this ChorusDraft download. Start ./bot as your normal user.')
 
 

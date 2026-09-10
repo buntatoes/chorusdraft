@@ -40,7 +40,7 @@ try {
     $zip = [IO.Compression.ZipFile]::OpenRead($archive.FullName)
     try {
         foreach ($entry in $zip.Entries) {
-            if ($entry.FullName -match '(^|/)(\.env|data|logs|_build|\.git)(/|$)') {
+            if ($entry.FullName -match '(^|/)(\.env|data|logs|credentials|activity|erl_crash\.dump|_build|\.git)(/|$)') {
                 throw "Runtime data leaked into package: $($entry.FullName)"
             }
         }
@@ -59,6 +59,11 @@ try {
     & escript (Join-Path $package 'chorusdraft') mastodon --help
     Assert-Exit 'Packaged Mastodon command failed.'
 
+    & (Join-Path $package 'run.ps1') bluesky --help
+    Assert-Exit 'Packaged run.ps1 Bluesky command failed.'
+    & (Join-Path $package 'run.ps1') mastodon --help
+    Assert-Exit 'Packaged run.ps1 Mastodon command failed.'
+
     if (-not (Test-Path -LiteralPath (Join-Path $package 'GUARD_LICENSE'))) { throw 'Package is missing GUARD_LICENSE.' }
     if (-not (Test-Path -LiteralPath (Join-Path $package 'source/guard/LICENSE'))) { throw 'Package source is missing Guard.' }
     if (-not (Test-Path -LiteralPath (Join-Path $package 'source/guard/lib/chorus_draft/guard/safety.ex'))) { throw 'Package source is missing Guard safety.' }
@@ -74,7 +79,13 @@ try {
 
     $autoHome = Join-Path $work 'auto-home'
     $null = New-Item -ItemType Directory -Path $autoHome
-    $autoOut = ((& { $env:LOCALAPPDATA = $autoHome; & (Join-Path $package 'install.ps1') }) | Out-String).TrimEnd()
+    $savedLocalAppData = $env:LOCALAPPDATA
+    try {
+        $env:LOCALAPPDATA = $autoHome
+        $autoOut = ((& (Join-Path $package 'install.ps1')) | Out-String).TrimEnd()
+    } finally {
+        $env:LOCALAPPDATA = $savedLocalAppData
+    }
     if ($autoOut -notmatch 'Installed ChorusDraft in (.+)\. Edit') { throw 'Automatic install did not report a destination.' }
     $autoInstalled = $Matches[1]
     if (-not (Test-Path -LiteralPath $autoInstalled)) { throw 'Automatic install directory is missing.' }

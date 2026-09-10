@@ -21,8 +21,8 @@ defmodule ChorusDraft.Package do
       File.mkdir!(package)
 
       for file <- @documents, do: copy(root, package, file)
-      File.cp!(Path.join(root, license), Path.join(package, "LICENSE"))
-      File.cp!(Path.join(root, "guard/LICENSE"), Path.join(package, "GUARD_LICENSE"))
+      copy(root, package, license, "LICENSE")
+      copy(root, package, "guard/LICENSE", "GUARD_LICENSE")
       copy(root, package, "chorusdraft")
 
       if os == "windows" do
@@ -52,7 +52,7 @@ defmodule ChorusDraft.Package do
       for file <- @documents ++ ~w(mix.exs mix.lock .formatter.exs setup.exs),
           do: copy(root, source, file)
 
-      File.cp!(Path.join(root, license), Path.join(source, "LICENSE"))
+      copy(root, source, license, "LICENSE")
       for dir <- ~w(lib test scripts guard), do: copy_tree(root, source, dir)
 
       for platform <- @platforms do
@@ -144,13 +144,15 @@ defmodule ChorusDraft.Package do
     """
   end
 
-  defp copy(root, destination, file) do
+  defp copy(root, destination, file), do: copy(root, destination, file, file)
+
+  defp copy(root, destination, file, as) do
     source = Path.join(root, file)
 
     unless File.lstat!(source).type == :regular,
       do: raise("Package input must be a regular file: #{file}")
 
-    target = Path.join(destination, file)
+    target = Path.join(destination, as)
     File.mkdir_p!(Path.dirname(target))
     File.cp!(source, target)
   end
