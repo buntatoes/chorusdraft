@@ -15,7 +15,7 @@ defmodule ChorusDraft.Service do
 
       "install" ->
         File.mkdir_p!(Path.dirname(spec.path))
-        File.write!(spec.path, spec.contents)
+        File.write!(spec.path, encode_unit(spec.path, spec.contents))
         if Platform.os() != "windows", do: File.chmod!(spec.path, 0o600)
         Control.log("Wrote #{spec.path}")
         Control.log(spec.enable)
@@ -259,6 +259,24 @@ defmodule ChorusDraft.Service do
     if String.contains?(value, [" ", "\t", "\""]),
       do: "\"" <> String.replace(value, "\"", "\\\"") <> "\"",
       else: value
+  end
+
+  def encode_unit(path, contents) when is_binary(path) and is_binary(contents) do
+    if String.ends_with?(path, ".xml") do
+      utf16_le(contents)
+    else
+      contents
+    end
+  end
+
+  defp utf16_le(text) do
+    case :unicode.characters_to_binary(text, :utf8, {:utf16, :little}) do
+      encoded when is_binary(encoded) ->
+        :unicode.encoding_to_bom({:utf16, :little}) <> encoded
+
+      _ ->
+        raise Error, "Service unit is not valid Unicode."
+    end
   end
 
   defp xml(value),

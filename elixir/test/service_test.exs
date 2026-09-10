@@ -62,6 +62,24 @@ defmodule ChorusDraft.ServiceTest do
     refute File.regular?(spec.path)
   end
 
+  test "Windows task XML is stored as UTF-16 LE with a BOM" do
+    xml = """
+    <?xml version="1.0" encoding="UTF-16"?>
+    <Task/>
+    """
+
+    encoded = Service.encode_unit("chorusdraft-bluesky.xml", xml)
+    assert binary_part(encoded, 0, 2) == <<0xFF, 0xFE>>
+
+    decoded =
+      encoded
+      |> binary_part(2, byte_size(encoded) - 2)
+      |> :unicode.characters_to_binary({:utf16, :little}, :utf8)
+
+    assert decoded == xml
+    assert Service.encode_unit("chorusdraft-bluesky.service", xml) == xml
+  end
+
   test "generated units keep secrets out of the command line" do
     {command, _workdir} =
       Service.command("bluesky", Path.expand("bluesky", File.cwd!()), false)
