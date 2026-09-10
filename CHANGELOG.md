@@ -2,10 +2,32 @@
 
 Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
-## 0.53.1 — 2026-09-10
+## 0.53.2 — 2026-09-10
 
 Current published GitHub Release. Earlier GitHub Releases and tags
-(v0.50 through v0.53.0) were withdrawn and are not downloadable.
+(v0.50 through v0.53.1) were withdrawn and are not downloadable.
+
+Draft and automatic mode no longer fail with a bare HTTP 404 against Bluesky’s
+entryway. After login the bot uses the account PDS from the session DID
+document for `com.atproto.*` and `https://public.api.bsky.app` for
+`app.bsky.*` (feeds, search, notifications). AI 404s name the provider and
+model instead of only “response omitted”.
+
+Desktop install is a stable per-user folder you can run again to update
+(account `.env`, data, and block lists are kept):
+
+- Linux: `~/.local/share/chorusdraft`
+- macOS: `~/Library/Application Support/chorusdraft-app`
+- Windows: `%LOCALAPPDATA%\Programs\ChorusDraft`
+
+Double-click `Install ChorusDraft.command` on macOS or `install.cmd` on
+Windows. The desktop archive no longer ships GUI source, build scripts, or the
+Elixir rebuild tree.
+
+Windows state-lock helpers are waited out after release so a still-open
+`state.lock` handle cannot stall the next store operation.
+
+## 0.53.1 — 2026-09-10
 
 Patch release: a full code review's worth of fixes and hardening. No behavior
 or interface changes for normal use.

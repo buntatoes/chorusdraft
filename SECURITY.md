@@ -4,7 +4,7 @@
 
 | Version | Runtime | Support |
 |---|---|---|
-| 0.53.1 | Elixir | Current (published GitHub Release) |
+| 0.53.2 | Elixir | Current (published GitHub Release) |
 | Prior versions | Not published as GitHub Releases | Unsupported |
 
 Report vulnerabilities through GitHub private reporting when it is available,
