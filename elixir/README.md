@@ -142,7 +142,7 @@ auth, bounded output, and `store: false`.
 ## Packages
 
 Downloads: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases)
-(0.53.2 is the current published release; earlier GitHub Releases were withdrawn).
+(0.53.2 is the current published release; earlier GitHub Releases keep their notes, without packages).
 
 CLI only (no GUI):
 

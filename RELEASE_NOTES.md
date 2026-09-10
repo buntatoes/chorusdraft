@@ -2,8 +2,9 @@
 
 Downloads: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
-0.53.2 is the current published GitHub Release. Earlier GitHub Releases and
-tags were withdrawn and are not downloadable.
+0.53.2 is the current published GitHub Release. Earlier GitHub Releases
+(v0.50 through v0.53.1) keep their notes; packages for those versions are
+not published.
 
 Draft and automatic mode talk to Bluesky’s AppView and the account PDS from
 the session DID document, so creating a draft no longer 404s against

@@ -4,8 +4,8 @@ Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/r
 
 ## 0.53.2 — 2026-09-10
 
-Current published GitHub Release. Earlier GitHub Releases and tags
-(v0.50 through v0.53.1) were withdrawn and are not downloadable.
+Current published GitHub Release. Earlier GitHub Releases (v0.50 through
+v0.53.1) keep their notes; packages for those versions are not published.
 
 Draft and automatic mode no longer fail with a bare HTTP 404 against Bluesky’s
 entryway. After login the bot uses the account PDS from the session DID
@@ -98,8 +98,8 @@ reconnect, and Jetstream timer tests that no longer wait on wall-clock time.
 
 ## 0.53.0 — 2026-09-10
 
-Earlier GitHub Releases and tags (v0.50 through v0.52.1) were withdrawn and
-are not downloadable.
+Earlier GitHub Releases (v0.50 through v0.52.1) keep their notes; packages
+for those versions are not published.
 
 Publication screening is now a proprietary module. Opt-out, injection,
 harassment, automatic-output, and personal-information checks moved out of the
