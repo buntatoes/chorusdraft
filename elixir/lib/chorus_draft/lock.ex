@@ -73,21 +73,9 @@ defmodule ChorusDraft.Lock do
     end
   end
 
-  # Close stdin so the helper drops the OS lock. On Windows the Python
-  # process can keep `state.lock` open after Port.close; wait for it to
-  # exit. Linux flock is killed with the port and does not emit exit_status.
+  # Close stdin so the helper drops the OS lock.
   def release(port) do
     if Port.info(port), do: Port.close(port)
-    if Platform.os() == "windows", do: drain(port)
     :ok
-  end
-
-  defp drain(port) do
-    receive do
-      {^port, {:exit_status, _}} -> :ok
-      {^port, {:data, _}} -> drain(port)
-    after
-      5_000 -> :ok
-    end
   end
 end
