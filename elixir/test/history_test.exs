@@ -92,7 +92,7 @@ defmodule ChorusDraft.HistoryTest do
     # In memory, history recovers the stale publication and prunes the old one;
     # on disk, nothing may change and no lock file may appear.
     path = Path.join(dir, "state.json")
-    File.rm!(Path.join(dir, "state.lock"))
+    remove_lock_file!(Path.join(dir, "state.lock"))
     before = File.read!(path)
 
     assert [%{"text" => "recent publication"}] = Store.history(base)
@@ -112,6 +112,30 @@ defmodule ChorusDraft.HistoryTest do
       end
 
       assert File.dir?(dir)
+    end
+  end
+
+  defp remove_lock_file!(path) do
+    result =
+      Enum.reduce_while(1..50, :error, fn _, acc ->
+        case File.rm(path) do
+          :ok ->
+            {:halt, :ok}
+
+          {:error, :enoent} ->
+            {:halt, :ok}
+
+          {:error, :eacces} ->
+            Process.sleep(20)
+            {:cont, acc}
+
+          {:error, reason} ->
+            raise File.Error, reason: reason, action: "remove file", path: path
+        end
+      end)
+
+    if result != :ok do
+      raise File.Error, reason: :eacces, action: "remove file", path: path
     end
   end
 end
