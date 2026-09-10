@@ -52,6 +52,73 @@ defmodule ChorusDraft.StreamingTest do
     assert Jetstream.wait(stream, 0) == :timeout
   end
 
+  test "SSE lines split across chunks still wake on notification" do
+    stream = Jetstream.subscription("mastodon")
+    state = Streaming.feed({"", nil, 0}, "event: notifi", stream)
+    assert Jetstream.wait(stream, 0) == :timeout
+    state = Streaming.feed(state, "cation\ndata: {\"a\":1}\n", stream)
+    assert Jetstream.wait(stream, 0) == :timeout
+    Streaming.feed(state, "\n", stream)
+    assert Jetstream.wait(stream, 0) == :activity
+  end
+
+  test "an SSE message larger than one megabyte is refused" do
+    stream = Jetstream.subscription("mastodon")
+
+    assert_raise Error, ~r/exceeded limits/, fn ->
+      Streaming.feed({"", nil, 0}, "data: " <> String.duplicate("x", 1_048_577), stream)
+    end
+
+    # Exactly at the cap still parses.
+    state = Streaming.feed({"", nil, 0}, "data: " <> String.duplicate("x", 1_048_570), stream)
+    assert elem(state, 2) == 1_048_576
+  end
+
+  test "a dropped stable session reconnects quickly instead of backing off" do
+    {:ok, listener} =
+      :gen_tcp.listen(0, [:binary, active: false, reuseaddr: true, ip: {127, 0, 0, 1}])
+
+    {:ok, {_, port}} = :inet.sockname(listener)
+    owner = self()
+    {:ok, server} = Task.start(fn -> drop_after_handshake(listener, owner, 4) end)
+    stream = Jetstream.subscription("mastodon")
+    url = "http://127.0.0.1:#{port}/api/v1/streaming/user"
+    {:ok, client} = Streaming.start_link(url, "fixture-token", stream, stable_session: 0)
+    Process.unlink(client)
+
+    on_exit(fn ->
+      Process.exit(client, :kill)
+      Process.exit(server, :kill)
+      :gen_tcp.close(listener)
+    end)
+
+    started = System.monotonic_time(:millisecond)
+    for _ <- 1..4, do: assert_receive({:dropped, _request}, 10_000)
+    elapsed = System.monotonic_time(:millisecond) - started
+
+    # Stable sessions reset the backoff to about one second per reconnect
+    # (~4s for four connections). Without the reset the backoff climbs to the
+    # attempt cap and the fourth connection lands after ~7 seconds.
+    assert elapsed < 5_500
+  end
+
+  defp drop_after_handshake(_listener, owner, 0), do: send(owner, :done)
+
+  defp drop_after_handshake(listener, owner, remaining) do
+    {:ok, socket} = :gen_tcp.accept(listener)
+    request = read_headers(socket, "")
+
+    :ok =
+      :gen_tcp.send(
+        socket,
+        "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-cache\r\n\r\n"
+      )
+
+    :gen_tcp.close(socket)
+    send(owner, {:dropped, request})
+    drop_after_handshake(listener, owner, remaining - 1)
+  end
+
   test "Mastodon listen validates the streaming URL before login" do
     dir = Path.join(System.tmp_dir!(), "streaming-cli-#{System.unique_integer([:positive])}")
     File.mkdir_p!(dir)

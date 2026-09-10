@@ -99,4 +99,45 @@ defmodule ChorusDraft.ClientTest do
     assert facet["index"]["byteStart"] == 5
     assert facet["index"]["byteEnd"] == 16
   end
+
+  test "Bluesky refreshes the session once after a 401 and retries with the new token" do
+    session = %{"did" => "did:plc:me", "accessJwt" => "access", "refreshJwt" => "refresh"}
+    refreshed = %{"did" => "did:plc:me", "accessJwt" => "access2", "refreshJwt" => "refresh2"}
+
+    TestHTTP.set_responses([
+      session,
+      ChorusDraft.HTTPError.exception(401),
+      refreshed,
+      %{"posts" => []}
+    ])
+
+    client = bluesky() |> Bluesky.login()
+    assert Bluesky.search(client, "elixir") == []
+
+    calls = TestHTTP.calls()
+    assert Enum.map(calls, &elem(&1, 0)) == [:post, :get, :post, :get]
+    assert Enum.at(calls, 2) |> elem(1) =~ "com.atproto.server.refreshSession"
+    assert (Enum.at(calls, 2) |> elem(2))[:headers]["Authorization"] == "Bearer refresh"
+    assert (Enum.at(calls, 3) |> elem(2))[:headers]["Authorization"] == "Bearer access2"
+  end
+
+  test "Bluesky fails closed when a refreshed session belongs to another account" do
+    session = %{"did" => "did:plc:me", "accessJwt" => "access", "refreshJwt" => "refresh"}
+
+    hijacked = %{
+      "did" => "did:plc:mallory",
+      "accessJwt" => "access2",
+      "refreshJwt" => "refresh2"
+    }
+
+    TestHTTP.set_responses([session, ChorusDraft.HTTPError.exception(401), hijacked])
+    client = bluesky() |> Bluesky.login()
+
+    assert_raise Error, ~r/Session account changed/, fn ->
+      Bluesky.search(client, "elixir")
+    end
+
+    # No retry with the mismatched session may happen.
+    assert Enum.map(TestHTTP.calls(), &elem(&1, 0)) == [:post, :get, :post]
+  end
 end

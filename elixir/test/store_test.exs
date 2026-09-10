@@ -234,6 +234,96 @@ defmodule ChorusDraft.StoreTest do
     end
   end
 
+  test "author-less unsolicited posts share no per-author cooldown", %{dir: dir} do
+    assert Store.stage(dir, %{"text" => "one"}, source: "s1", unsolicited: true)
+    assert Store.stage(dir, %{"text" => "two"}, source: "s2", unsolicited: true)
+    assert Store.stage(dir, %{"author" => "  "}, source: "s3", unsolicited: true)
+
+    Store.transaction(dir, fn state ->
+      assert state["authors"] == %{}
+      assert length(state["daily"]) == 3
+      {nil, state}
+    end)
+
+    assert Store.available?(dir, author: nil, unsolicited: true)
+  end
+
+  test "the automatic budget refills after the rolling 24-hour window", %{dir: dir} do
+    old = System.system_time(:second) - 86_401
+
+    Store.transaction(dir, fn state ->
+      {nil, Map.put(state, "automatic", List.duplicate(old, 5))}
+    end)
+
+    item = Store.stage(dir, %{"text" => "fresh"})
+    assert {:ok, claimed} = Store.claim_automatic(dir, item)
+    assert claimed["status"] == "publishing"
+  end
+
+  test "the author cooldown expires after thirty days", %{dir: dir} do
+    old = System.system_time(:second) - 2_592_001
+
+    Store.transaction(dir, fn state ->
+      {nil, state |> Map.put("authors", %{"alice" => old}) |> Map.put("daily", [old])}
+    end)
+
+    assert Store.stage(dir, %{"author" => "alice"}, source: "s1", unsolicited: true)
+  end
+
+  test "the seen list evicts the oldest entries beyond ten thousand", %{dir: dir} do
+    Store.transaction(dir, fn state ->
+      {nil, Map.put(state, "seen", for(n <- 1..10_000, do: "old#{n}"))}
+    end)
+
+    assert Store.stage(dir, %{"text" => "new"}, source: "new-source")
+    refute Store.seen?(dir, "old1")
+    assert Store.seen?(dir, "old2")
+    assert Store.seen?(dir, "new-source")
+
+    Store.transaction(dir, fn state ->
+      assert length(state["seen"]) == 10_000
+      {nil, state}
+    end)
+  end
+
+  test "import refuses its own destination state as source", %{dir: dir} do
+    assert_raise Error, ~r/separate read-only source/, fn ->
+      Store.import_state(dir, Path.join(dir, "state.json"), "mastodon", "acct")
+    end
+  end
+
+  test "import re-reads the source under lock and refuses a mid-import change", %{dir: dir} do
+    source_dir =
+      Path.join(System.tmp_dir!(), "chorus-import-#{System.unique_integer([:positive])}")
+
+    Store.new(source_dir)
+    Store.stage(source_dir, pending_draft("imported"))
+    on_exit(fn -> File.rm_rf!(source_dir) end)
+    source = Path.join(source_dir, "state.json")
+
+    task =
+      Store.transaction(dir, fn state ->
+        # Holding the destination lock makes the import wait inside acquire;
+        # changing the source before releasing it must trip the recheck.
+        task =
+          Task.async(fn ->
+            try do
+              Store.import_state(dir, source, "mastodon", "acct")
+            rescue
+              error in Error -> {:error, error}
+            end
+          end)
+
+        Process.sleep(500)
+        File.write!(source, "{}")
+        {task, state}
+      end)
+
+    assert {:error, %Error{message: message}} = Task.await(task)
+    assert message =~ "Source changed during import"
+    assert Store.drafts(dir) == []
+  end
+
   test "a nested transaction on the same store fails at once", %{dir: dir} do
     {elapsed, error} =
       :timer.tc(fn ->

@@ -59,5 +59,8 @@ defmodule ChorusDraft.TestClient do
     %{}
   end
 
-  def delete(_client, _id), do: %{}
+  def delete(_client, id) do
+    if Process.get({__MODULE__, :notify_delete}), do: send(self(), {:deleted, id})
+    %{}
+  end
 end

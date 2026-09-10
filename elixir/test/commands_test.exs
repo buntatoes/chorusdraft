@@ -62,7 +62,28 @@ defmodule ChorusDraft.CommandsTest do
     version = String.trim(File.read!("VERSION"))
     assert version == ChorusDraft.version()
     assert version == String.trim(File.read!("../VERSION"))
-    assert File.read!("../desktop/package.json") =~ ~s("version": "#{version}")
+    assert File.read!("mix.exs") =~ ~s(version: "#{version}")
+
+    # Release packages ship source/ without the desktop app, so only check
+    # the desktop version in a full checkout.
+    if File.regular?("../desktop/package.json") do
+      assert File.read!("../desktop/package.json") =~ ~s("version": "#{version}")
+    end
+  end
+
+  test "the do-not-contact file blocks listed actors and skips comments" do
+    dir = Path.join(System.tmp_dir!(), "chorus-dnc-#{System.unique_integer([:positive])}")
+    on_exit(fn -> File.rm_rf!(dir) end)
+    ChorusDraft.Store.new(dir)
+    list = Path.join(dir, "do_not_contact.txt")
+    File.write!(list, "# comment\n\n alice@example.org \n@Bob\n")
+
+    CLI.load_do_not_contact(dir, list)
+
+    assert ChorusDraft.Store.blocked?(dir, "alice@example.org")
+    assert ChorusDraft.Store.blocked?(dir, "bob")
+    refute ChorusDraft.Store.blocked?(dir, "carol")
+    refute ChorusDraft.Store.blocked?(dir, "# comment")
   end
 
   test "edit cannot skip review by adding --publish" do

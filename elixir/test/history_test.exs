@@ -59,7 +59,47 @@ defmodule ChorusDraft.HistoryTest do
     assert [%{"text" => "retained"}] = Jason.decode!(output)
   end
 
-  @tag :tmp_dir
+  test "history is a lock-free read that never mutates state", %{base: base, dir: dir} do
+    stale = Store.stage(dir, %{"text" => "stale publication"})
+    Store.transition(dir, stale["id"], "pending", "publishing")
+    recent = Store.stage(dir, %{"text" => "recent publication"})
+    Store.transition(dir, recent["id"], "pending", "publishing")
+    Store.transition(dir, recent["id"], "publishing", "published")
+    old_pub = Store.stage(dir, %{"text" => "old publication"})
+    Store.transition(dir, old_pub["id"], "pending", "publishing")
+    Store.transition(dir, old_pub["id"], "publishing", "published")
+
+    Store.transaction(dir, fn state ->
+      old = DateTime.utc_now() |> DateTime.add(-11 * 86_400) |> DateTime.to_iso8601()
+
+      drafts =
+        Enum.map(state["drafts"], fn draft ->
+          cond do
+            draft["id"] == stale["id"] ->
+              Map.put(draft, "claimed_at", System.system_time(:second) - 301)
+
+            draft["id"] == old_pub["id"] ->
+              draft |> Map.put("created_at", old) |> Map.put("finished_at", old)
+
+            true ->
+              draft
+          end
+        end)
+
+      {nil, Map.put(state, "drafts", drafts)}
+    end)
+
+    # In memory, history recovers the stale publication and prunes the old one;
+    # on disk, nothing may change and no lock file may appear.
+    path = Path.join(dir, "state.json")
+    File.rm!(Path.join(dir, "state.lock"))
+    before = File.read!(path)
+
+    assert [%{"text" => "recent publication"}] = Store.history(base)
+    refute File.exists?(Path.join(dir, "state.lock"))
+    assert File.read!(path) == before
+  end
+
   test "history refuses linked base and data ancestors", %{base: base, dir: dir} do
     if ChorusDraft.Platform.os() != "windows" do
       linked = base <> "-link"
