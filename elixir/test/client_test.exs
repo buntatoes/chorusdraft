@@ -116,6 +116,10 @@ defmodule ChorusDraft.ClientTest do
 
     calls = TestHTTP.calls()
     assert Enum.map(calls, &elem(&1, 0)) == [:post, :get, :post, :get]
+
+    assert Enum.at(calls, 1) |> elem(1) =~
+             "https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts"
+
     assert Enum.at(calls, 2) |> elem(1) =~ "com.atproto.server.refreshSession"
     assert (Enum.at(calls, 2) |> elem(2))[:headers]["Authorization"] == "Bearer refresh"
     assert (Enum.at(calls, 3) |> elem(2))[:headers]["Authorization"] == "Bearer access2"
@@ -139,5 +143,67 @@ defmodule ChorusDraft.ClientTest do
 
     # No retry with the mismatched session may happen.
     assert Enum.map(TestHTTP.calls(), &elem(&1, 0)) == [:post, :get, :post]
+  end
+
+  test "Bluesky drafts use the AppView and the PDS from the DID document" do
+    session = %{
+      "did" => "did:plc:me",
+      "accessJwt" => "access",
+      "refreshJwt" => "refresh",
+      "didDoc" => %{
+        "service" => [
+          %{
+            "id" => "#atproto_pds",
+            "type" => "AtprotoPersonalDataServer",
+            "serviceEndpoint" => "https://pds.example"
+          }
+        ]
+      }
+    }
+
+    TestHTTP.set_responses([session, %{"feed" => []}, %{"uri" => "posted"}])
+    client = bluesky() |> Bluesky.login()
+    assert client.pds == "https://pds.example"
+    assert Bluesky.account_key(client) == "https://bsky.social:did:plc:me"
+    assert Bluesky.recent(client) == []
+
+    Bluesky.publish(client, %{
+      "id" => "draft",
+      "record_key" => "3m2abcdefghijkl",
+      "text" => "Hello",
+      "created_at" => "2026-09-05T00:00:00Z",
+      "visibility" => "public"
+    })
+
+    urls = Enum.map(TestHTTP.calls(), &elem(&1, 1))
+
+    assert Enum.at(urls, 0) ==
+             "https://bsky.social/xrpc/com.atproto.server.createSession"
+
+    assert Enum.at(urls, 1) ==
+             "https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed"
+
+    assert Enum.at(urls, 2) ==
+             "https://pds.example/xrpc/com.atproto.repo.createRecord"
+  end
+
+  test "Bluesky rejects a DID document PDS that is not an HTTPS origin" do
+    session = %{
+      "did" => "did:plc:me",
+      "accessJwt" => "access",
+      "refreshJwt" => "refresh",
+      "didDoc" => %{
+        "service" => [
+          %{
+            "id" => "#atproto_pds",
+            "type" => "AtprotoPersonalDataServer",
+            "serviceEndpoint" => "https://pds.example/xrpc"
+          }
+        ]
+      }
+    }
+
+    TestHTTP.set_responses([session])
+    assert_raise Error, ~r/HTTPS origin/, fn -> bluesky() |> Bluesky.login() end
   end
 end
