@@ -6,6 +6,11 @@ Downloads: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 v0.53.1 were withdrawn and are not downloadable. 0.54.0 and 0.53.2 remain
 available.
 
+README on `main` shows a desktop CI badge for
+`.github/workflows/bot-testing.yml` next to Elixir checks (`?branch=main`).
+The Top language shields badge is gone. License, Platforms, Services, and
+Latest-release badges stay.
+
 **Desktop (recommended).** Extract the archive, then run `./install.sh`
 (double-click `Install ChorusDraft.command` on macOS) or `install.cmd` on
 Windows. No install path is required. Run the installer again to update; your

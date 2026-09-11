@@ -8,6 +8,11 @@ Current published GitHub Release. 0.54.0 remains available. Releases v0.50
 through v0.53.1 were withdrawn and are not downloadable. 0.53.2 remains
 available.
 
+README on `main` shows a desktop CI badge for
+`.github/workflows/bot-testing.yml` next to Elixir checks (`?branch=main`).
+The Top language shields badge is gone. License, Platforms, Services, and
+Latest-release badges stay.
+
 ## 0.54.0 — 2026-09-11
 
 Earlier GitHub Releases and tags (v0.50 through v0.53.1) were withdrawn and
