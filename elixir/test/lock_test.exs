@@ -31,6 +31,17 @@ defmodule ChorusDraft.LockTest do
     assert forbidden == []
   end
 
+  # Connecting to a closed port costs a full timeout on Windows, so an
+  # uncontended lock must never reach for an address it did not find taken.
+  test "an uncontended lock is taken and released without probing", %{path: path} do
+    {elapsed, :ok} =
+      :timer.tc(fn ->
+        Enum.each(1..10, fn _ -> path |> Lock.acquire() |> Lock.release() end)
+      end)
+
+    assert elapsed < 2_000_000
+  end
+
   test "the holder releases the lock and can take it again", %{path: path} do
     lock = Lock.acquire(path)
     assert :ok = Lock.release(lock)

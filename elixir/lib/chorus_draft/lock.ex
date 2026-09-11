@@ -16,11 +16,16 @@ defmodule ChorusDraft.Lock do
   # holder answers every connection with that identity digest, which is how a
   # contender separates a peer holding this store's lock from an unrelated
   # local listener on a candidate address.
+  #
+  # Candidates sit below the ephemeral ranges Linux, macOS, and Windows hand
+  # out by default, so passing outbound connections cannot occupy them. Only an
+  # address that refused a bind is ever connected to: a connection to a closed
+  # port costs a full timeout on Windows rather than an immediate refusal.
 
   @timeout_ms 5_000
   @candidates 8
-  @first_port 49_152
-  @port_count 16_384
+  @first_port 17_000
+  @port_count 15_000
   @retry_ms 20
   @accept_wait_ms 25
   @answer_wait_ms 25
@@ -78,9 +83,11 @@ defmodule ChorusDraft.Lock do
   end
 
   # A throwaway connection returns the acceptor from its accept wait, so the
-  # address is free the moment release returns rather than one wait later.
+  # address is free the moment release returns rather than one wait later. The
+  # wait is short: the acceptor may have closed the address already, and
+  # connecting to a closed port costs a full timeout on Windows.
   defp wake(port) do
-    case :gen_tcp.connect({127, 0, 0, 1}, port, [active: false], @peer_wait_ms) do
+    case :gen_tcp.connect({127, 0, 0, 1}, port, [active: false], @accept_wait_ms) do
       {:ok, socket} -> :gen_tcp.close(socket)
       {:error, _reason} -> :ok
     end
@@ -97,7 +104,7 @@ defmodule ChorusDraft.Lock do
   defp release_vm_lock(resource), do: :global.del_lock({resource, self()}, [node()])
 
   defp listen(ports, digest, deadline) do
-    case claim(ports, ports, digest) do
+    case claim(ports, [], digest) do
       {:ok, socket, port} -> {:ok, socket, port}
       reason -> if retry?(deadline), do: listen(ports, digest, deadline), else: reason
     end
@@ -105,19 +112,19 @@ defmodule ChorusDraft.Lock do
 
   # Candidates are walked in one fixed order, so every contender agrees on
   # which address belongs to this store.
-  defp claim([], _all, _digest), do: :unavailable
+  defp claim([], _taken, _digest), do: :unavailable
 
-  defp claim([port | rest], all, digest) do
+  defp claim([port | rest], taken, digest) do
     options = [:binary, ip: {127, 0, 0, 1}, active: false, packet: :raw, backlog: @backlog]
 
     # No `reuseaddr`: a bind must fail while another socket holds the address,
     # which is the whole guarantee this lock rests on.
     case :gen_tcp.listen(port, options) do
       {:ok, socket} ->
-        # An unrelated listener can free an earlier candidate at any moment, so
-        # a successful bind alone does not prove sole ownership. Yield the lock
-        # if a peer answers on any other candidate.
-        if Enum.any?(List.delete(all, port), &peer?(&1, digest)) do
+        # An unrelated listener can free an address that was stepped over at
+        # any moment, so a bind alone does not prove sole ownership: a peer may
+        # have taken one of them since. Yield the lock if one answers.
+        if Enum.any?(taken, &peer?(&1, digest)) do
           :gen_tcp.close(socket)
           :busy
         else
@@ -125,10 +132,10 @@ defmodule ChorusDraft.Lock do
         end
 
       {:error, :eaddrinuse} ->
-        if peer?(port, digest), do: :busy, else: claim(rest, all, digest)
+        if peer?(port, digest), do: :busy, else: claim(rest, [port | taken], digest)
 
       {:error, _reason} ->
-        claim(rest, all, digest)
+        claim(rest, taken, digest)
     end
   end
 
