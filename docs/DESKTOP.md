@@ -61,9 +61,20 @@ your normal user afterward. Repeat if you move the install; use the same script
 with `--remove` before removing an old copy.
 
 Choose Bluesky or Mastodon, click **Set up**, then **Open configuration**.
-**Create a draft** stages a post. **Open review** approves, edits, or rejects
-it. The desktop talks to the bot over JSON; publish buttons follow a review
-event, not a scraped prompt. **Queue** lists pending and uncertain drafts from
+**Create a draft** stages a post. **Write a post**, **Write a reply**, and
+**Write a quote** open compose. Body text shows a live count against 300
+characters on Bluesky and 500 on Mastodon. Mastodon compose includes a
+content warning (`--cw`); Bluesky rejects content warnings. Reply id
+(`reply ID TEXT` / `--reply-to`) is an at:// URI on Bluesky or a numeric
+status id on Mastodon. Quote id (`quote ID TEXT` / `--quote-uri`) stages a
+quote. Compose shows the visibility the draft will store: Bluesky `public`;
+Mastodon originals and quotes use **Default visibility** from Settings
+(`STATUS_VISIBILITY`); Mastodon replies to others stage as `unlisted`.
+Compose queues for review. It does not publish.
+
+**Open review** approves, edits, or rejects it. The desktop talks to the bot
+over JSON; publish buttons follow a review event, not a scraped prompt.
+**Queue** lists pending and uncertain drafts from
 the account store last used on the selected platform, remaining automatic
 attempts, and freeze state. Edit from Queue or during review; the replacement
 is screened and still needs approval. During review, **Edit text** prefills

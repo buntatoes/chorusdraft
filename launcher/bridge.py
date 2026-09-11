@@ -21,7 +21,7 @@ def settings(request):
 
 
 ACTIONS = {'setup', 'draft', 'review', 'start', 'listen', 'replies', 'search', 'post', 'help', 'version'}
-ACTIONS.update({'automatic', 'reject', 'edit', 'status'})
+ACTIONS.update({'automatic', 'reject', 'edit', 'status', 'reply', 'quote'})
 LINE_LIMIT = 65536
 
 
@@ -40,6 +40,17 @@ def valid_id(value):
     return isinstance(value, str) and value.strip() and len(value) <= 80 and not has_control(value)
 
 
+def valid_post_id(value):
+    return (
+        isinstance(value, str)
+        and value.strip()
+        and len(value) <= 512
+        and not has_control(value)
+        and not any(character.isspace() for character in value)
+        and not value.startswith('--')
+    )
+
+
 def require_live_session(session):
     if not session or session.finished:
         raise ValueError('The bot session has already ended.')
@@ -51,11 +62,24 @@ def arguments(request):
     if runtime != 'elixir' or platform not in ('bluesky', 'mastodon') or action not in ACTIONS:
         raise ValueError('Choose a valid bot and action.')
     args = [action]
-    if action in ('search', 'post'):
+    if action in ('search', 'post', 'reply', 'quote'):
         text = request.get('text')
         if not isinstance(text, str) or not text.strip() or len(text) > 10000 or '\x00' in text:
             raise ValueError('Enter text for this action (maximum 10,000 characters).')
-        args.append(text)
+        if action in ('reply', 'quote'):
+            target = request.get('target')
+            if not valid_post_id(target):
+                raise ValueError('Enter a reply or quote target.')
+            args.extend([target, text])
+        else:
+            args.append(text)
+        cw = request.get('cw')
+        if action != 'search' and cw not in (None, ''):
+            if platform == 'bluesky':
+                raise ValueError('Content warnings are supported only for Mastodon.')
+            if not isinstance(cw, str) or not cw.strip() or len(cw) > 10000 or '\x00' in cw:
+                raise ValueError('Enter a content warning (maximum 10,000 characters).')
+            args.extend(['--cw', cw])
     if action == 'reject':
         text = request.get('text')
         if not valid_id(text):

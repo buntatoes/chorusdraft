@@ -104,6 +104,16 @@ function validId(id) {
     !CONTROL.test(id)
   );
 }
+function validPostId(id) {
+  return (
+    typeof id === "string" &&
+    id.trim() !== "" &&
+    id.length <= 512 &&
+    !CONTROL.test(id) &&
+    !/\s/.test(id) &&
+    !id.startsWith("--")
+  );
+}
 function emit(message) {
   if (window && !window.isDestroyed())
     window.webContents.send("bot:event", message);
@@ -270,6 +280,8 @@ app
         "replies",
         "search",
         "post",
+        "reply",
+        "quote",
         "help",
         "version",
         "status",
@@ -279,10 +291,29 @@ app
       if (!actions.includes(request.action) || running)
         throw new Error("Choose an action after the current session ends.");
       if (
-        ["search", "post"].includes(request.action) &&
+        ["search", "post", "reply", "quote"].includes(request.action) &&
         !validText(request.text, 10000)
       )
         throw new Error("Enter text for this action (maximum 10,000 characters).");
+      if (
+        ["reply", "quote"].includes(request.action) &&
+        !validPostId(request.target)
+      )
+        throw new Error("Enter a reply or quote target.");
+      const cw =
+        ["post", "reply", "quote"].includes(request.action) &&
+        typeof request.cw === "string" &&
+        request.cw.trim()
+          ? request.cw
+          : undefined;
+      if (cw) {
+        if (request.platform === "bluesky")
+          throw new Error("Content warnings are supported only for Mastodon.");
+        if (!validText(cw, 10000))
+          throw new Error(
+            "Enter a content warning (maximum 10,000 characters).",
+          );
+      }
       if (request.action === "reject" && !validId(request.text))
         throw new Error("Choose a pending or uncertain draft to reject.");
       if (
@@ -307,6 +338,7 @@ app
           action: request.action,
           text: request.text,
           target: request.target,
+          cw,
         });
       } catch (error) {
         running = false;

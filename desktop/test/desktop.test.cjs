@@ -169,6 +169,58 @@ test(
       );
       assert.equal(info.saved.BLUESKY_APP_PASSWORD, true);
       assert.equal(info.values.BLUESKY_APP_PASSWORD, undefined);
+      assert.equal(
+        await page.getByRole("button", { name: "Write a quote", exact: true }).count(),
+        1,
+      );
+      await page
+        .getByRole("button", { name: "Write a post", exact: true })
+        .click();
+      await page.getByRole("textbox", { name: "Post text" }).waitFor();
+      assert.equal(await page.getByLabel("Character count").innerText(), "0/300");
+      assert.match(
+        await page.getByLabel("Draft visibility").innerText(),
+        /^Visibility: public$/,
+      );
+      assert.equal(await page.getByLabel("Content warning").count(), 0);
+      await page.getByLabel("Reply id").waitFor();
+      await page.getByLabel("Quote id").waitFor();
+      await page.getByRole("textbox", { name: "Post text" }).fill("Hi");
+      assert.equal(await page.getByLabel("Character count").innerText(), "2/300");
+      await page.getByRole("textbox", { name: "Post text" }).fill("x".repeat(301));
+      assert.equal(
+        await page.getByLabel("Character count").innerText(),
+        "301/300",
+      );
+      assert.equal(
+        await page.getByRole("button", { name: "Add to review queue" }).isDisabled(),
+        true,
+      );
+      await page.getByRole("button", { name: "Cancel", exact: true }).click();
+      await page.getByLabel("Social platform").selectOption("mastodon");
+      await page
+        .getByRole("button", { name: "Write a post", exact: true })
+        .click();
+      await page.getByRole("textbox", { name: "Post text" }).waitFor();
+      assert.equal(await page.getByLabel("Character count").innerText(), "0/500");
+      await page.getByLabel("Content warning").waitFor();
+      assert.match(
+        await page.getByLabel("Draft visibility").innerText(),
+        /^Visibility: public/,
+      );
+      await page.getByLabel("Reply id").fill("123");
+      await page.waitForFunction(() => {
+        const field = document.querySelector(
+          '[aria-label="Draft visibility"]',
+        );
+        return field && /^Visibility: unlisted/.test(field.textContent);
+      });
+      assert.match(
+        await page.getByLabel("Draft visibility").innerText(),
+        /^Visibility: unlisted/,
+      );
+      await page.getByRole("button", { name: "Cancel", exact: true }).click();
+      await page.getByLabel("Social platform").selectOption("bluesky");
       const texts = [
         'A literal "draft" & pipes | $HOME; café',
         "This second draft requires separate approval.",
@@ -280,6 +332,24 @@ test(
       assert.equal(
         await fs.readFile(path.join(root, "published.txt"), "utf8"),
         reviewed,
+      );
+      await page
+        .getByRole("button", { name: "Write a reply", exact: true })
+        .click();
+      await page
+        .getByLabel("Reply id")
+        .fill("at://did:plc:alice/app.bsky.feed.post/fixture");
+      const replyText = "A staged reply from compose.";
+      await page.getByRole("textbox", { name: "Reply text" }).fill(replyText);
+      assert.equal(
+        await page.getByLabel("Character count").innerText(),
+        `${replyText.length}/300`,
+      );
+      await page.getByRole("button", { name: "Add to review queue" }).click();
+      await page.getByText("Session complete", { exact: true }).waitFor();
+      assert.match(
+        await page.getByRole("log").innerText(),
+        /Staged manual draft /,
       );
       await page.getByRole("button", { name: "History", exact: true }).click();
       await page

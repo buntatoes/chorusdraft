@@ -114,6 +114,8 @@ const titles = {
   replies: "Draft replies",
   search: "Search posts",
   post: "Write a post",
+  reply: "Write a reply",
+  quote: "Write a quote",
   edit: "Edit draft",
   reject: "Reject draft",
   status: "Queue status",
@@ -121,6 +123,7 @@ const titles = {
   version: "Version",
 };
 const api = window.chorus;
+const TEXT_LIMIT = { bluesky: 300, mastodon: 500 };
 
 function App() {
   const runtime = "elixir";
@@ -137,6 +140,10 @@ function App() {
   const [error, setError] = useState("");
   const [compose, setCompose] = useState(null);
   const [text, setText] = useState("");
+  const [cw, setCw] = useState("");
+  const [replyTo, setReplyTo] = useState("");
+  const [quoteTo, setQuoteTo] = useState("");
+  const [mastodonVisibility, setMastodonVisibility] = useState("public");
   const [result, setResult] = useState("");
   const logRef = useRef(null);
   const terminalText = useRef(new TerminalText());
@@ -235,6 +242,23 @@ function App() {
   useEffect(() => {
     if (!running) runningLock.current = false;
   }, [running]);
+  useEffect(() => {
+    if (!compose || compose === "search" || platform !== "mastodon" || !api)
+      return;
+    let active = true;
+    api
+      .settings({ runtime, platform })
+      .then((info) => {
+        if (active)
+          setMastodonVisibility(info.values.STATUS_VISIBILITY || "public");
+      })
+      .catch(() => {
+        if (active) setMastodonVisibility("public");
+      });
+    return () => {
+      active = false;
+    };
+  }, [compose, platform]);
   const invoke = async (operation, opts = {}) => {
     try {
       setError("");
@@ -260,8 +284,14 @@ function App() {
   };
   const run = async (nextAction, suppliedText, target, opts = {}) => {
     if (!api || running || runningLock.current) return;
-    if (["search", "post"].includes(nextAction) && suppliedText === undefined) {
+    if (
+      ["search", "post", "reply", "quote"].includes(nextAction) &&
+      suppliedText === undefined
+    ) {
       setText("");
+      setCw("");
+      setReplyTo("");
+      setQuoteTo("");
       setCompose(nextAction);
       return;
     }
@@ -289,6 +319,7 @@ function App() {
         action: nextAction,
         text: suppliedText,
         target,
+        cw: opts.cw,
       }),
     );
   };
@@ -335,6 +366,37 @@ function App() {
     (action !== "review" || reviewReady);
   const selected = `${platform === "bluesky" ? "Bluesky" : "Mastodon"}`;
   const configure = () => api && setSettingsTarget({ runtime, platform });
+  const writeLimit = TEXT_LIMIT[platform];
+  const replyId = replyTo.trim();
+  const quoteId = quoteTo.trim();
+  const stagingReply =
+    (compose === "reply" || !!replyId) &&
+    !(compose === "quote" || !!quoteId);
+  const composeVisibility =
+    platform === "bluesky"
+      ? "public"
+      : stagingReply
+        ? "unlisted"
+        : mastodonVisibility;
+  const composeOver =
+    compose && compose !== "search" && text.length > writeLimit;
+  const composeReady =
+    !!text.trim() &&
+    !composeOver &&
+    !(replyId && quoteId) &&
+    (compose !== "reply" || !!replyId) &&
+    (compose !== "quote" || !!quoteId);
+  const submitCompose = () => {
+    if (compose === "search") {
+      run("search", text);
+      return;
+    }
+    if (!composeReady) return;
+    const action = replyId ? "reply" : quoteId ? "quote" : "post";
+    run(action, text, replyId || quoteId || undefined, {
+      cw: platform === "mastodon" && cw.trim() ? cw : undefined,
+    });
+  };
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -603,6 +665,14 @@ function App() {
                   <Icon name="draft" size={15} />
                   Write a post
                 </button>
+                <button disabled={running || !api} onClick={() => run("reply")}>
+                  <Icon name="draft" size={15} />
+                  Write a reply
+                </button>
+                <button disabled={running || !api} onClick={() => run("quote")}>
+                  <Icon name="draft" size={15} />
+                  Write a quote
+                </button>
                 <button
                   disabled={running || !api}
                   onClick={() => run("search")}
@@ -809,7 +879,13 @@ function App() {
           >
             <div className="modal-title">
               <h2 id="compose-title">
-                {compose === "post" ? "Write a post" : "Search public posts"}
+                {compose === "search"
+                  ? "Search public posts"
+                  : compose === "reply"
+                    ? "Write a reply"
+                    : compose === "quote"
+                      ? "Write a quote"
+                      : "Write a post"}
               </h2>
               <button
                 aria-label="Close dialog"
@@ -819,28 +895,103 @@ function App() {
               </button>
             </div>
             <p>
-              {compose === "post"
-                ? "Your post will be queued for review before publication."
-                : "Enter a topic or phrase to search on the selected platform."}
+              {compose === "search"
+                ? "Enter a topic or phrase to search on the selected platform."
+                : "Queued for review before publication. Bluesky is 300 characters; Mastodon is 500."}
             </p>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                run(compose, text);
+                submitCompose();
               }}
             >
               <textarea
-                autoFocus
+                autoFocus={compose !== "reply" && compose !== "quote"}
                 maxLength={10000}
-                aria-label={compose === "post" ? "Post text" : "Search query"}
+                aria-label={
+                  compose === "search"
+                    ? "Search query"
+                    : compose === "reply"
+                      ? "Reply text"
+                      : compose === "quote"
+                        ? "Quote text"
+                        : "Post text"
+                }
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder={
-                  compose === "post"
-                    ? "What would you like to say?"
-                    : "Search for a topic…"
+                  compose === "search"
+                    ? "Search for a topic…"
+                    : "What would you like to say?"
                 }
               />
+              {compose !== "search" && (
+                <>
+                  <p
+                    className="compose-count"
+                    data-over={composeOver ? "true" : "false"}
+                    aria-label="Character count"
+                  >
+                    {text.length}/{writeLimit}
+                  </p>
+                  {platform === "mastodon" && (
+                    <label className="settings-field">
+                      Content warning
+                      <input
+                        aria-label="Content warning"
+                        maxLength={10000}
+                        value={cw}
+                        onChange={(e) => setCw(e.target.value)}
+                        placeholder="Optional Mastodon content warning"
+                      />
+                    </label>
+                  )}
+                  <label className="settings-field">
+                    Reply id
+                    <input
+                      autoFocus={compose === "reply"}
+                      aria-label="Reply id"
+                      maxLength={512}
+                      value={replyTo}
+                      onChange={(e) => setReplyTo(e.target.value)}
+                      placeholder={
+                        platform === "bluesky"
+                          ? "at:// URI of the post to reply to"
+                          : "Numeric Mastodon status id"
+                      }
+                    />
+                  </label>
+                  <label className="settings-field">
+                    Quote id
+                    <input
+                      autoFocus={compose === "quote"}
+                      aria-label="Quote id"
+                      maxLength={512}
+                      value={quoteTo}
+                      onChange={(e) => setQuoteTo(e.target.value)}
+                      placeholder={
+                        platform === "bluesky"
+                          ? "at:// URI of the post to quote"
+                          : "Numeric Mastodon status id"
+                      }
+                    />
+                  </label>
+                  <p
+                    className="compose-visibility"
+                    aria-label="Draft visibility"
+                  >
+                    Visibility: {composeVisibility}
+                    {platform === "mastodon"
+                      ? ". Replies to others stage as unlisted. Originals and quotes use Default visibility from Settings."
+                      : ""}
+                  </p>
+                  {replyId && quoteId && (
+                    <p className="settings-error" role="alert">
+                      Choose either a reply or quote.
+                    </p>
+                  )}
+                </>
+              )}
               <div className="modal-footer">
                 <button
                   type="button"
@@ -852,9 +1003,9 @@ function App() {
                 <button
                   className="button primary"
                   type="submit"
-                  disabled={!text.trim()}
+                  disabled={!composeReady}
                 >
-                  {compose === "post" ? "Add to review queue" : "Search posts"}
+                  {compose === "search" ? "Search posts" : "Add to review queue"}
                   <Icon name="arrow" size={16} />
                 </button>
               </div>

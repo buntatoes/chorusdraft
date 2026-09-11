@@ -8,6 +8,17 @@ defmodule ChorusDraft.HTTP do
         if get_in(opts[:body], ["password"]) != "desktop-fixture-password", do: raise("GUI credentials were not passed")
         IO.puts("Credential check: " <> opts[:body]["password"])
         %{"did" => "did:plc:desktop", "accessJwt" => "fixture-access", "refreshJwt" => "fixture-refresh"}
+      String.ends_with?(url, "app.bsky.feed.getPosts") ->
+        %{
+          "posts" => [
+            %{
+              "uri" => "at://did:plc:alice/app.bsky.feed.post/fixture",
+              "cid" => "bafy-fixture",
+              "author" => %{"did" => "did:plc:alice", "handle" => "alice.test"},
+              "record" => %{"text" => "public source"}
+            }
+          ]
+        }
       String.ends_with?(url, "com.atproto.repo.createRecord") ->
         File.write!(Path.join(System.fetch_env!("CHORUSDRAFT_ROOT"), "published.txt"), opts[:body]["record"]["text"])
         %{"uri" => "at://did:plc:desktop/app.bsky.feed.post/fixture"}

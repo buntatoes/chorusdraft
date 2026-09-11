@@ -128,13 +128,35 @@ class DesktopTests(unittest.TestCase):
                          ('elixir', 'bluesky', ['edit', 'draft-id', text]))
         self.assertEqual(arguments({'runtime': 'elixir', 'platform': 'mastodon', 'action': 'reject', 'text': 'draft-id'}),
                          ('elixir', 'mastodon', ['reject', 'draft-id']))
+        uri = 'at://did:web:bsky.much-longer.subdomain.example.social/app.bsky.feed.post/3jzfciyerx22f'
+        self.assertGreater(len(uri), 80)
+        self.assertEqual(
+            arguments({'runtime': 'elixir', 'platform': 'bluesky', 'action': 'reply', 'text': text, 'target': uri}),
+            ('elixir', 'bluesky', ['reply', uri, text]))
+        self.assertEqual(
+            arguments({'runtime': 'elixir', 'platform': 'bluesky', 'action': 'quote', 'text': text, 'target': uri}),
+            ('elixir', 'bluesky', ['quote', uri, text]))
+        self.assertEqual(
+            arguments({'runtime': 'elixir', 'platform': 'mastodon', 'action': 'post', 'text': text, 'cw': 'note'}),
+            ('elixir', 'mastodon', ['post', text, '--cw', 'note']))
+        self.assertEqual(
+            arguments({'runtime': 'elixir', 'platform': 'mastodon', 'action': 'reply',
+                       'text': text, 'target': '123', 'cw': 'note'}),
+            ('elixir', 'mastodon', ['reply', '123', text, '--cw', 'note']))
         for request in ({'runtime': 'elixir', 'platform': 'bluesky', 'action': '--publish'},
                         {'runtime': 'python', 'platform': 'mastodon', 'action': 'review'},
                         {'runtime': 'elixir', 'platform': '../bluesky', 'action': 'review'},
                         {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'edit', 'text': text},
-                        {'runtime': 'elixir', 'platform': 'mastodon', 'action': 'reject', 'text': 'draft\nid'}):
+                        {'runtime': 'elixir', 'platform': 'mastodon', 'action': 'reject', 'text': 'draft\nid'},
+                        {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'publish', 'text': text},
+                        {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'reply', 'text': text},
+                        {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'quote', 'text': text, 'target': '--publish'},
+                        {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'post', 'text': text, 'cw': 'note'},
+                        {'runtime': 'elixir', 'platform': 'mastodon', 'action': 'reply', 'text': text, 'target': '12 3'}):
             with self.assertRaises(ValueError):
                 arguments(request)
+        self.assertNotIn('--publish', arguments(
+            {'runtime': 'elixir', 'platform': 'mastodon', 'action': 'post', 'text': text, 'cw': 'note'})[2])
 
     def test_review_input_requires_a_live_session(self):
         class Finished:

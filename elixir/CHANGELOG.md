@@ -2,6 +2,15 @@
 
 Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
+## Unreleased
+
+Desktop compose stages the same fields the bot already stages: body text with
+a live 300-character count on Bluesky and 500 on Mastodon, a Mastodon content
+warning, optional reply id and quote id, and the visibility the draft will
+store. **Write a reply** and **Write a quote** are allowed through
+desktop `bot:run` the same way **Write a post** is. Compose still queues for
+review. There is no desktop `--publish`.
+
 ## 0.53.2 — 2026-09-10
 
 Current published GitHub Release. Earlier GitHub Releases and tags
