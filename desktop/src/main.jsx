@@ -9,6 +9,7 @@ import {
   composeAction,
   composeCanSubmit,
   draftVisibility,
+  validPostId,
 } from "./compose.mjs";
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -534,6 +535,7 @@ function App() {
     }
   };
   const useHit = (nextAction, hit) => {
+    if (!validPostId(platform, hit.id)) return;
     if (nextAction === "reply") run("reply", undefined, undefined, { replyTo: hit.id });
     else if (nextAction === "quote")
       run("quote", undefined, undefined, { quoteTo: hit.id });
@@ -949,7 +951,9 @@ function App() {
                           <button
                             type="button"
                             className="text-button"
-                            disabled={running || !api}
+                            disabled={
+                              running || !api || !validPostId(platform, hit.id)
+                            }
                             onClick={() => useHit("reply", hit)}
                           >
                             Reply
@@ -957,7 +961,9 @@ function App() {
                           <button
                             type="button"
                             className="text-button"
-                            disabled={running || !api}
+                            disabled={
+                              running || !api || !validPostId(platform, hit.id)
+                            }
                             onClick={() => useHit("quote", hit)}
                           >
                             Quote
@@ -965,7 +971,9 @@ function App() {
                           <button
                             type="button"
                             className="text-button"
-                            disabled={running || !api}
+                            disabled={
+                              running || !api || !validPostId(platform, hit.id)
+                            }
                             onClick={() => useHit("discover", hit)}
                           >
                             Discover

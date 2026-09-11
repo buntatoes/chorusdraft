@@ -99,9 +99,11 @@ then confirms from the bot `confirm` event with an id. Confirming sends
 `approve`. Cancel sends `quit`. The app refuses approve until that event.
 The bot still refuses ids that are not your posts.
 
-**Search posts** runs `search`. Public hits are shown as cards with author,
-id, and text. **Reply** and **Quote** open compose with that id filled in.
-**Discover** starts discovery using that id. **Copy id** puts the id on the
+**Search posts** runs `search`. Each public hit is one card with author, id,
+and text. Lines inside the post body are not extra cards. **Reply** and
+**Quote** open compose with that id filled in. **Discover** starts discovery
+using that id. Those three actions require the same Bluesky at:// post URI or
+Mastodon numeric status id as compose. **Copy id** puts the id on the
 clipboard.
 
 **Start automatic mode** can post only a new original or an eligible public

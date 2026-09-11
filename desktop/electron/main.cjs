@@ -335,7 +335,8 @@ app
         ["discover", "targets"].includes(request.action) &&
         request.text != null &&
         String(request.text).trim() !== "" &&
-        !validText(request.text, 10000)
+        (!validText(request.text, 10000) ||
+          String(request.text).trimStart().startsWith("-"))
       )
         throw new Error("Enter text for this action (maximum 10,000 characters).");
       if (request.action === "delete" && !validPostId(request.platform, request.text))

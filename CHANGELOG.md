@@ -2,6 +2,13 @@
 
 Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
+## Unreleased
+
+Desktop search cards use one inspect_posts put per `output` event. Lines in
+the post body that look like `@author | id` stay on that card. Discover and
+Targets optional text from the desktop cannot start with `-`. Reply, quote,
+and delete already refuse `--` ids.
+
 ## 0.54.0 — 2026-09-11
 
 Current published GitHub Release. Earlier GitHub Releases and tags
