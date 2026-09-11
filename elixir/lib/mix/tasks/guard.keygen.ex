@@ -34,7 +34,7 @@ defmodule Mix.Tasks.Guard.Keygen do
 
     File.mkdir_p!(Path.dirname(private_path))
     File.write!(private_path, Signature.encode_private_key(private_key))
-    File.chmod!(private_path, 0o600)
+    ChorusDraft.Platform.private_created_file!(private_path)
 
     File.mkdir_p!(Path.dirname(public_path))
     File.write!(public_path, Signature.encode_public_key(Signature.public_key(private_key)))

@@ -139,7 +139,7 @@ defmodule Mix.Tasks.Guard.Sign do
       private_key = :crypto.strong_rand_bytes(32)
       File.mkdir_p!(Path.dirname(path))
       File.write!(path, Signature.encode_private_key(private_key))
-      File.chmod!(path, 0o600)
+      ChorusDraft.Platform.private_created_file!(path)
       private_key
     end
   end
