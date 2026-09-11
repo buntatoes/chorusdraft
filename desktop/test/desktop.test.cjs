@@ -272,11 +272,22 @@ test(
       await page
         .getByRole("button", { name: "Open review", exact: true })
         .click();
-      await page
+      const card = page.getByRole("region", { name: "Draft review" });
+      await card
         .getByRole("button", { name: "Publish this draft", exact: true })
         .waitFor();
+      assert.equal(await card.getByLabel("Draft text").innerText(), edited);
+      await card.getByText("manual", { exact: true }).waitFor();
+      await card.getByText("public", { exact: true }).waitFor();
+      await card.getByText("pending", { exact: true }).waitFor();
+      assert.equal(await card.getByText(texts[0], { exact: true }).count(), 0);
+      assert.equal(
+        await page.getByRole("log").getByRole("button").count(),
+        0,
+      );
       const log = await page.getByRole("log").innerText();
-      assert.ok(log.includes(edited));
+      assert.ok(log.includes("\n  " + edited + "\n"));
+      assert.notEqual(await page.getByRole("log").locator("pre").innerText(), edited);
       assert.ok(!log.includes(texts[0]));
       assert.ok(!log.includes("desktop-fixture-password"));
       assert.ok(log.includes("[redacted]"));
@@ -316,7 +327,7 @@ test(
       await page
         .getByRole("button", { name: "Publish this draft", exact: true })
         .waitFor();
-      // Draft text is indented by the bot so it never starts a line.
+      assert.equal(await card.getByLabel("Draft text").innerText(), reviewed);
       assert.ok(
         (await page.getByRole("log").innerText()).includes(
           "\n  Edited during review.\n  Second line.\n",
@@ -333,12 +344,11 @@ test(
         await fs.readFile(path.join(root, "published.txt"), "utf8"),
         reviewed,
       );
+      const replyUri = "at://did:plc:alice/app.bsky.feed.post/fixture";
       await page
         .getByRole("button", { name: "Write a reply", exact: true })
         .click();
-      await page
-        .getByLabel("Reply id")
-        .fill("at://did:plc:alice/app.bsky.feed.post/fixture");
+      await page.getByLabel("Reply id").fill(replyUri);
       const replyText = "A staged reply from compose.";
       await page.getByRole("textbox", { name: "Reply text" }).fill(replyText);
       assert.equal(
@@ -351,6 +361,18 @@ test(
         await page.getByRole("log").innerText(),
         /Staged manual draft /,
       );
+      await page
+        .getByRole("button", { name: "Open review", exact: true })
+        .click();
+      await card
+        .getByRole("button", { name: "Publish this draft", exact: true })
+        .waitFor();
+      assert.equal(await card.getByLabel("Draft text").innerText(), replyText);
+      await card.getByText("Reply: " + replyUri, { exact: true }).waitFor();
+      await page.getByRole("button", { name: "Stop session" }).click();
+      await page.getByRole("region", { name: "Draft review" }).waitFor({
+        state: "hidden",
+      });
       await page.getByRole("button", { name: "History", exact: true }).click();
       await page
         .getByRole("heading", { name: "History", exact: true })
