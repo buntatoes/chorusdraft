@@ -1,6 +1,6 @@
 import { Settings, History, Queue } from "./Privacy.jsx";
 import { TerminalText } from "./terminal.mjs";
-import { reviewDraftFrom } from "./review.mjs";
+import { reviewCardFrom, reviewDraftFrom } from "./review.mjs";
 import {
   TEXT_LIMIT,
   characterCount,
@@ -109,6 +109,102 @@ function Logo() {
         />
       </svg>
     </span>
+  );
+}
+function ReviewDraft({
+  draft,
+  editing,
+  editText,
+  saving,
+  onEditText,
+  onCancelEdit,
+  onStartEdit,
+  onSaveEdit,
+  onReject,
+  onPublish,
+}) {
+  const card = reviewCardFrom(draft);
+  const statusClass = ["pending", "publishing", "uncertain"].includes(
+    card.status,
+  )
+    ? `queue-status ${card.status}`
+    : "";
+  return (
+    <section className="review-panel" aria-label="Draft review">
+      <div className="review-panel-header">
+        <h2>Review</h2>
+      </div>
+      <article className="history-card review-draft">
+        <div className="history-meta">
+          {card.status ? (
+            <span className={statusClass || undefined}>{card.status}</span>
+          ) : null}
+          {card.action ? <span>{card.action}</span> : null}
+          {card.visibility ? <span>{card.visibility}</span> : null}
+          {card.id ? <span className="review-draft-id">{card.id}</span> : null}
+        </div>
+        {card.cw ? <p>Content warning: {card.cw}</p> : null}
+        {card.reply_to ? <p>Reply: {card.reply_to}</p> : null}
+        {card.quote_to ? <p>Quote: {card.quote_to}</p> : null}
+        {editing ? (
+          <>
+            <label className="settings-field">
+              Replacement text
+              <textarea
+                aria-label="Replacement draft text"
+                maxLength={10000}
+                value={editText}
+                onChange={(e) => onEditText(e.target.value)}
+              />
+            </label>
+            <div className="review-actions">
+              <button
+                className="button secondary"
+                disabled={saving}
+                onClick={onCancelEdit}
+              >
+                Cancel
+              </button>
+              <button
+                className="button primary"
+                disabled={saving || !editText.trim()}
+                onClick={onSaveEdit}
+              >
+                Save edit
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <pre aria-label="Draft text">{card.text}</pre>
+            <div className="review-actions">
+              <span>Publish this exact draft?</span>
+              <button
+                className="button secondary"
+                disabled={saving}
+                onClick={onReject}
+              >
+                Reject draft
+              </button>
+              <button
+                className="button secondary"
+                disabled={saving}
+                onClick={onStartEdit}
+              >
+                Edit text
+              </button>
+              <button
+                className="button primary"
+                disabled={saving}
+                onClick={onPublish}
+              >
+                Publish this draft
+              </button>
+            </div>
+          </>
+        )}
+      </article>
+    </section>
   );
 }
 const titles = {
@@ -227,10 +323,6 @@ function App() {
       if (fresh.length !== activityParts.current.length) {
         activityParts.current = fresh;
         setActivity(fresh.map((p) => p.text).join(""));
-        if (!fresh.length) {
-          approvalAvailable.current = false;
-          setReviewPrompt(false);
-        }
       }
     }, 60000);
     return () => clearInterval(timer);
@@ -338,7 +430,7 @@ function App() {
     if (typeof value === "string") {
       const trimmed = value.trim().toLowerCase();
       if (trimmed === "e") {
-        setReviewEdit(reviewDraft?.text || "");
+        setReviewEdit(reviewCardFrom(reviewDraft).text);
         setEditingReview(true);
         return true;
       }
@@ -699,10 +791,50 @@ function App() {
                   Listen for mentions
                 </button>
               </div>
-              <section
-                className="activity-panel"
-                aria-label="Activity and review"
-              >
+              {reviewReady && (
+                <ReviewDraft
+                  draft={reviewDraft}
+                  editing={editingReview}
+                  editText={reviewEdit}
+                  saving={savingReview}
+                  onEditText={setReviewEdit}
+                  onCancelEdit={() => {
+                    setEditingReview(false);
+                    setReviewEdit("");
+                    setSavingReview(false);
+                  }}
+                  onStartEdit={() => {
+                    if (savingReviewLock.current) return;
+                    setResponse("");
+                    setReviewEdit(reviewCardFrom(reviewDraft).text);
+                    setEditingReview(true);
+                  }}
+                  onSaveEdit={async () => {
+                    const next = reviewEdit.trim();
+                    if (!next || savingReviewLock.current) return;
+                    savingReviewLock.current = true;
+                    setSavingReview(true);
+                    try {
+                      if (
+                        !(await send(
+                          { action: "edit", text: reviewEdit },
+                          { force: true },
+                        ))
+                      )
+                        return;
+                      setEditingReview(false);
+                      setReviewEdit("");
+                    } finally {
+                      savingReviewLock.current = false;
+                      setSavingReview(false);
+                      setEditingReview(false);
+                    }
+                  }}
+                  onReject={() => send("d")}
+                  onPublish={() => send("y")}
+                />
+              )}
+              <section className="activity-panel" aria-label="Activity">
                 <div className="activity-header">
                   <div>
                     <Icon name="terminal" size={18} />
@@ -733,101 +865,10 @@ function App() {
                         <Icon name="terminal" size={25} />
                       </span>
                       <h3>A quiet moment before you begin.</h3>
-                      <p>
-                        Your bot’s activity and review prompts will appear here.
-                      </p>
+                      <p>Your bot’s activity will appear here.</p>
                     </div>
                   )}
                 </div>
-                {reviewReady && (
-                  <div className="review-actions">
-                    {editingReview ? (
-                      <>
-                        <label className="settings-field">
-                          Replacement text
-                          <textarea
-                            aria-label="Replacement draft text"
-                            maxLength={10000}
-                            value={reviewEdit}
-                            onChange={(e) => setReviewEdit(e.target.value)}
-                          />
-                        </label>
-                        <button
-                          className="button secondary"
-                          disabled={savingReview}
-                          onClick={() => {
-                            setEditingReview(false);
-                            setReviewEdit("");
-                            setSavingReview(false);
-                          }}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          className="button primary"
-                          disabled={savingReview || !reviewEdit.trim()}
-                          onClick={async () => {
-                            const next = reviewEdit.trim();
-                            if (!next || savingReviewLock.current) return;
-                            savingReviewLock.current = true;
-                            setSavingReview(true);
-                            try {
-                              if (
-                                !(await send(
-                                  { action: "edit", text: reviewEdit },
-                                  { force: true },
-                                ))
-                              )
-                                return;
-                              setEditingReview(false);
-                              setReviewEdit("");
-                            } finally {
-                              savingReviewLock.current = false;
-                              setSavingReview(false);
-                              setEditingReview(false);
-                            }
-                          }}
-                        >
-                          Save edit
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <span>Publish the exact draft displayed above?</span>
-                        <button
-                          className="button secondary"
-                          disabled={savingReview}
-                          onClick={() => send("d")}
-                        >
-                          Reject draft
-                        </button>
-                        <button
-                          className="button secondary"
-                          disabled={savingReview}
-                          onClick={() => {
-                            if (savingReviewLock.current) return;
-                            setResponse("");
-                            setReviewEdit(
-                              reviewDraft && typeof reviewDraft.text === "string"
-                                ? reviewDraft.text
-                                : "",
-                            );
-                            setEditingReview(true);
-                          }}
-                        >
-                          Edit text
-                        </button>
-                        <button
-                          className="button primary"
-                          disabled={savingReview}
-                          onClick={() => send("y")}
-                        >
-                          Publish this draft
-                        </button>
-                      </>
-                    )}
-                  </div>
-                )}
                 <form
                   className="response-bar"
                   onSubmit={(e) => {

@@ -632,13 +632,35 @@ h1 {
   align-items: center;
   gap: 7px;
 }
+.review-panel {
+  margin: 0 0 20px;
+}
+.review-panel-header h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+  color: #252938;
+}
+.review-draft .history-meta {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.review-draft-id {
+  overflow-wrap: anywhere;
+}
+.review-draft > p {
+  font-size: 12px;
+  color: #616b80;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
 .review-actions {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
-  padding: 12px 18px;
-  background: #faf8ff;
+  padding: 8px 0 0;
+  background: none;
   border-top: 1px solid #e8e1f7;
 }
 .review-actions > span {
