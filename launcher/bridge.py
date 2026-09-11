@@ -24,7 +24,7 @@ def settings(request):
 ACTIONS = {
     'setup', 'draft', 'review', 'start', 'automatic', 'listen', 'replies',
     'search', 'post', 'reply', 'quote', 'help', 'version', 'status', 'reject',
-    'edit',
+    'edit', 'discover', 'targets', 'delete',
 }
 LINE_LIMIT = 65536
 
@@ -94,6 +94,19 @@ def arguments(request):
             if not isinstance(cw, str) or not cw.strip() or len(cw) > 500 or '\x00' in cw:
                 raise ValueError('Enter a content warning (maximum 500 characters).')
             args.extend(['--cw', cw])
+    if action in ('discover', 'targets'):
+        text = request.get('text')
+        if text is None or (isinstance(text, str) and not text.strip()):
+            pass
+        elif not isinstance(text, str) or len(text) > 10000 or '\x00' in text:
+            raise ValueError('Enter text for this action (maximum 10,000 characters).')
+        else:
+            args.append(text)
+    if action == 'delete':
+        text = request.get('text')
+        if not valid_post_id(text, platform):
+            raise ValueError('Choose a post to delete.')
+        args.append(text)
     if action == 'reject':
         text = request.get('text')
         if not valid_id(text):
@@ -189,6 +202,9 @@ def serve(root):
                     break
                 if kind == 'review':
                     emit('review', draft=value)
+                elif kind == 'confirm':
+                    payload = value if isinstance(value, dict) else {}
+                    emit('confirm', action=payload.get('action'), id=payload.get('id'))
                 elif kind == 'error':
                     emit('error', value=value, active=False)
                 else:

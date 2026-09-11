@@ -1,6 +1,8 @@
 import { Settings, History, Queue } from "./Privacy.jsx";
 import { TerminalText } from "./terminal.mjs";
 import { reviewCardFrom, reviewDraftFrom } from "./review.mjs";
+import { confirmDeleteFrom } from "./confirm.mjs";
+import { searchHitsFrom } from "./search.mjs";
 import {
   TEXT_LIMIT,
   characterCount,
@@ -74,6 +76,12 @@ function Icon({ name, size = 20 }) {
     ),
     spark: (
       <path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z" />
+    ),
+    target: (
+      <>
+        <circle cx="12" cy="12" r="8" />
+        <circle cx="12" cy="12" r="3" />
+      </>
     ),
   };
   return (
@@ -219,6 +227,9 @@ const titles = {
   post: "Write a post",
   reply: "Write a reply",
   quote: "Write a quote",
+  discover: "Discover",
+  targets: "Targets",
+  delete: "Delete a post",
   edit: "Edit draft",
   reject: "Reject draft",
   status: "Queue status",
@@ -255,8 +266,15 @@ function App() {
   const [reviewEdit, setReviewEdit] = useState("");
   const [savingReview, setSavingReview] = useState(false);
   const [reviewDraft, setReviewDraft] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [searchHits, setSearchHits] = useState([]);
+  const [copiedHit, setCopiedHit] = useState("");
+  const [deletePrompt, setDeletePrompt] = useState(false);
+  const [deleteId, setDeleteId] = useState("");
   const savingReviewLock = useRef(false);
   const runningLock = useRef(false);
+  const deleteAvailable = useRef(false);
+  const actionRef = useRef(null);
   useEffect(() => {
     if (!api) {
       setError("Open ChorusDraft in the desktop app to use the bot controls.");
@@ -287,6 +305,11 @@ function App() {
               .join("")
               .slice(-160000),
           );
+          if (actionRef.current === "search") {
+            const hits = searchHitsFrom(output);
+            if (hits.length)
+              setSearchHits((previous) => previous.concat(hits));
+          }
         }
       }
       const draft = reviewDraftFrom(event);
@@ -299,7 +322,13 @@ function App() {
         setSavingReview(false);
         savingReviewLock.current = false;
       }
+      const deleted = confirmDeleteFrom(event);
+      if (deleted !== null) {
+        deleteAvailable.current = true;
+        setDeleteConfirm(deleted);
+      }
       if (event.type === "started") {
+        actionRef.current = event.action;
         setRunning(true);
         setAction(event.action);
       }
@@ -323,6 +352,12 @@ function App() {
       if (fresh.length !== activityParts.current.length) {
         activityParts.current = fresh;
         setActivity(fresh.map((p) => p.text).join(""));
+        if (!fresh.length) {
+          approvalAvailable.current = false;
+          deleteAvailable.current = false;
+          setReviewPrompt(false);
+          setDeleteConfirm(null);
+        }
       }
     }, 60000);
     return () => clearInterval(timer);
@@ -332,7 +367,10 @@ function App() {
   }, [activity]);
   useEffect(() => {
     const close = (e) => {
-      if (e.key === "Escape") setCompose(null);
+      if (e.key === "Escape") {
+        setCompose(null);
+        setDeletePrompt(false);
+      }
     };
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
@@ -387,15 +425,28 @@ function App() {
     ) {
       setText("");
       setCw("");
-      setReplyTo("");
-      setQuoteTo("");
+      setReplyTo(opts.replyTo || "");
+      setQuoteTo(opts.quoteTo || "");
+      setDeletePrompt(false);
       setCompose(nextAction);
+      return;
+    }
+    if (
+      nextAction === "delete" &&
+      (suppliedText === undefined || !String(suppliedText).trim())
+    ) {
+      setDeleteId("");
+      setCompose(null);
+      setDeletePrompt(true);
       return;
     }
     runningLock.current = true;
     setCompose(null);
+    setDeletePrompt(false);
     if (!opts.stay) setPage("overview");
     activityParts.current = [];
+    actionRef.current = nextAction;
+    if (nextAction === "search") setSearchHits([]);
     setAction(nextAction);
     setRunning(true);
     setActivity("");
@@ -403,12 +454,14 @@ function App() {
     setResponse("");
     terminalText.current.reset();
     approvalAvailable.current = false;
+    deleteAvailable.current = false;
     setReviewPrompt(false);
     setEditingReview(false);
     setReviewEdit("");
     setSavingReview(false);
     savingReviewLock.current = false;
     setReviewDraft(null);
+    setDeleteConfirm(null);
     await invoke(() =>
       api.run({
         runtime,
@@ -426,10 +479,12 @@ function App() {
       return false;
     if (action === "review" && !opts.force && !approvalAvailable.current)
       return false;
+    if (action === "delete" && !opts.force && !deleteAvailable.current)
+      return false;
     let payload = value;
     if (typeof value === "string") {
       const trimmed = value.trim().toLowerCase();
-      if (trimmed === "e") {
+      if (trimmed === "e" && action === "review") {
         setReviewEdit(reviewCardFrom(reviewDraft).text);
         setEditingReview(true);
         return true;
@@ -444,25 +499,51 @@ function App() {
               : { action: "skip" };
     }
     approvalAvailable.current = false;
+    deleteAvailable.current = false;
     const ok = await invoke(() => api.respond(payload), { keepRunning: true });
     if (ok) {
       setReviewPrompt(false);
+      setDeleteConfirm(null);
       setResponse("");
       // Prevent repeated approval clicks before the next prompt arrives.
       setActivity((previous) => previous + "\n");
     } else if (action === "review") {
       approvalAvailable.current = true;
+    } else if (action === "delete") {
+      deleteAvailable.current = true;
     }
     return ok;
   };
   const reviewReady = running && action === "review" && reviewPrompt;
+  const deleteReady = running && action === "delete" && deleteConfirm !== null;
   const canRespond =
     running &&
     !editingReview &&
     !savingReview &&
-    (action !== "review" || reviewReady);
+    (action !== "review" || reviewReady) &&
+    (action !== "delete" || deleteReady);
   const selected = `${platform === "bluesky" ? "Bluesky" : "Mastodon"}`;
   const configure = () => api && setSettingsTarget({ runtime, platform });
+  const copyHitId = async (id) => {
+    if (!api) return;
+    try {
+      await api.copy(id);
+      setCopiedHit(id);
+    } catch {
+      setError("This id could not be copied to the clipboard.");
+    }
+  };
+  const useHit = (nextAction, hit) => {
+    if (nextAction === "reply") run("reply", undefined, undefined, { replyTo: hit.id });
+    else if (nextAction === "quote")
+      run("quote", undefined, undefined, { quoteTo: hit.id });
+    else if (nextAction === "discover") run("discover", hit.id);
+  };
+  const submitDelete = () => {
+    const id = deleteId.trim();
+    if (!id) return;
+    run("delete", id);
+  };
   const writeLimit = TEXT_LIMIT[platform];
   const replyId = replyTo.trim();
   const quoteId = quoteTo.trim();
@@ -768,6 +849,27 @@ function App() {
                 </button>
                 <button
                   disabled={running || !api}
+                  onClick={() => run("discover")}
+                >
+                  <Icon name="spark" size={15} />
+                  Discover
+                </button>
+                <button
+                  disabled={running || !api}
+                  onClick={() => run("targets")}
+                >
+                  <Icon name="target" size={15} />
+                  Targets
+                </button>
+                <button
+                  disabled={running || !api}
+                  onClick={() => run("delete")}
+                >
+                  <Icon name="close" size={15} />
+                  Delete a post
+                </button>
+                <button
+                  disabled={running || !api}
                   onClick={() => run("replies")}
                 >
                   Draft replies
@@ -822,6 +924,65 @@ function App() {
                   onPublish={() => send("y")}
                 />
               )}
+              {searchHits.length > 0 && (
+                <section className="search-hits" aria-label="Search results">
+                  <div className="section-title">
+                    <h2>Search results</h2>
+                    <span>{searchHits.length}</span>
+                  </div>
+                  <div className="history-list">
+                    {searchHits.map((hit, index) => (
+                      <article
+                        className="history-card search-hit"
+                        key={`${hit.id}-${index}`}
+                        data-author={hit.author}
+                        data-post-id={hit.id}
+                      >
+                        <div className="history-meta">
+                          <span className="search-hit-author">
+                            @{hit.author}
+                          </span>
+                          <code className="search-hit-id">{hit.id}</code>
+                        </div>
+                        <pre>{hit.text}</pre>
+                        <div className="queue-actions">
+                          <button
+                            type="button"
+                            className="text-button"
+                            disabled={running || !api}
+                            onClick={() => useHit("reply", hit)}
+                          >
+                            Reply
+                          </button>
+                          <button
+                            type="button"
+                            className="text-button"
+                            disabled={running || !api}
+                            onClick={() => useHit("quote", hit)}
+                          >
+                            Quote
+                          </button>
+                          <button
+                            type="button"
+                            className="text-button"
+                            disabled={running || !api}
+                            onClick={() => useHit("discover", hit)}
+                          >
+                            Discover
+                          </button>
+                          <button
+                            type="button"
+                            className="text-button"
+                            onClick={() => copyHitId(hit.id)}
+                          >
+                            {copiedHit === hit.id ? "Copied id" : "Copy id"}
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              )}
               <section className="activity-panel" aria-label="Activity">
                 <div className="activity-header">
                   <div>
@@ -857,6 +1018,25 @@ function App() {
                     </div>
                   )}
                 </div>
+                {deleteReady && (
+                  <div className="review-actions">
+                    <span>
+                      Delete {deleteConfirm || "this post"} from your account?
+                    </span>
+                    <button
+                      className="button secondary"
+                      onClick={() => send({ action: "quit" })}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="button primary"
+                      onClick={() => send({ action: "approve" })}
+                    >
+                      Delete this post
+                    </button>
+                  </div>
+                )}
                 <form
                   className="response-bar"
                   onSubmit={(e) => {
@@ -1045,6 +1225,62 @@ function App() {
                   disabled={!composeReady}
                 >
                   {compose === "search" ? "Search posts" : "Add to review queue"}
+                  <Icon name="arrow" size={16} />
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+      {deletePrompt && (
+        <div className="modal-backdrop">
+          <section
+            className="compose-modal delete-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-title"
+          >
+            <div className="modal-title">
+              <h2 id="delete-title">Delete a post</h2>
+              <button
+                aria-label="Close dialog"
+                onClick={() => setDeletePrompt(false)}
+              >
+                <Icon name="close" />
+              </button>
+            </div>
+            <p>
+              Enter the id of a post on your account. ChorusDraft asks before
+              deleting.
+            </p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                submitDelete();
+              }}
+            >
+              <input
+                autoFocus
+                maxLength={512}
+                aria-label="Post id"
+                value={deleteId}
+                onChange={(e) => setDeleteId(e.target.value)}
+                placeholder="Post id"
+              />
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="button secondary"
+                  onClick={() => setDeletePrompt(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="button primary"
+                  type="submit"
+                  disabled={!deleteId.trim()}
+                >
+                  Ask to confirm
                   <Icon name="arrow" size={16} />
                 </button>
               </div>

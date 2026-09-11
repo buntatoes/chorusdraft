@@ -79,6 +79,9 @@ test(
       page = await app.firstWindow();
       page.setDefaultTimeout(30000);
       await page.getByRole("heading", { name: "Your bot workspace" }).waitFor();
+      await page.getByRole("button", { name: "Discover", exact: true }).waitFor();
+      await page.getByRole("button", { name: "Targets", exact: true }).waitFor();
+      await page.getByRole("button", { name: "Delete a post", exact: true }).waitFor();
       await page.evaluate(() => {
         window.sessionEvents = [];
         window.chorus.onEvent((event) => {
