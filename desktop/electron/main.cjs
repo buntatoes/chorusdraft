@@ -292,6 +292,9 @@ app
         "status",
         "reject",
         "edit",
+        "discover",
+        "targets",
+        "delete",
       ];
       if (!actions.includes(request.action) || running)
         throw new Error("Choose an action after the current session ends.");
@@ -319,6 +322,15 @@ app
             "Enter a content warning (maximum 500 characters).",
           );
       }
+      if (
+        ["discover", "targets"].includes(request.action) &&
+        request.text != null &&
+        String(request.text).trim() !== "" &&
+        !validText(request.text, 10000)
+      )
+        throw new Error("Enter text for this action (maximum 10,000 characters).");
+      if (request.action === "delete" && !validPostId(request.platform, request.text))
+        throw new Error("Choose a post to delete.");
       if (request.action === "reject" && !validId(request.text))
         throw new Error("Choose a pending or uncertain draft to reject.");
       if (
