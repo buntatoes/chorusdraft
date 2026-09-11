@@ -83,12 +83,25 @@ the edit form is open so `y` cannot publish the original. After you save,
 review asks again. You can also send `y`, `e`, `d`, or `q` through the
 response field when those buttons are showing.
 
+**Discover** and **Targets** stage commentary the same way as `discover` and
+`targets` on the command line. Discovery and target commentary still need
+review; automatic mode does not publish them. **Delete a post** asks for a
+post id, then confirms from the bot `confirm` event. Confirming sends
+`approve`. Cancel sends `quit`. The bot still refuses ids that are not your
+posts.
+
+**Search posts** runs `search`. Public hits are shown as cards with author,
+id, and text. **Reply** and **Quote** open compose with that id filled in.
+**Discover** starts discovery using that id. **Copy id** puts the id on the
+clipboard.
+
 **Start automatic mode** can post only a new original or an eligible public
 mention reply from that run. Manual posts, existing drafts, quotes, targets,
 and discovery still need review.
 
 **Start monitoring** keeps drafting. **Stop session** ends a running session.
-Closing the window asks before stopping an active bot.
+Closing the window asks before stopping an active bot. `import` and
+`service` stay command-line only.
 
 ## Account credentials
 
@@ -197,6 +210,7 @@ Bot events, one JSON object per line on stdout:
 ```json
 {"event":"log","value":"message\n"}
 {"event":"review","draft":{"id":"draft-id","action":"ai_generated","visibility":"public","text":"Exact draft text","cw":null,"reply_to":null,"quote_to":null,"status":"pending"}}
+{"event":"confirm","action":"delete","id":"post-id"}
 ```
 
 Commands, one JSON object per line on stdin:
@@ -214,7 +228,10 @@ cannot contain NUL or C0 controls other than tab and newline. EOF or a read
 error is `quit`. The desktop rejects a bot line larger than 64 KiB.
 
 There is no `publish` action. Approval is `approve` after a `review` event.
-CLI review without this environment still uses the `[y/N/e/d/q]` prompt.
+Delete confirmation is `approve` after a `confirm` event with
+`action` `delete`. CLI review without this environment still uses the
+`[y/N/e/d/q]` prompt. CLI delete without this environment still requires
+typing `delete`.
 
 ## Configuration and upgrades
 

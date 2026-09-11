@@ -1,6 +1,8 @@
 import { Settings, History, Queue } from "./Privacy.jsx";
 import { TerminalText } from "./terminal.mjs";
 import { reviewDraftFrom } from "./review.mjs";
+import { confirmDeleteFrom } from "./confirm.mjs";
+import { searchHitsFrom } from "./search.mjs";
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
@@ -68,6 +70,12 @@ function Icon({ name, size = 20 }) {
     spark: (
       <path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z" />
     ),
+    target: (
+      <>
+        <circle cx="12" cy="12" r="8" />
+        <circle cx="12" cy="12" r="3" />
+      </>
+    ),
   };
   return (
     <svg
@@ -116,6 +124,9 @@ const titles = {
   post: "Write a post",
   reply: "Write a reply",
   quote: "Write a quote",
+  discover: "Discover",
+  targets: "Targets",
+  delete: "Delete a post",
   edit: "Edit draft",
   reject: "Reject draft",
   status: "Queue status",
@@ -124,6 +135,32 @@ const titles = {
 };
 const api = window.chorus;
 const TEXT_LIMIT = { bluesky: 300, mastodon: 500 };
+const promptCopy = {
+  discover: {
+    title: "Discover public posts",
+    hint: "Optional topic. Leave blank to use the bot’s discovery keywords.",
+    label: "Discovery query",
+    placeholder: "Topic to search…",
+    submit: "Start discovery",
+    require: false,
+  },
+  targets: {
+    title: "Target accounts",
+    hint: "Optional handle. Leave blank to use the target account list.",
+    label: "Account handle",
+    placeholder: "handle",
+    submit: "Stage commentary",
+    require: false,
+  },
+  delete: {
+    title: "Delete a post",
+    hint: "Enter the id of a post on your account. ChorusDraft asks before deleting.",
+    label: "Post id",
+    placeholder: "Post id",
+    submit: "Ask to confirm",
+    require: true,
+  },
+};
 
 function App() {
   const runtime = "elixir";
@@ -153,8 +190,14 @@ function App() {
   const [reviewEdit, setReviewEdit] = useState("");
   const [savingReview, setSavingReview] = useState(false);
   const [reviewDraft, setReviewDraft] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [searchHits, setSearchHits] = useState([]);
+  const [copiedHit, setCopiedHit] = useState("");
+  const [prompt, setPrompt] = useState(null);
+  const [promptText, setPromptText] = useState("");
   const savingReviewLock = useRef(false);
   const runningLock = useRef(false);
+  const deleteAvailable = useRef(false);
   useEffect(() => {
     if (!api) {
       setError("Open ChorusDraft in the desktop app to use the bot controls.");
@@ -197,6 +240,11 @@ function App() {
         setSavingReview(false);
         savingReviewLock.current = false;
       }
+      const deleted = confirmDeleteFrom(event);
+      if (deleted !== null) {
+        deleteAvailable.current = true;
+        setDeleteConfirm(deleted);
+      }
       if (event.type === "started") {
         setRunning(true);
         setAction(event.action);
@@ -223,7 +271,9 @@ function App() {
         setActivity(fresh.map((p) => p.text).join(""));
         if (!fresh.length) {
           approvalAvailable.current = false;
+          deleteAvailable.current = false;
           setReviewPrompt(false);
+          setDeleteConfirm(null);
         }
       }
     }, 60000);
@@ -233,8 +283,14 @@ function App() {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [activity]);
   useEffect(() => {
+    if (action === "search") setSearchHits(searchHitsFrom(activity));
+  }, [activity, action]);
+  useEffect(() => {
     const close = (e) => {
-      if (e.key === "Escape") setCompose(null);
+      if (e.key === "Escape") {
+        setCompose(null);
+        setPrompt(null);
+      }
     };
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
@@ -290,13 +346,24 @@ function App() {
     ) {
       setText("");
       setCw("");
-      setReplyTo("");
-      setQuoteTo("");
+      setReplyTo(opts.replyTo || "");
+      setQuoteTo(opts.quoteTo || "");
+      setPrompt(null);
       setCompose(nextAction);
+      return;
+    }
+    if (
+      ["discover", "targets", "delete"].includes(nextAction) &&
+      suppliedText === undefined
+    ) {
+      setPromptText("");
+      setCompose(null);
+      setPrompt(nextAction);
       return;
     }
     runningLock.current = true;
     setCompose(null);
+    setPrompt(null);
     if (!opts.stay) setPage("overview");
     activityParts.current = [];
     setAction(nextAction);
@@ -306,12 +373,14 @@ function App() {
     setResponse("");
     terminalText.current.reset();
     approvalAvailable.current = false;
+    deleteAvailable.current = false;
     setReviewPrompt(false);
     setEditingReview(false);
     setReviewEdit("");
     setSavingReview(false);
     savingReviewLock.current = false;
     setReviewDraft(null);
+    setDeleteConfirm(null);
     await invoke(() =>
       api.run({
         runtime,
@@ -329,10 +398,12 @@ function App() {
       return false;
     if (action === "review" && !opts.force && !approvalAvailable.current)
       return false;
+    if (action === "delete" && !opts.force && !deleteAvailable.current)
+      return false;
     let payload = value;
     if (typeof value === "string") {
       const trimmed = value.trim().toLowerCase();
-      if (trimmed === "e") {
+      if (trimmed === "e" && action === "review") {
         setReviewEdit(reviewDraft?.text || "");
         setEditingReview(true);
         return true;
@@ -347,25 +418,51 @@ function App() {
               : { action: "skip" };
     }
     approvalAvailable.current = false;
+    deleteAvailable.current = false;
     const ok = await invoke(() => api.respond(payload), { keepRunning: true });
     if (ok) {
       setReviewPrompt(false);
+      setDeleteConfirm(null);
       setResponse("");
       // Prevent repeated approval clicks before the next prompt arrives.
       setActivity((previous) => previous + "\n");
     } else if (action === "review") {
       approvalAvailable.current = true;
+    } else if (action === "delete") {
+      deleteAvailable.current = true;
     }
     return ok;
   };
   const reviewReady = running && action === "review" && reviewPrompt;
+  const deleteReady = running && action === "delete" && deleteConfirm !== null;
   const canRespond =
     running &&
     !editingReview &&
     !savingReview &&
-    (action !== "review" || reviewReady);
+    (action !== "review" || reviewReady) &&
+    (action !== "delete" || deleteReady);
   const selected = `${platform === "bluesky" ? "Bluesky" : "Mastodon"}`;
   const configure = () => api && setSettingsTarget({ runtime, platform });
+  const copyHitId = async (id) => {
+    if (!api) return;
+    try {
+      await api.copy(id);
+      setCopiedHit(id);
+    } catch {
+      setError("This id could not be copied to the clipboard.");
+    }
+  };
+  const useHit = (nextAction, hit) => {
+    if (nextAction === "reply") run("reply", undefined, undefined, { replyTo: hit.id });
+    else if (nextAction === "quote")
+      run("quote", undefined, undefined, { quoteTo: hit.id });
+    else if (nextAction === "discover") run("discover", hit.id);
+  };
+  const submitPrompt = () => {
+    if (!prompt) return;
+    if (promptCopy[prompt].require && !promptText.trim()) return;
+    run(prompt, prompt === "delete" ? promptText.trim() : promptText.trim());
+  };
   const writeLimit = TEXT_LIMIT[platform];
   const replyId = replyTo.trim();
   const quoteId = quoteTo.trim();
@@ -682,6 +779,27 @@ function App() {
                 </button>
                 <button
                   disabled={running || !api}
+                  onClick={() => run("discover")}
+                >
+                  <Icon name="spark" size={15} />
+                  Discover
+                </button>
+                <button
+                  disabled={running || !api}
+                  onClick={() => run("targets")}
+                >
+                  <Icon name="target" size={15} />
+                  Targets
+                </button>
+                <button
+                  disabled={running || !api}
+                  onClick={() => run("delete")}
+                >
+                  <Icon name="close" size={15} />
+                  Delete a post
+                </button>
+                <button
+                  disabled={running || !api}
                   onClick={() => run("replies")}
                 >
                   Draft replies
@@ -693,6 +811,65 @@ function App() {
                   Listen for mentions
                 </button>
               </div>
+              {searchHits.length > 0 && (
+                <section className="search-hits" aria-label="Search results">
+                  <div className="section-title">
+                    <h2>Search results</h2>
+                    <span>{searchHits.length}</span>
+                  </div>
+                  <div className="history-list">
+                    {searchHits.map((hit, index) => (
+                      <article
+                        className="history-card search-hit"
+                        key={`${hit.id}-${index}`}
+                        data-author={hit.author}
+                        data-post-id={hit.id}
+                      >
+                        <div className="history-meta">
+                          <span className="search-hit-author">
+                            @{hit.author}
+                          </span>
+                          <code className="search-hit-id">{hit.id}</code>
+                        </div>
+                        <pre>{hit.text}</pre>
+                        <div className="queue-actions">
+                          <button
+                            type="button"
+                            className="text-button"
+                            disabled={running || !api}
+                            onClick={() => useHit("reply", hit)}
+                          >
+                            Reply
+                          </button>
+                          <button
+                            type="button"
+                            className="text-button"
+                            disabled={running || !api}
+                            onClick={() => useHit("quote", hit)}
+                          >
+                            Quote
+                          </button>
+                          <button
+                            type="button"
+                            className="text-button"
+                            disabled={running || !api}
+                            onClick={() => useHit("discover", hit)}
+                          >
+                            Discover
+                          </button>
+                          <button
+                            type="button"
+                            className="text-button"
+                            onClick={() => copyHitId(hit.id)}
+                          >
+                            {copiedHit === hit.id ? "Copied id" : "Copy id"}
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              )}
               <section
                 className="activity-panel"
                 aria-label="Activity and review"
@@ -820,6 +997,25 @@ function App() {
                         </button>
                       </>
                     )}
+                  </div>
+                )}
+                {deleteReady && (
+                  <div className="review-actions">
+                    <span>
+                      Delete {deleteConfirm || "this post"} from your account?
+                    </span>
+                    <button
+                      className="button secondary"
+                      onClick={() => send({ action: "quit" })}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="button primary"
+                      onClick={() => send({ action: "approve" })}
+                    >
+                      Delete this post
+                    </button>
                   </div>
                 )}
                 <form
@@ -1006,6 +1202,59 @@ function App() {
                   disabled={!composeReady}
                 >
                   {compose === "search" ? "Search posts" : "Add to review queue"}
+                  <Icon name="arrow" size={16} />
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+      {prompt && promptCopy[prompt] && (
+        <div className="modal-backdrop">
+          <section
+            className="compose-modal prompt-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="prompt-title"
+          >
+            <div className="modal-title">
+              <h2 id="prompt-title">{promptCopy[prompt].title}</h2>
+              <button
+                aria-label="Close dialog"
+                onClick={() => setPrompt(null)}
+              >
+                <Icon name="close" />
+              </button>
+            </div>
+            <p>{promptCopy[prompt].hint}</p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                submitPrompt();
+              }}
+            >
+              <input
+                autoFocus
+                maxLength={prompt === "delete" ? 512 : 10000}
+                aria-label={promptCopy[prompt].label}
+                value={promptText}
+                onChange={(e) => setPromptText(e.target.value)}
+                placeholder={promptCopy[prompt].placeholder}
+              />
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="button secondary"
+                  onClick={() => setPrompt(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="button primary"
+                  type="submit"
+                  disabled={promptCopy[prompt].require && !promptText.trim()}
+                >
+                  {promptCopy[prompt].submit}
                   <Icon name="arrow" size={16} />
                 </button>
               </div>

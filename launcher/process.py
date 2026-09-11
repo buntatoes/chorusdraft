@@ -161,6 +161,13 @@ class Session:
                 elif event == 'review':
                     draft = message.get('draft')
                     self.events.put(('review', draft if isinstance(draft, dict) else {}))
+                elif event == 'confirm':
+                    action = message.get('action')
+                    ident = message.get('id')
+                    if action == 'delete' and isinstance(ident, str):
+                        self.events.put(('confirm', {'action': 'delete', 'id': ident}))
+                    else:
+                        self.events.put(('output', line + '\n'))
                 else:
                     self.events.put(('output', line + '\n'))
             code = self.process.wait()

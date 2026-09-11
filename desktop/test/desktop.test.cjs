@@ -79,6 +79,17 @@ test(
       page = await app.firstWindow();
       page.setDefaultTimeout(30000);
       await page.getByRole("heading", { name: "Your bot workspace" }).waitFor();
+      await page.getByRole("button", { name: "Discover", exact: true }).waitFor();
+      await page.getByRole("button", { name: "Targets", exact: true }).waitFor();
+      await page.getByRole("button", { name: "Delete a post", exact: true }).waitFor();
+      await page
+        .locator(".quick-actions")
+        .getByRole("button", { name: "Discover", exact: true })
+        .click();
+      await page.getByRole("heading", { name: "Discover public posts" }).waitFor();
+      assert.equal(await page.getByLabel("Character count").count(), 0);
+      assert.equal(await page.getByLabel("Reply id").count(), 0);
+      await page.getByRole("button", { name: "Cancel", exact: true }).click();
       await page.evaluate(() => {
         window.sessionEvents = [];
         window.chorus.onEvent((event) => {

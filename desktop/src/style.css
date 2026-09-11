@@ -744,6 +744,27 @@ h1 {
   line-height: 1.6;
   color: #616b80;
 }
+.prompt-modal input {
+  width: 100%;
+  border: 1px solid #e0e3ed;
+  border-radius: 9px;
+  padding: 14px;
+  line-height: 1.7;
+  color: #4e5671;
+  background: #fcfcfe;
+}
+.search-hits {
+  margin: 0 0 27px;
+}
+.search-hit-author {
+  font-weight: 650;
+  color: #5c6274;
+}
+.search-hit-id {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+  color: #687285;
+}
 .modal-footer {
   display: flex;
   justify-content: flex-end;
