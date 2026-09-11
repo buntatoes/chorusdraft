@@ -10,8 +10,8 @@ public-mention replies after screening and a source recheck.
 
 - Linux, macOS, or Windows with Erlang/OTP 25+
 - Elixir 1.15+, Mix, and Erlang development headers to build or test
-- Linux: util-linux (`flock`); `tar` and `sha256sum` to verify packages
-- macOS: Python 3; `tar` and `shasum`
+- Linux: `tar` and `sha256sum` to verify packages
+- macOS: `tar` and `shasum`
 - Windows: Python 3 and PowerShell
 - A Bluesky app password or Mastodon access token
 - A local AI endpoint, Gemini credentials, or OpenAI API credentials and model
@@ -186,7 +186,8 @@ Check the live account first. Do not force uncertain back to pending.
 |---|---|
 | `ChorusDraft Guard is required` | Official source includes `guard/`. Do not delete or replace it. |
 | `automatic frozen` in `status` | A `publishing` or `uncertain` draft is blocking claims. Inspect the live account, then `reject ID`. |
-| `State is busy` / lock timed out | Another process holds the account store. Stop the extra daemon. Linux needs `flock` (`util-linux`). |
+| `State is busy` / lock timed out | Another process holds the account store. Stop the extra daemon or the other run. |
+| `no loopback lock address was free` | Locking binds a loopback address. Allow local sockets on `127.0.0.1` for the bot. |
 | `State is already locked by this process` | Nested store write. Retry the edit after the outer command finishes. |
 | `Import requires empty destination state` | Import only into a new account store. Source must match platform and account. |
 | `Jetstream cannot be disabled` | `--no-jetstream` is rejected. Bluesky listen/start always stream. |
