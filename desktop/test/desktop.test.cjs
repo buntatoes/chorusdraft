@@ -264,8 +264,23 @@ test(
       await page.getByText(texts[0], { exact: true }).waitFor();
       await page.getByText(texts[1], { exact: true }).waitFor();
       await page
-        .getByText(/Automatic attempts remaining: 5\/5/)
+        .getByRole("button", {
+          name: "Bluesky: 2 pending, 0 uncertain, 5/5 automatic remaining",
+          exact: true,
+        })
         .waitFor();
+      await page
+        .getByRole("button", {
+          name: "Mastodon: 0 pending, 0 uncertain, 5/5 automatic remaining",
+          exact: true,
+        })
+        .waitFor();
+      assert.equal(
+        await page
+          .getByRole("button", { name: "Publish this draft", exact: true })
+          .count(),
+        0,
+      );
       const edited = "Edited from the queue for later review.";
       await page
         .locator("article")
@@ -289,10 +304,17 @@ test(
         .getByRole("button", { name: "Reject", exact: true })
         .click();
       await page.getByText(texts[1], { exact: true }).waitFor({ state: "hidden" });
-      await page.getByRole("button", { name: "Overview", exact: true }).click();
+      await page
+        .getByRole("button", {
+          name: "Bluesky: 1 pending, 0 uncertain, 5/5 automatic remaining",
+          exact: true,
+        })
+        .waitFor();
       await assert.rejects(fs.access(path.join(root, "published.txt")));
       await page
-        .getByRole("button", { name: "Open review", exact: true })
+        .locator("article")
+        .filter({ hasText: edited })
+        .getByRole("button", { name: "Review this draft", exact: true })
         .click();
       await page
         .getByRole("button", { name: "Publish this draft", exact: true })

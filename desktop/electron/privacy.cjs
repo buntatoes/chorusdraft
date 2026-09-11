@@ -744,6 +744,8 @@ class History {
         cw: typeof draft.cw === "string" ? draft.cw : "",
         visibility:
           typeof draft.visibility === "string" ? draft.visibility : "",
+        reply_to: typeof draft.reply_to === "string" ? draft.reply_to : "",
+        quote_to: typeof draft.quote_to === "string" ? draft.quote_to : "",
         time: Number.isFinite(time) ? time : 0,
       });
     }

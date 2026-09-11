@@ -545,6 +545,8 @@ function App() {
               <Queue
                 selection={{ runtime, platform }}
                 running={running}
+                onPlatform={setPlatform}
+                onReview={(id) => run("review", undefined, id)}
                 onRun={(action, text, target) =>
                   run(action, text, target, { stay: true })
                 }

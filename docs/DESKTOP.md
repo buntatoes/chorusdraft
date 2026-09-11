@@ -74,9 +74,12 @@ Compose queues for review. It does not publish.
 
 **Open review** approves, edits, or rejects it. The desktop talks to the bot
 over JSON; publish buttons follow a review event, not a scraped prompt.
-**Queue** lists pending and uncertain drafts from
-the account store last used on the selected platform, remaining automatic
-attempts, and freeze state. Edit from Queue or during review; the replacement
+**Queue** lists pending and uncertain drafts from the account store last used
+on the selected platform. Cards show reply and quote targets when the draft
+has them. **Review this draft** starts `review ID` for that pending item;
+publish buttons still follow a review event. Remaining automatic attempts and
+freeze state are shown for Bluesky and Mastodon side by side. Edit from Queue
+or during review; the replacement
 is screened and still needs approval. During review, **Edit text** prefills
 the current draft and keeps line breaks. The response field is disabled while
 the edit form is open so `y` cannot publish the original. After you save,

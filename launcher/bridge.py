@@ -99,6 +99,12 @@ def arguments(request):
         if not valid_id(text):
             raise ValueError('Choose a pending or uncertain draft to reject.')
         args.append(text)
+    if action == 'review':
+        target = request.get('target')
+        if target is not None:
+            if not valid_id(target):
+                raise ValueError('Choose a pending draft to review.')
+            args.append(target)
     if action == 'edit':
         target = request.get('target')
         text = request.get('text')

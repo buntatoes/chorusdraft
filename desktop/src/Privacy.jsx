@@ -493,13 +493,25 @@ export function History({ selection }) {
     </section>
   );
 }
-export function Queue({ selection, running, onRun }) {
-  const [data, setData] = useState(null),
-    [error, setError] = useState(""),
+function queueSummary(name, data, error) {
+  if (error) return `${name}: queue could not be read`;
+  if (!data) return `${name}: reading queue`;
+  const pending = data.items.filter((item) => item.status === "pending").length;
+  const uncertain = data.items.filter(
+    (item) => item.status === "uncertain",
+  ).length;
+  const freeze = data.automatic.frozen ? ", frozen" : "";
+  return `${name}: ${pending} pending, ${uncertain} uncertain, ${data.automatic.remaining}/${data.automatic.limit} automatic remaining${freeze}`;
+}
+export function Queue({ selection, running, onRun, onReview, onPlatform }) {
+  const [queues, setQueues] = useState({ bluesky: null, mastodon: null }),
+    [errors, setErrors] = useState({ bluesky: "", mastodon: "" }),
     [editing, setEditing] = useState(null),
     [text, setText] = useState(""),
     [revision, setRevision] = useState(0);
   const saving = useRef(false);
+  const data = queues[selection.platform];
+  const error = errors[selection.platform];
   useEffect(() => {
     const timer = setInterval(() => setRevision((v) => v + 1), 60000);
     const remove = window.chorus?.onEvent((e) => {
@@ -522,23 +534,27 @@ export function Queue({ selection, running, onRun }) {
   useEffect(() => {
     if (!window.chorus) return;
     let active = true;
-    window.chorus
-      .queue(selection)
-      .then((v) => {
-        if (!active) return;
-        setData(v);
-        setError("");
-      })
-      .catch(() => {
-        if (active)
-          setError(
-            "The local queue could not be read. Check storage permissions.",
-          );
-      });
+    for (const platform of ["bluesky", "mastodon"]) {
+      window.chorus
+        .queue({ ...selection, platform })
+        .then((v) => {
+          if (!active) return;
+          setQueues((prev) => ({ ...prev, [platform]: v }));
+          setErrors((prev) => ({ ...prev, [platform]: "" }));
+        })
+        .catch(() => {
+          if (active)
+            setErrors((prev) => ({
+              ...prev,
+              [platform]:
+                "The local queue could not be read. Check storage permissions.",
+            }));
+        });
+    }
     return () => {
       active = false;
     };
-  }, [selection.platform, running, revision]);
+  }, [running, revision]);
   const save = (item) => {
     const next = text.trim();
     if (!next || running || saving.current) return;
@@ -559,24 +575,71 @@ export function Queue({ selection, running, onRun }) {
       <p>
         Pending drafts stay here until you review, edit, or reject them.
         Uncertain drafts freeze automatic mode until you reject them after
-        checking the account. Queue reads the account store last used on this
-        platform.
+        checking the account. Queue reads the account store last used on each
+        platform. Drafts stay on the platform that created them.
       </p>
-      {data?.automatic && (
-        <p className={`queue-budget${data.automatic.frozen ? " frozen" : ""}`}>
-          Automatic attempts remaining: {data.automatic.remaining}/
-          {data.automatic.limit}
-          {data.automatic.frozen
-            ? " · frozen while a publishing or uncertain draft is open"
-            : ""}
-        </p>
-      )}
+      <div
+        className="queue-platforms"
+        role="group"
+        aria-label="Bluesky and Mastodon queues"
+      >
+        {[
+          ["bluesky", "Bluesky"],
+          ["mastodon", "Mastodon"],
+        ].map(([platform, name]) => {
+          const summary = queues[platform];
+          const platformError = errors[platform];
+          const frozen = !!summary?.automatic.frozen;
+          return (
+            <button
+              key={platform}
+              type="button"
+              className={`queue-platform${frozen ? " frozen" : ""}${selection.platform === platform ? " selected" : ""}`}
+              aria-pressed={selection.platform === platform}
+              aria-label={queueSummary(name, summary, platformError)}
+              disabled={running}
+              onClick={() => onPlatform(platform)}
+            >
+              <strong>{name}</strong>
+              {platformError ? (
+                <span>Could not read this queue</span>
+              ) : !summary ? (
+                <span>Reading queue…</span>
+              ) : (
+                <>
+                  <span>
+                    {
+                      summary.items.filter((item) => item.status === "pending")
+                        .length
+                    }{" "}
+                    pending
+                  </span>
+                  <span>
+                    {
+                      summary.items.filter(
+                        (item) => item.status === "uncertain",
+                      ).length
+                    }{" "}
+                    uncertain
+                  </span>
+                  <span>
+                    Automatic remaining: {summary.automatic.remaining}/
+                    {summary.automatic.limit}
+                    {frozen
+                      ? " · frozen while a publishing or uncertain draft is open"
+                      : ""}
+                  </span>
+                </>
+              )}
+            </button>
+          );
+        })}
+      </div>
       {error && (
         <p className="settings-error" role="alert">
           {error}
         </p>
       )}
-      {!data && !error && <p>Reading queue…</p>}
       {data && !data.items.length && (
         <div className="history-empty">
           <h2>Queue is empty</h2>
@@ -597,6 +660,12 @@ export function Queue({ selection, running, onRun }) {
               )}
             </div>
             {item.account && <p className="history-account">{item.account}</p>}
+            {item.reply_to && editing !== item.id && (
+              <p className="queue-target">Reply: {item.reply_to}</p>
+            )}
+            {item.quote_to && editing !== item.id && (
+              <p className="queue-target">Quote: {item.quote_to}</p>
+            )}
             {item.cw && editing !== item.id && (
               <p>Content warning: {item.cw}</p>
             )}
@@ -635,6 +704,15 @@ export function Queue({ selection, running, onRun }) {
                 <div className="queue-actions">
                   {item.status === "pending" && (
                     <button
+                      className="button secondary"
+                      disabled={running}
+                      onClick={() => onReview(item.id)}
+                    >
+                      Review this draft
+                    </button>
+                  )}
+                  {item.status === "pending" && (
+                    <button
                       className="text-button"
                       disabled={running}
                       onClick={() => {
@@ -661,9 +739,10 @@ export function Queue({ selection, running, onRun }) {
         ))}
       </div>
       <p className="history-footnote">
-        Editing re-screens the new text, then leaves the draft pending for
-        review. Rejecting an uncertain draft clears the automatic freeze after
-        you inspect the account.
+        Review this draft starts a review session for that pending item.
+        Publishing still waits for a review event. Editing re-screens the new
+        text, then leaves the draft pending for review. Rejecting an uncertain
+        draft clears the automatic freeze after you inspect the account.
       </p>
     </section>
   );

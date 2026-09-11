@@ -322,6 +322,12 @@ app
       if (request.action === "reject" && !validId(request.text))
         throw new Error("Choose a pending or uncertain draft to reject.");
       if (
+        request.action === "review" &&
+        request.target != null &&
+        !validId(request.target)
+      )
+        throw new Error("Choose a pending draft to review.");
+      if (
         request.action === "edit" &&
         (!validId(request.target) || !validDraft(request.text, 10000))
       )
