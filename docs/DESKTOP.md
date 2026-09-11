@@ -17,7 +17,7 @@ Packages are on
 [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases) and as
 artifacts from
 [desktop checks](https://github.com/buntatoes/chorusdraft/actions/workflows/bot-testing.yml).
-Download `chorusdraft-v0.53.2-<os>-<arch>` (Desktop). The
+Download `chorusdraft-v0.54.0-<os>-<arch>` (Desktop). The
 `ChorusDraft-elixir-*` files on the same page are **CLI only (no GUI)**.
 Each desktop archive has the Elixir bot, both social platforms, the desktop
 launcher, licenses, a SHA-256 sidecar, and a checksum manifest.

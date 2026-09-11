@@ -2,7 +2,24 @@
 
 Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
-## Unreleased
+## 0.54.0 — 2026-09-11
+
+Current published GitHub Release. Earlier GitHub Releases and tags
+(v0.50 through v0.53.1) were withdrawn and are not downloadable.
+
+`review ID` and `--process-queue ID` review one pending draft. `review` and
+`--process-queue` still walk every pending draft. Missing or non-pending ids
+are refused. There is no new publish action.
+
+Desktop review shows a card from the bot `review` event: exact text, action,
+visibility, content warning, reply target, quote target, id, and status.
+Activity stays the session log. Publish, reject, edit, and skip are the
+existing commands. Publish buttons still arm only from that event.
+
+Queue cards show reply and quote targets when the draft has them. **Review
+this draft** starts `review ID` for that pending item. Remaining automatic
+attempts and freeze state are shown for Bluesky and Mastodon side by side.
+Queue still does not publish without a `review` event.
 
 Desktop compose stages the same fields the bot already stages: body text with
 a live 300-character count on Bluesky and 500 on Mastodon, a Mastodon content
@@ -12,10 +29,21 @@ will receive. **Write a reply** and **Write a quote** are GUI labels; desktop
 `bot:run` allows the `reply` and `quote` commands the same way it allows
 `post`. Compose still queues for review. There is no desktop `--publish`.
 
+Overview starts **Discover**, **Targets**, and **Delete a post**. Delete
+asks for a post id, then confirms from the bot `confirm` event with
+`approve`. Search hits are cards with author, id, and text. **Reply** and
+**Quote** open compose with that id. **Discover** on a card starts discovery
+using that id.
+
+Settings includes `ACTIVE_HOURS` (`HH:MM-HH:MM`; blank or equal start and end
+means always active) and `DISCOVERY_KEYWORDS` (comma-separated). Target
+accounts and Do not contact edit `config/target_accounts.txt` and
+`config/do_not_contact.txt` (one handle per line).
+
 ## 0.53.2 — 2026-09-10
 
-Current published GitHub Release. Earlier GitHub Releases and tags
-(v0.50 through v0.53.1) were withdrawn and are not downloadable.
+Earlier GitHub Releases and tags (v0.50 through v0.53.1) were withdrawn and
+are not downloadable.
 
 Draft and automatic mode no longer fail with a bare HTTP 404 against Bluesky’s
 entryway. After login the bot uses the account PDS from the session DID
