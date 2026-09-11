@@ -9,6 +9,8 @@ const AUTOMATIC_LIMIT = 5;
 const PUBLICATION_LEASE_SECONDS = 300;
 // Bot state and activity files are read whole; anything larger is not ours.
 const FILE_LIMIT = 50 * 1024 * 1024;
+const LIST_LIMIT = 256 * 1024;
+const LISTS = ["target_accounts.txt", "do_not_contact.txt"];
 const SECRET = [
   "BLUESKY_APP_PASSWORD",
   "MASTODON_ACCESS_TOKEN",
@@ -24,6 +26,8 @@ const common = {
   OPENAI_API_KEY: "",
   OPENAI_MODEL: "",
   STATUS_LANGUAGE: "en",
+  ACTIVE_HOURS: "",
+  DISCOVERY_KEYWORDS: "opensource",
 };
 const sites = {
   bluesky: {
@@ -55,7 +59,7 @@ function regular(file) {
 }
 // Check and read through one descriptor so the path cannot be swapped between
 // the size check and the read.
-function contents(file, message) {
+function contents(file, message, limit = FILE_LIMIT) {
   regular(file);
   const fd = fs.openSync(
     file,
@@ -64,7 +68,7 @@ function contents(file, message) {
   try {
     const value = fs.fstatSync(fd);
     if (!value.isFile()) throw Error("Storage must be a regular file.");
-    if (value.size > FILE_LIMIT) throw Error(message);
+    if (value.size > limit) throw Error(message);
     return fs.readFileSync(fd, "utf8");
   } finally {
     fs.closeSync(fd);
@@ -128,6 +132,40 @@ function validValues(site, values) {
   }
   return values;
 }
+function validActiveHours(value) {
+  if (value === "") return true;
+  const match = value.match(
+    /^(\d{1,2})(?::(\d{2}))?-(\d{1,2})(?::(\d{2}))?$/,
+  );
+  if (!match) return false;
+  const startHour = Number(match[1]),
+    startMinute = Number(match[2] || "0"),
+    endHour = Number(match[3]),
+    endMinute = Number(match[4] || "0");
+  return (
+    startHour < 24 && endHour < 24 && startMinute < 60 && endMinute < 60
+  );
+}
+function validLists(lists) {
+  if (!lists || Array.isArray(lists) || typeof lists !== "object")
+    throw Error("Invalid settings.");
+  const values = {};
+  for (const key of Object.keys(lists)) {
+    if (!LISTS.includes(key)) throw Error("Invalid account list.");
+  }
+  for (const name of LISTS) {
+    if (!Object.hasOwn(lists, name)) throw Error("Invalid account list.");
+    const value = lists[name];
+    if (
+      typeof value !== "string" ||
+      value.length > LIST_LIMIT ||
+      /[\0]/.test(value)
+    )
+      throw Error("Invalid account list.");
+    values[name] = value;
+  }
+  return values;
+}
 class Vault {
   constructor(root, dir, storage, os = process.platform) {
     this.root = fs.realpathSync(root);
@@ -157,6 +195,45 @@ class Vault {
       this.root,
       path.join(this.root, "elixir", platform(site), ".env"),
     );
+  }
+  configDir(site) {
+    const base = within(
+      this.root,
+      path.join(this.root, "elixir", platform(site)),
+    );
+    if (!stat(base)?.isDirectory())
+      throw Error("Platform directory is missing.");
+    const dir = path.join(base, "config");
+    const value = stat(dir);
+    if (value && (value.isSymbolicLink() || !value.isDirectory()))
+      throw Error("Configuration directory must not be a link.");
+    return dir;
+  }
+  configFile(site, name) {
+    if (!LISTS.includes(name)) throw Error("Invalid account list.");
+    return within(
+      this.root,
+      path.join(this.configDir(site), name),
+    );
+  }
+  lists(site) {
+    platform(site);
+    const values = {};
+    for (const name of LISTS) {
+      const file = this.configFile(site, name);
+      regular(file);
+      values[name] = stat(file)
+        ? contents(file, "Configuration list is too large.", LIST_LIMIT)
+        : "";
+    }
+    return values;
+  }
+  saveLists(site, lists) {
+    const values = validLists(lists);
+    const dir = this.configDir(site);
+    if (!stat(dir)) fs.mkdirSync(dir, { mode: 0o700 });
+    within(this.root, dir);
+    for (const name of LISTS) write(this.configFile(site, name), values[name]);
   }
   legacy(site) {
     const file = this.envFile(site),
@@ -240,6 +317,7 @@ class Vault {
         : stat(this.file(site))
           ? "saved"
           : "unset",
+      lists: this.lists(site),
     };
   }
   save(site, input, persist) {
@@ -262,6 +340,12 @@ class Vault {
       !["public", "unlisted"].includes(values.STATUS_VISIBILITY)
     )
       throw Error("Choose public or unlisted visibility.");
+    if (!validActiveHours(values.ACTIVE_HOURS || ""))
+      throw Error("Active hours must use HH:MM-HH:MM.");
+    if (!(values.DISCOVERY_KEYWORDS || "").trim())
+      values.DISCOVERY_KEYWORDS = "opensource";
+    const lists =
+      input.lists === undefined ? null : validLists(input.lists);
     for (const key of [
       "BLUESKY_PDS_URL",
       "MASTODON_API_BASE_URL",
@@ -329,6 +413,7 @@ class Vault {
         );
       }
     } else this.sessions.set(site, values);
+    if (lists) this.saveLists(site, lists);
     return this.view(site);
   }
   forget(site) {
@@ -676,4 +761,4 @@ class History {
     };
   }
 }
-module.exports = { Vault, History, Redactor, SECRET, DAYS };
+module.exports = { Vault, History, Redactor, SECRET, DAYS, LIST_LIMIT };

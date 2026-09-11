@@ -8,7 +8,7 @@ import tempfile
 import time
 import unittest
 from unittest.mock import patch
-from bridge import arguments, has_control, require_live_session
+from bridge import arguments, has_control, require_live_session, settings
 from process import Session, bot_command
 
 
@@ -166,6 +166,16 @@ class DesktopTests(unittest.TestCase):
             require_live_session(None)
         with self.assertRaisesRegex(ValueError, 'already ended'):
             require_live_session(Finished())
+
+    def test_gui_settings_allow_hours_and_discovery_keywords(self):
+        self.assertEqual(
+            settings({'environment': {'ACTIVE_HOURS': '08:30-22:00', 'DISCOVERY_KEYWORDS': 'elixir,linux'}}),
+            {'ACTIVE_HOURS': '08:30-22:00', 'DISCOVERY_KEYWORDS': 'elixir,linux'},
+        )
+        with self.assertRaises(ValueError):
+            settings({'environment': {'DISCOVERY_TAGS': 'opensource'}})
+        with self.assertRaises(ValueError):
+            settings({'environment': {'ACTIVE_HOURS': '08:30-22:00\nOTHER=1'}})
 
     def test_missing_executable_has_a_clear_error(self):
         with tempfile.TemporaryDirectory() as folder, patch('process.shutil.which', return_value='/fake/escript'):

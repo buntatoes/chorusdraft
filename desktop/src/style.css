@@ -910,6 +910,7 @@ h1 {
 }
 .settings-field input,
 .settings-field select,
+.settings-field textarea,
 .history-toolbar input,
 .history-selection select {
   border: 1px solid #d7dce7;
@@ -918,6 +919,13 @@ h1 {
   background: #fafbfe;
   color: #252938;
   min-width: 0;
+}
+.settings-field textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+.settings-field.wide {
+  grid-column: 1 / -1;
 }
 .remove-secret {
   display: flex;

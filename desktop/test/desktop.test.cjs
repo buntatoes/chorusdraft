@@ -127,6 +127,16 @@ test(
       await page.getByLabel("OpenAI API key", { exact: true }).fill("synthetic-openai-secret");
       assert.equal(await page.getByLabel("OpenAI API key", { exact: true }).getAttribute("type"), "password");
       await page.getByLabel("Provider", { exact: true }).selectOption("local");
+      await page.getByLabel("Active hours", { exact: true }).fill("08:30-22:00");
+      await page
+        .getByLabel("Discovery keywords", { exact: true })
+        .fill("elixir,linux");
+      await page
+        .getByLabel("Target accounts", { exact: true })
+        .fill("targets.example\n");
+      await page
+        .getByLabel("Do not contact", { exact: true })
+        .fill("blocked.example\n");
       const secure = await save.isEnabled();
       if (!secure)
         console.log(
@@ -169,6 +179,10 @@ test(
       );
       assert.equal(info.saved.BLUESKY_APP_PASSWORD, true);
       assert.equal(info.values.BLUESKY_APP_PASSWORD, undefined);
+      assert.equal(info.values.ACTIVE_HOURS, "08:30-22:00");
+      assert.equal(info.values.DISCOVERY_KEYWORDS, "elixir,linux");
+      assert.equal(info.lists["target_accounts.txt"], "targets.example\n");
+      assert.equal(info.lists["do_not_contact.txt"], "blocked.example\n");
       assert.equal(
         await page.getByRole("button", { name: "Write a quote", exact: true }).count(),
         1,
