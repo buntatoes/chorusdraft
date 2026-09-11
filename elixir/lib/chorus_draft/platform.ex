@@ -11,13 +11,6 @@ defmodule ChorusDraft.Platform do
     end
   end
 
-  def python do
-    candidates = if os() == "windows", do: ["python", "python3"], else: ["python3"]
-
-    Enum.find_value(candidates, &System.find_executable/1) ||
-      raise(Error, "Install Python 3 and add it to PATH for macOS/Windows state locking.")
-  end
-
   # Windows mode bits do not establish a private ACL. Use the current token SID,
   # not an interpolated username; pass the path separately through the environment.
   def private_directory!(path) do
@@ -58,6 +51,12 @@ defmodule ChorusDraft.Platform do
     else
       File.rename!(source, destination)
     end
+  end
+
+  # Only Windows needs Python, to replace the state file atomically.
+  defp python do
+    Enum.find_value(["python", "python3"], &System.find_executable/1) ||
+      raise(Error, "Install Python 3 and add it to PATH for Windows state writes.")
   end
 
   # Windows mode bits do not establish a private ACL. Use the current token SID,
