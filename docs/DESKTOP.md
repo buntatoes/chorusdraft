@@ -77,6 +77,9 @@ Compose queues for review. It does not publish.
 exact text, action, visibility, content warning, reply target, quote target,
 id, and status. Approve, edit, or reject from that card. Activity is the
 session log. Publish buttons follow a review event, not a scraped prompt.
+The app also refuses approve, reject, skip, and edit until that event, and
+after the session ends.
+
 **Queue** lists pending and uncertain drafts from the account store last used
 on the selected platform. Cards show reply and quote targets when the draft
 has them. **Review this draft** starts `review ID` for that pending item;
@@ -92,8 +95,9 @@ showing.
 **Discover** and **Targets** start `discover` and `targets` the same way as
 the command line. Discovery and target commentary still need review;
 automatic mode does not publish them. **Delete a post** asks for a post id,
-then confirms from the bot `confirm` event. Confirming sends `approve`.
-Cancel sends `quit`. The bot still refuses ids that are not your posts.
+then confirms from the bot `confirm` event with an id. Confirming sends
+`approve`. Cancel sends `quit`. The app refuses approve until that event.
+The bot still refuses ids that are not your posts.
 
 **Search posts** runs `search`. Public hits are shown as cards with author,
 id, and text. **Reply** and **Quote** open compose with that id filled in.

@@ -118,6 +118,26 @@ defmodule ChorusDraft.CommandsTest do
     refute ChorusDraft.Store.blocked?(dir, "# comment")
   end
 
+  test "a do-not-contact symlink is refused instead of followed" do
+    dir = Path.join(System.tmp_dir!(), "chorus-dnc-#{System.unique_integer([:positive])}")
+    on_exit(fn -> File.rm_rf!(dir) end)
+    ChorusDraft.Store.new(dir)
+    outside = Path.join(dir, "outside.txt")
+    link = Path.join(dir, "do_not_contact.txt")
+    File.write!(outside, "alice.example\n")
+
+    case File.ln_s(outside, link) do
+      :ok ->
+        assert_raise Error, fn -> CLI.load_do_not_contact(dir, link) end
+        refute ChorusDraft.Store.blocked?(dir, "alice.example")
+
+      {:error, reason} ->
+        if :os.type() == {:win32, :nt} and reason in [:eacces, :eperm],
+          do: :ok,
+          else: flunk("Could not create test symlink: #{inspect(reason)}")
+    end
+  end
+
   test "edit cannot skip review by adding --publish" do
     message =
       capture_io(:stderr, fn ->

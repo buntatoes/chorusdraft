@@ -44,8 +44,10 @@ response field until the replacement is saved and review asks again.
 `--random-reply` picks the target; it cannot be combined with `--publish`.
 
 Review indents draft text. The desktop lights the publish buttons from a JSON
-`review` event, not from matching prompt text. CLI review still uses the
-line-anchored prompt.
+`review` event, not from matching prompt text. The main process also refuses
+approve, reject, skip, and edit until that event (or a delete `confirm` event
+with an id), and after the session ends. Unstructured review input is refused.
+CLI review still uses the line-anchored prompt.
 
 These checks live in proprietary ChorusDraft Guard. Official builds include
 it and sign the compiled Guard modules with an ed25519 release key. The public
@@ -67,7 +69,8 @@ logs, or state. No automatic likes, favourites, boosts, or reposts.
 
 ## Credentials and network
 
-Credentials live in local `.env` or the process environment. Setup never
+Credentials live in local `.env` or the process environment. `.env` and
+account list files must be regular files, not symbolic links. Setup never
 overwrites an existing `.env`, executes it, starts a service, or contacts a
 provider. Release packages exclude `.env`, state, logs, and build caches.
 

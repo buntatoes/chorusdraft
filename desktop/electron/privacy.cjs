@@ -59,7 +59,7 @@ function regular(file) {
 }
 // Check and read through one descriptor so the path cannot be swapped between
 // the size check and the read.
-function contents(file, message, limit = FILE_LIMIT) {
+function contents(file, message, limit = FILE_LIMIT, encoding = "utf8") {
   regular(file);
   const fd = fs.openSync(
     file,
@@ -69,7 +69,9 @@ function contents(file, message, limit = FILE_LIMIT) {
     const value = fs.fstatSync(fd);
     if (!value.isFile()) throw Error("Storage must be a regular file.");
     if (value.size > limit) throw Error(message);
-    return fs.readFileSync(fd, "utf8");
+    return encoding == null
+      ? fs.readFileSync(fd)
+      : fs.readFileSync(fd, encoding);
   } finally {
     fs.closeSync(fd);
   }
@@ -241,8 +243,10 @@ class Vault {
     regular(file);
     if (!stat(file)) return values;
     const allowed = { ...common, ...sites[site] };
-    for (const [index, original] of fs
-      .readFileSync(file, "utf8")
+    for (const [index, original] of contents(
+      file,
+      "Configuration is too large.",
+    )
       .split(/\r?\n/)
       .entries()) {
       const line = original.trim();
@@ -273,10 +277,16 @@ class Vault {
     if (!stat(file)) return {};
     if (!this.available())
       throw Error("Unlock your system keyring to use saved credentials.");
+    const raw = contents(
+      file,
+      "Saved credentials could not be unlocked. Unlock the keyring or forget these settings before replacing them.",
+      FILE_LIMIT,
+      null,
+    );
     try {
       return validValues(
         site,
-        JSON.parse(this.storage.decryptString(fs.readFileSync(file))),
+        JSON.parse(this.storage.decryptString(raw)),
       );
     } catch {
       throw Error(
@@ -395,8 +405,7 @@ class Vault {
         if (stat(file))
           write(
             file,
-            fs
-              .readFileSync(file, "utf8")
+            contents(file, "Configuration is too large.")
               .split(/\r?\n/)
               .filter(
                 (line) =>
@@ -763,4 +772,4 @@ class History {
     };
   }
 }
-module.exports = { Vault, History, Redactor, SECRET, DAYS, LIST_LIMIT };
+module.exports = { Vault, History, Redactor, SECRET, DAYS, FILE_LIMIT, LIST_LIMIT };

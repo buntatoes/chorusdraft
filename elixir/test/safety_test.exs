@@ -152,7 +152,7 @@ defmodule ChorusDraft.SafetyTest do
     end
   end
 
-  test ".env parsing treats values as data and preserves the process environment" do
+  test ".env parsing treats values as data, preserves the process environment, and refuses links" do
     path = Path.join(System.tmp_dir!(), "chorus-draft-env-#{System.unique_integer([:positive])}")
     File.write!(path, "KEY=$(touch sentinel)\nEXISTING=overwrite\nQUOTED='hello there'\n")
     env = Config.load(path, %{"EXISTING" => "keep"})
@@ -160,6 +160,29 @@ defmodule ChorusDraft.SafetyTest do
     assert env["EXISTING"] == "keep"
     assert env["QUOTED"] == "hello there"
     File.rm!(path)
+    assert Config.load(path, %{"EXISTING" => "keep"}) == %{"EXISTING" => "keep"}
+
+    dir = path <> "-dir"
+    File.mkdir!(dir)
+    assert_raise Error, fn -> Config.load(dir, %{}) end
+    File.rmdir!(dir)
+
+    target = path <> "-target"
+    link = path <> "-link"
+    File.write!(target, "SECRET=synthetic\n")
+
+    case File.ln_s(target, link) do
+      :ok ->
+        assert_raise Error, fn -> Config.load(link, %{}) end
+        File.rm!(link)
+
+      {:error, reason} ->
+        if :os.type() == {:win32, :nt} and reason in [:eacces, :eperm],
+          do: :ok,
+          else: flunk("Could not create test symlink: #{inspect(reason)}")
+    end
+
+    File.rm!(target)
   end
 
   test "audit regressions: automatic publication applies stricter harassment, link, mention, and PII gates" do

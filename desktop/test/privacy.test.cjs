@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const crypto = require("node:crypto");
-const { Vault, History, Redactor, DAYS, LIST_LIMIT } = require("../electron/privacy.cjs");
+const { Vault, History, Redactor, DAYS, FILE_LIMIT, LIST_LIMIT } = require("../electron/privacy.cjs");
 function fixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "chorusdraft privacy "));
   for (const site of ["bluesky", "mastodon"])
@@ -182,6 +182,27 @@ test("malformed legacy assignments prevent a misleading successful migration", (
   );
   assert.equal(fs.readFileSync(file, "utf8"), original);
   assert.deepEqual(fs.readdirSync(path.join(root, "credentials")), []);
+});
+test("legacy .env and encrypted settings are refused when oversized", (t) => {
+  const root = fixture(t),
+    vault = new Vault(
+      root,
+      path.join(root, "credentials"),
+      protectedStorage(),
+      "linux",
+    );
+  const env = path.join(root, "elixir", "bluesky", ".env");
+  fs.writeFileSync(env, "BLUESKY_HANDLE=account.example\n");
+  fs.truncateSync(env, FILE_LIMIT + 1);
+  assert.throws(() => vault.legacy("bluesky"), /too large/);
+  vault.save(
+    "mastodon",
+    input({ MASTODON_ACCESS_TOKEN: "synthetic-token" }),
+    true,
+  );
+  const encrypted = path.join(root, "credentials", "mastodon.enc");
+  fs.truncateSync(encrypted, FILE_LIMIT + 1);
+  assert.throws(() => vault.values("mastodon"), /could not be unlocked/);
 });
 test("secret omission preserves credentials, explicit clearing removes them, and unsafe settings are rejected", (t) => {
   const root = fixture(t),

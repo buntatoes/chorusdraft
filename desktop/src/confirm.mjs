@@ -4,5 +4,5 @@
 export function confirmDeleteFrom(event) {
   if (!event || event.type !== "confirm" || event.action !== "delete")
     return null;
-  return typeof event.id === "string" ? event.id : "";
+  return typeof event.id === "string" && event.id !== "" ? event.id : null;
 }
