@@ -398,7 +398,9 @@ test(
         .waitFor();
       assert.equal(await card.getByLabel("Draft text").innerText(), replyText);
       await card.getByText("Reply: " + replyUri, { exact: true }).waitFor();
-      await page.getByRole("button", { name: "Stop session" }).click();
+      await page.getByLabel("Review response").fill("q");
+      await page.getByRole("button", { name: "Send response" }).click();
+      await page.getByText("Session complete", { exact: true }).waitFor();
       await page.getByRole("region", { name: "Draft review" }).waitFor({
         state: "hidden",
       });
