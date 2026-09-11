@@ -105,10 +105,12 @@ for sensitive material.
 
 ## State
 
-Split by platform, service origin, and account. Native locks serialize writers
-and release after crashes. Unix files use private modes; Windows uses protected
-ACLs. Replaces are atomic. Symlinks and special files are refused. Corrupt or
-unexpected state is rejected.
+Split by platform, service origin, and account. Locks serialize writers,
+release after crashes, and spawn no helper program: a lock holds a loopback
+socket address derived from the lock file, takes local connections only, and
+answers each with that derived identifier alone. Unix files use private modes;
+Windows uses protected ACLs. Replaces are atomic. Symlinks and special files
+are refused. Corrupt or unexpected state is rejected.
 
 One daemon per account. Import only into an empty account store. Unknown fields
 are ignored or rejected. In-flight imports become `uncertain`. The source file

@@ -3,9 +3,10 @@
 ## Requirements
 
 Desktop downloads include the GUI and terminal bridge. The bot needs
-Erlang/OTP 25 or later. Linux also needs util-linux (`flock`); macOS and
-Windows need Python 3 for account-state locking. Windows launchers use
-PowerShell. Building the bot from source requires Elixir 1.15+ and Mix.
+Erlang/OTP 25 or later; account-state locking needs nothing else installed.
+Windows needs Python 3 to replace the state file atomically, and Windows
+launchers use PowerShell. Building the bot from source requires Elixir 1.15+
+and Mix.
 
 Connect with a Bluesky app password or Mastodon access token. AI drafting
 needs a local Ollama/OpenAI-compatible endpoint, Gemini, or ChatGPT/OpenAI

@@ -33,8 +33,8 @@ defmodule ChorusDraft.Store do
   end
 
   def transaction(dir, fun) do
-    # The lock is a separate OS process, so a nested transaction on the same
-    # store would wait out the lock timeout and report "busy". Fail at once.
+    # The lock is not reentrant, so a nested transaction on the same store
+    # would wait out the lock timeout and report "busy". Fail at once.
     key = {__MODULE__, :locked}
     holding = Process.get(key, [])
     expanded = Path.expand(dir)
@@ -579,7 +579,8 @@ defmodule ChorusDraft.Store do
     end)
   end
 
-  # Keep a persistent lock file; unlinking it could split concurrent owners.
+  # Keep a persistent lock file; the lock identity follows it, so unlinking it
+  # could split concurrent owners.
   defp acquire_lock(path) do
     regular_file!(path, true)
     {:ok, io} = File.open(path, [:append, :binary])
