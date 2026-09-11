@@ -190,6 +190,10 @@ class DesktopTests(unittest.TestCase):
                          ('elixir', 'bluesky', ['discover']))
         self.assertEqual(arguments({'runtime': 'elixir', 'platform': 'mastodon', 'action': 'discover', 'text': 'opensource'}),
                          ('elixir', 'mastodon', ['discover', 'opensource']))
+        self.assertEqual(
+            arguments({'runtime': 'elixir', 'platform': 'bluesky', 'action': 'discover',
+                       'text': 'at://did:plc:alice/app.bsky.feed.post/abc'}),
+            ('elixir', 'bluesky', ['discover', 'at://did:plc:alice/app.bsky.feed.post/abc']))
         self.assertEqual(arguments({'runtime': 'elixir', 'platform': 'bluesky', 'action': 'targets'}),
                          ('elixir', 'bluesky', ['targets']))
         self.assertEqual(arguments({'runtime': 'elixir', 'platform': 'mastodon', 'action': 'targets', 'text': 'someone'}),
@@ -216,6 +220,8 @@ class DesktopTests(unittest.TestCase):
                          'target': 'at://did:plc:alice/app.bsky.feed.like/fixture'},
                         {'runtime': 'elixir', 'platform': 'mastodon', 'action': 'post', 'text': text, 'cw': 'n' * 501},
                         {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'review', 'target': 'draft\nid'},
+                        {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'discover', 'text': '--ignore-active-hours'},
+                        {'runtime': 'elixir', 'platform': 'mastodon', 'action': 'targets', 'text': '--limit=1'},
                         {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'import'},
                         {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'service'},
                         {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'delete'},

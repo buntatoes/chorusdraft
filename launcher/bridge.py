@@ -98,7 +98,12 @@ def arguments(request):
         text = request.get('text')
         if text is None or (isinstance(text, str) and not text.strip()):
             pass
-        elif not isinstance(text, str) or len(text) > 10000 or '\x00' in text:
+        elif (
+            not isinstance(text, str)
+            or len(text) > 10000
+            or '\x00' in text
+            or text.lstrip().startswith('-')
+        ):
             raise ValueError('Enter text for this action (maximum 10,000 characters).')
         else:
             args.append(text)
