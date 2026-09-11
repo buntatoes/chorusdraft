@@ -206,12 +206,18 @@ test(
       await page.getByLabel("Content warning").waitFor();
       assert.match(
         await page.getByLabel("Draft visibility").innerText(),
-        /Visibility: public/,
+        /^Visibility: public/,
       );
       await page.getByLabel("Reply id").fill("123");
+      await page.waitForFunction(() => {
+        const field = document.querySelector(
+          '[aria-label="Draft visibility"]',
+        );
+        return field && /^Visibility: unlisted/.test(field.textContent);
+      });
       assert.match(
         await page.getByLabel("Draft visibility").innerText(),
-        /Visibility: unlisted/,
+        /^Visibility: unlisted/,
       );
       await page.getByRole("button", { name: "Cancel", exact: true }).click();
       await page.getByLabel("Social platform").selectOption("bluesky");

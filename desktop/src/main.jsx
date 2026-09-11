@@ -143,7 +143,7 @@ function App() {
   const [cw, setCw] = useState("");
   const [replyTo, setReplyTo] = useState("");
   const [quoteTo, setQuoteTo] = useState("");
-  const [composeVisibility, setComposeVisibility] = useState("public");
+  const [mastodonVisibility, setMastodonVisibility] = useState("public");
   const [result, setResult] = useState("");
   const logRef = useRef(null);
   const terminalText = useRef(new TerminalText());
@@ -243,35 +243,22 @@ function App() {
     if (!running) runningLock.current = false;
   }, [running]);
   useEffect(() => {
-    if (!compose || compose === "search") return;
-    const reply = compose === "reply" || replyTo.trim();
-    const quote = compose === "quote" || quoteTo.trim();
-    if (platform === "bluesky") {
-      setComposeVisibility("public");
+    if (!compose || compose === "search" || platform !== "mastodon" || !api)
       return;
-    }
-    if (reply && !quote) {
-      setComposeVisibility("unlisted");
-      return;
-    }
-    if (!api) {
-      setComposeVisibility("public");
-      return;
-    }
     let active = true;
     api
       .settings({ runtime, platform })
       .then((info) => {
         if (active)
-          setComposeVisibility(info.values.STATUS_VISIBILITY || "public");
+          setMastodonVisibility(info.values.STATUS_VISIBILITY || "public");
       })
       .catch(() => {
-        if (active) setComposeVisibility("public");
+        if (active) setMastodonVisibility("public");
       });
     return () => {
       active = false;
     };
-  }, [compose, platform, replyTo, quoteTo]);
+  }, [compose, platform]);
   const invoke = async (operation, opts = {}) => {
     try {
       setError("");
@@ -382,6 +369,15 @@ function App() {
   const writeLimit = TEXT_LIMIT[platform];
   const replyId = replyTo.trim();
   const quoteId = quoteTo.trim();
+  const stagingReply =
+    (compose === "reply" || !!replyId) &&
+    !(compose === "quote" || !!quoteId);
+  const composeVisibility =
+    platform === "bluesky"
+      ? "public"
+      : stagingReply
+        ? "unlisted"
+        : mastodonVisibility;
   const composeOver =
     compose && compose !== "search" && text.length > writeLimit;
   const composeReady =
