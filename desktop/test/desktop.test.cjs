@@ -264,8 +264,23 @@ test(
       await page.getByText(texts[0], { exact: true }).waitFor();
       await page.getByText(texts[1], { exact: true }).waitFor();
       await page
-        .getByText(/Automatic attempts remaining: 5\/5/)
+        .getByRole("button", {
+          name: "Bluesky: 2 pending, 0 uncertain, 5/5 automatic remaining",
+          exact: true,
+        })
         .waitFor();
+      await page
+        .getByRole("button", {
+          name: "Mastodon: 0 pending, 0 uncertain, 5/5 automatic remaining",
+          exact: true,
+        })
+        .waitFor();
+      assert.equal(
+        await page
+          .getByRole("button", { name: "Publish this draft", exact: true })
+          .count(),
+        0,
+      );
       const edited = "Edited from the queue for later review.";
       await page
         .locator("article")
@@ -284,15 +299,16 @@ test(
       await page.getByText(edited, { exact: true }).waitFor();
       assert.equal(await page.getByText(texts[0], { exact: true }).count(), 0);
       await page
-        .locator("article")
-        .filter({ hasText: texts[1] })
-        .getByRole("button", { name: "Reject", exact: true })
-        .click();
-      await page.getByText(texts[1], { exact: true }).waitFor({ state: "hidden" });
-      await page.getByRole("button", { name: "Overview", exact: true }).click();
+        .getByRole("button", {
+          name: "Bluesky: 2 pending, 0 uncertain, 5/5 automatic remaining",
+          exact: true,
+        })
+        .waitFor();
       await assert.rejects(fs.access(path.join(root, "published.txt")));
       await page
-        .getByRole("button", { name: "Open review", exact: true })
+        .locator("article")
+        .filter({ hasText: edited })
+        .getByRole("button", { name: "Review this draft", exact: true })
         .click();
       await page
         .getByRole("button", { name: "Publish this draft", exact: true })
@@ -300,6 +316,7 @@ test(
       const log = await page.getByRole("log").innerText();
       assert.ok(log.includes(edited));
       assert.ok(!log.includes(texts[0]));
+      assert.ok(!log.includes(texts[1]));
       assert.ok(!log.includes("desktop-fixture-password"));
       assert.ok(log.includes("[redacted]"));
       await page.getByRole("button", { name: "Edit text", exact: true }).click();
@@ -355,6 +372,35 @@ test(
         await fs.readFile(path.join(root, "published.txt"), "utf8"),
         reviewed,
       );
+      await page.getByRole("button", { name: "Queue", exact: true }).click();
+      await page.getByRole("heading", { name: "Queue", exact: true }).waitFor();
+      await page.getByText(texts[1], { exact: true }).waitFor();
+      assert.equal(await page.getByText(edited, { exact: true }).count(), 0);
+      await page
+        .getByRole("button", {
+          name: "Bluesky: 1 pending, 0 uncertain, 5/5 automatic remaining",
+          exact: true,
+        })
+        .waitFor();
+      assert.equal(
+        await page
+          .getByRole("button", { name: "Publish this draft", exact: true })
+          .count(),
+        0,
+      );
+      await page
+        .locator("article")
+        .filter({ hasText: texts[1] })
+        .getByRole("button", { name: "Reject", exact: true })
+        .click();
+      await page.getByText(texts[1], { exact: true }).waitFor({ state: "hidden" });
+      await page
+        .getByRole("button", {
+          name: "Bluesky: 0 pending, 0 uncertain, 5/5 automatic remaining",
+          exact: true,
+        })
+        .waitFor();
+      await page.getByRole("button", { name: "Overview", exact: true }).click();
       await page
         .getByRole("button", { name: "Write a reply", exact: true })
         .click();
@@ -380,6 +426,14 @@ test(
         await page.getByRole("log").innerText(),
         /Staged manual draft /,
       );
+      await page.getByRole("button", { name: "Queue", exact: true }).click();
+      await page.getByRole("heading", { name: "Queue", exact: true }).waitFor();
+      await page.getByText(replyText, { exact: true }).waitFor();
+      await page
+        .getByText("Reply: at://did:plc:alice/app.bsky.feed.post/fixture", {
+          exact: true,
+        })
+        .waitFor();
       await page.getByRole("button", { name: "History", exact: true }).click();
       await page
         .getByRole("heading", { name: "History", exact: true })

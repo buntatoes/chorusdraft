@@ -430,12 +430,14 @@ test("queue lists unresolved drafts and automatic budget without writing state",
         status: "pending",
         text: "hold for review",
         action: "manual",
+        reply_to: "at://did/app.bsky.feed.post/parent",
         created_at: new Date(now - 1000).toISOString(),
       },
       {
         id: "uncertain-id",
         status: "uncertain",
         text: "check the account",
+        quote_to: "at://did/app.bsky.feed.post/quoted",
         created_at: new Date(now - 2000).toISOString(),
       },
       {
@@ -458,6 +460,10 @@ test("queue lists unresolved drafts and automatic budget without writing state",
   assert.equal(queue.automatic.used, 1);
   assert.equal(queue.automatic.remaining, 4);
   assert.equal(queue.automatic.frozen, true);
+  assert.equal(queue.items[1].reply_to, "at://did/app.bsky.feed.post/parent");
+  assert.equal(queue.items[1].quote_to, "");
+  assert.equal(queue.items[0].quote_to, "at://did/app.bsky.feed.post/quoted");
+  assert.equal(queue.items[0].reply_to, "");
   assert.equal(fs.readFileSync(file, "utf8"), original);
 });
 test("queue shows expired publication leases as uncertain without writing state", (t) => {
@@ -549,6 +555,46 @@ test("queue uses the most recently written account store only", (t) => {
   assert.equal(queue.automatic.used, 0);
   assert.equal(queue.automatic.remaining, 5);
   assert.equal(queue.automatic.frozen, false);
+});
+test("queue reads Bluesky and Mastodon stores separately", (t) => {
+  const root = fixture(t),
+    now = Date.UTC(2026, 8, 8, 12),
+    history = new History(root, path.join(root, "activity"), () => now);
+  for (const [site, id, frozen] of [
+    ["bluesky", "bsky-pending", false],
+    ["mastodon", "masto-uncertain", true],
+  ]) {
+    const dir = path.join(root, "elixir", site, "data", "d".repeat(24));
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(
+      path.join(dir, "state.json"),
+      JSON.stringify({
+        drafts: [
+          {
+            id,
+            status: frozen ? "uncertain" : "pending",
+            text: `${site} draft`,
+            created_at: new Date(now - 1000).toISOString(),
+          },
+        ],
+        automatic: frozen ? [Math.floor(now / 1000) - 60] : [],
+      }),
+    );
+  }
+  const bluesky = history.queue("bluesky");
+  const mastodon = history.queue("mastodon");
+  assert.deepEqual(
+    bluesky.items.map((row) => [row.id, row.status]),
+    [["bsky-pending", "pending"]],
+  );
+  assert.equal(bluesky.automatic.frozen, false);
+  assert.equal(bluesky.automatic.remaining, 5);
+  assert.deepEqual(
+    mastodon.items.map((row) => [row.id, row.status]),
+    [["masto-uncertain", "uncertain"]],
+  );
+  assert.equal(mastodon.automatic.frozen, true);
+  assert.equal(mastodon.automatic.remaining, 4);
 });
 test(
   "filesystem links cannot redirect credentials, activity, or legacy cleanup outside their boundaries",

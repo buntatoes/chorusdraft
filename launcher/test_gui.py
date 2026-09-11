@@ -143,6 +143,10 @@ class DesktopTests(unittest.TestCase):
             arguments({'runtime': 'elixir', 'platform': 'mastodon', 'action': 'reply',
                        'text': text, 'target': '123', 'cw': 'note'}),
             ('elixir', 'mastodon', ['reply', '123', text, '--cw', 'note']))
+        self.assertEqual(arguments({'runtime': 'elixir', 'platform': 'bluesky', 'action': 'review', 'target': 'draft-id'}),
+                         ('elixir', 'bluesky', ['review', 'draft-id']))
+        self.assertEqual(arguments({'runtime': 'elixir', 'platform': 'bluesky', 'action': 'review'}),
+                         ('elixir', 'bluesky', ['review']))
         for request in ({'runtime': 'elixir', 'platform': 'bluesky', 'action': '--publish'},
                         {'runtime': 'python', 'platform': 'mastodon', 'action': 'review'},
                         {'runtime': 'elixir', 'platform': '../bluesky', 'action': 'review'},
@@ -158,7 +162,8 @@ class DesktopTests(unittest.TestCase):
                         {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'reply', 'text': text, 'target': 'not-a-uri'},
                         {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'quote', 'text': text,
                          'target': 'at://did:plc:alice/app.bsky.feed.like/fixture'},
-                        {'runtime': 'elixir', 'platform': 'mastodon', 'action': 'post', 'text': text, 'cw': 'n' * 501}):
+                        {'runtime': 'elixir', 'platform': 'mastodon', 'action': 'post', 'text': text, 'cw': 'n' * 501},
+                        {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'review', 'target': 'draft\nid'}):
             with self.assertRaises(ValueError):
                 arguments(request)
 
