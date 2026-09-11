@@ -29,8 +29,6 @@ defmodule ChorusDraft.Guard.Safety do
   @mixed_script ~r/\p{Latin}[\p{L}\p{M}]*[\p{Cyrillic}\p{Greek}\p{Armenian}]|[\p{Cyrillic}\p{Greek}\p{Armenian}][\p{L}\p{M}]*\p{Latin}/u
   @format ~r/[\x{00AD}\x{0600}-\x{0605}\x{061C}\x{06DD}\x{070F}\x{0890}\x{0891}\x{08E2}\x{180E}\x{200B}-\x{200F}\x{202A}-\x{202E}\x{2060}-\x{206F}\x{FEFF}\x{FFF9}-\x{FFFB}\x{110BD}\x{110CD}\x{13430}-\x{1343F}\x{1BCA0}-\x{1BCA3}\x{1D173}-\x{1D17A}\x{E0001}\x{E0020}-\x{E007F}]/u
 
-  def __guard_id__, do: "chorusdraft-guard-" <> ChorusDraft.version()
-
   def public?(post), do: post["visibility"] in ["public", "unlisted"]
 
   def actor_key(actor) do

@@ -6,8 +6,11 @@ defmodule ChorusDraft.Package do
     unless Mix.env() == :prod,
       do: raise("Build with MIX_ENV=prod mix run scripts/build_release.exs")
 
+    # Signs the compiled Guard modules, then builds the escript that carries
+    # both the Guard beams and the signature verified against them.
     Mix.Task.run("escript.build")
     root = File.cwd!()
+    check_guard_keys(root)
     license = if File.regular?("LICENSE"), do: "LICENSE", else: "../LICENSE"
     dist = Path.join(root, "dist")
     File.mkdir_p!(dist)
@@ -97,6 +100,13 @@ defmodule ChorusDraft.Package do
 
       File.write!(archive <> ".sha256", digest <> "  " <> Path.basename(archive) <> "\n")
       IO.puts("Built #{archive}")
+
+      if File.regular?(Path.join(root, "guard/keys/development.pub")) do
+        IO.puts(
+          "Unofficial build: Guard is signed with the development key in _build. " <>
+            "Set CHORUSDRAFT_GUARD_SIGNING_KEY and delete guard/keys/development.pub to sign a release."
+        )
+      end
     after
       File.rm_rf!(work)
     end
@@ -142,6 +152,16 @@ defmodule ChorusDraft.Package do
     esac
     exec "$base/chorusdraft" "$platform" --base "$base/$platform" --setup "$@"
     """
+  end
+
+  # A signing key in the source tree would be copied into the package.
+  defp check_guard_keys(root) do
+    for path <- Path.wildcard(Path.join(root, "guard/keys/*")) do
+      name = Path.basename(path)
+
+      unless name == "README.md" or Path.extname(name) == ".pub",
+        do: raise("guard/keys may hold only public keys and README.md, found #{name}")
+    end
   end
 
   defp copy(root, destination, file), do: copy(root, destination, file, file)

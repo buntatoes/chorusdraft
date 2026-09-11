@@ -35,8 +35,6 @@ defmodule ChorusDraft.Guard.PII do
     @private_key
   ]
 
-  def __guard_id__, do: "chorusdraft-guard-" <> ChorusDraft.version()
-
   def sensitive?(text) when is_binary(text) do
     value = Safety.screening_text(text)
     Enum.any?(@patterns, &Regex.match?(&1, value))
