@@ -79,12 +79,12 @@ on the selected platform. Cards show reply and quote targets when the draft
 has them. **Review this draft** starts `review ID` for that pending item;
 publish buttons still follow a review event. Remaining automatic attempts and
 freeze state are shown for Bluesky and Mastodon side by side. Edit from Queue
-or during review; the replacement
-is screened and still needs approval. During review, **Edit text** prefills
-the current draft and keeps line breaks. The response field is disabled while
-the edit form is open so `y` cannot publish the original. After you save,
-review asks again. You can also send `y`, `e`, `d`, or `q` through the
-response field when those buttons are showing.
+or during review; the replacement is screened and still needs approval.
+During review, **Edit text** prefills the current draft and keeps line
+breaks. The response field is disabled while the edit form is open so `y`
+cannot publish the original. After you save, review asks again. You can also
+send `y`, `e`, `d`, or `q` through the response field when those buttons are
+showing.
 
 **Start automatic mode** can post only a new original or an eligible public
 mention reply from that run. Manual posts, existing drafts, quotes, targets,

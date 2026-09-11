@@ -529,29 +529,15 @@ function App() {
               <History selection={{ runtime, platform }} />
             </>
           ) : page === "queue" ? (
-            <>
-              <label className="history-selection">
-                Platform
-                <select
-                  aria-label="Queue platform"
-                  disabled={running}
-                  value={platform}
-                  onChange={(e) => setPlatform(e.target.value)}
-                >
-                  <option value="bluesky">Bluesky</option>
-                  <option value="mastodon">Mastodon</option>
-                </select>
-              </label>
-              <Queue
-                selection={{ runtime, platform }}
-                running={running}
-                onPlatform={setPlatform}
-                onReview={(id) => run("review", undefined, id)}
-                onRun={(action, text, target) =>
-                  run(action, text, target, { stay: true })
-                }
-              />
-            </>
+            <Queue
+              selection={{ runtime, platform }}
+              running={running}
+              onPlatform={setPlatform}
+              onReview={(id) => run("review", undefined, id)}
+              onRun={(action, text, target) =>
+                run(action, text, target, { stay: true })
+              }
+            />
           ) : (
             <>
               <div className="page-heading">

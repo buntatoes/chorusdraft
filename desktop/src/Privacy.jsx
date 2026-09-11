@@ -493,13 +493,19 @@ export function History({ selection }) {
     </section>
   );
 }
+function queueCounts(data) {
+  let pending = 0,
+    uncertain = 0;
+  for (const item of data.items) {
+    if (item.status === "pending") pending += 1;
+    else if (item.status === "uncertain") uncertain += 1;
+  }
+  return { pending, uncertain };
+}
 function queueSummary(name, data, error) {
   if (error) return `${name}: queue could not be read`;
   if (!data) return `${name}: reading queue`;
-  const pending = data.items.filter((item) => item.status === "pending").length;
-  const uncertain = data.items.filter(
-    (item) => item.status === "uncertain",
-  ).length;
+  const { pending, uncertain } = queueCounts(data);
   const freeze = data.automatic.frozen ? ", frozen" : "";
   return `${name}: ${pending} pending, ${uncertain} uncertain, ${data.automatic.remaining}/${data.automatic.limit} automatic remaining${freeze}`;
 }
@@ -575,8 +581,7 @@ export function Queue({ selection, running, onRun, onReview, onPlatform }) {
       <p>
         Pending drafts stay here until you review, edit, or reject them.
         Uncertain drafts freeze automatic mode until you reject them after
-        checking the account. Queue reads the account store last used on each
-        platform. Drafts stay on the platform that created them.
+        checking the account.
       </p>
       <div
         className="queue-platforms"
@@ -590,6 +595,7 @@ export function Queue({ selection, running, onRun, onReview, onPlatform }) {
           const summary = queues[platform];
           const platformError = errors[platform];
           const frozen = !!summary?.automatic.frozen;
+          const counts = summary ? queueCounts(summary) : null;
           return (
             <button
               key={platform}
@@ -607,21 +613,8 @@ export function Queue({ selection, running, onRun, onReview, onPlatform }) {
                 <span>Reading queue…</span>
               ) : (
                 <>
-                  <span>
-                    {
-                      summary.items.filter((item) => item.status === "pending")
-                        .length
-                    }{" "}
-                    pending
-                  </span>
-                  <span>
-                    {
-                      summary.items.filter(
-                        (item) => item.status === "uncertain",
-                      ).length
-                    }{" "}
-                    uncertain
-                  </span>
+                  <span>{counts.pending} pending</span>
+                  <span>{counts.uncertain} uncertain</span>
                   <span>
                     Automatic remaining: {summary.automatic.remaining}/
                     {summary.automatic.limit}
@@ -739,10 +732,10 @@ export function Queue({ selection, running, onRun, onReview, onPlatform }) {
         ))}
       </div>
       <p className="history-footnote">
-        Review this draft starts a review session for that pending item.
-        Publishing still waits for a review event. Editing re-screens the new
-        text, then leaves the draft pending for review. Rejecting an uncertain
-        draft clears the automatic freeze after you inspect the account.
+        Review this draft starts review ID for that pending item. Publishing
+        still waits for a review event. Editing re-screens the new text, then
+        leaves the draft pending. Rejecting an uncertain draft clears the
+        automatic freeze after you inspect the account.
       </p>
     </section>
   );

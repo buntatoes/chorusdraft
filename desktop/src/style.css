@@ -1155,8 +1155,7 @@ h1 {
 }
 @media (max-width: 1120px) {
   .settings-actions,
-  .history-toolbar,
-  .queue-platforms {
+  .history-toolbar {
     flex-wrap: wrap;
   }
   .queue-platforms {
