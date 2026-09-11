@@ -82,6 +82,7 @@ defmodule ChorusDraft.RunnerTest do
     run = runner(client, dir, interactive: false)
     Runner.original(run)
     assert_raise Error, fn -> Runner.review(run) end
+    assert_raise Error, fn -> Runner.review(run, "any-id") end
     assert Agent.get(published, & &1) == []
 
     {:ok, input} = StringIO.open("yes\n")
@@ -451,6 +452,116 @@ defmodule ChorusDraft.RunnerTest do
 
     assert hd(Store.drafts(dir))["text"] == "reply wording"
     assert hd(Store.drafts(dir))["status"] == "pending"
+  end
+
+  test "review of one pending id leaves other pending drafts untouched", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    first = Runner.manual(runner(client, dir), "first")
+    second = Runner.manual(runner(client, dir), "second")
+    {:ok, input} = StringIO.open("yes\n")
+    Runner.review(runner(client, dir, interactive: true, input: input), second["id"])
+
+    drafts = Map.new(Store.drafts(dir), &{&1["id"], &1["status"]})
+    assert drafts[first["id"]] == "pending"
+    assert drafts[second["id"]] == "published"
+    assert Enum.map(Agent.get(published, & &1), & &1["id"]) == [second["id"]]
+  end
+
+  test "review of one pending id does not walk the rest of the queue", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    first = Runner.manual(runner(client, dir), "first")
+    second = Runner.manual(runner(client, dir), "second")
+    {:ok, input} = StringIO.open("n\nyes\n")
+    Runner.review(runner(client, dir, interactive: true, input: input), first["id"])
+
+    drafts = Map.new(Store.drafts(dir), &{&1["id"], &1["status"]})
+    assert drafts[first["id"]] == "pending"
+    assert drafts[second["id"]] == "pending"
+    assert Agent.get(published, & &1) == []
+  end
+
+  test "empty review id walks every pending draft", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    Runner.manual(runner(client, dir), "first")
+    Runner.manual(runner(client, dir), "second")
+    {:ok, input} = StringIO.open("yes\nyes\n")
+    Runner.review(runner(client, dir, interactive: true, input: input), "")
+    assert length(Agent.get(published, & &1)) == 2
+    assert Enum.map(Store.drafts(dir), & &1["status"]) == ["published", "published"]
+  end
+
+  test "review of a missing or non-pending id is refused", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    pending = Runner.manual(runner(client, dir), "pending")
+    rejected = Runner.manual(runner(client, dir), "rejected")
+    Store.transition(dir, rejected["id"], "pending", "rejected")
+    publishing = Runner.manual(runner(client, dir), "publishing")
+    Store.transition(dir, publishing["id"], "pending", "publishing")
+    uncertain = Runner.manual(runner(client, dir), "uncertain")
+    Store.transition(dir, uncertain["id"], "pending", "publishing")
+    Store.transition(dir, uncertain["id"], "publishing", "uncertain")
+    {:ok, input} = StringIO.open("yes\n")
+    run = runner(client, dir, interactive: true, input: input)
+
+    assert_raise Error, "Draft is unavailable or not pending.", fn ->
+      Runner.review(run, "missing-id")
+    end
+
+    assert_raise Error, "Draft is unavailable or not pending.", fn ->
+      Runner.review(run, rejected["id"])
+    end
+
+    assert_raise Error, "Draft is unavailable or not pending.", fn ->
+      Runner.review(run, publishing["id"])
+    end
+
+    assert_raise Error, "Draft is unavailable or not pending.", fn ->
+      Runner.review(run, uncertain["id"])
+    end
+
+    assert Agent.get(published, & &1) == []
+    drafts = Map.new(Store.drafts(dir), &{&1["id"], &1["status"]})
+    assert drafts[pending["id"]] == "pending"
+    assert drafts[rejected["id"]] == "rejected"
+    assert drafts[publishing["id"]] == "publishing"
+    assert drafts[uncertain["id"]] == "uncertain"
+  end
+
+  test "control review of one pending id publishes from approve", %{
+    dir: dir,
+    client: client,
+    published: published
+  } do
+    first = Runner.manual(runner(client, dir), "first")
+    second = Runner.manual(runner(client, dir), "second")
+    {:ok, input} = StringIO.open(~s({"action":"approve"}\n))
+    {:ok, output} = StringIO.open("")
+
+    Runner.review(
+      runner(client, dir, interactive: true, control: true, input: input, output: output),
+      second["id"]
+    )
+
+    drafts = Map.new(Store.drafts(dir), &{&1["id"], &1["status"]})
+    assert drafts[first["id"]] == "pending"
+    assert drafts[second["id"]] == "published"
+    assert length(Agent.get(published, & &1)) == 1
+    {_, shown} = StringIO.contents(output)
+    assert shown =~ ~s("event":"review")
+    assert shown =~ second["id"]
+    refute shown =~ first["id"]
   end
 
   test "control review drives skip, reject, and quit commands", %{

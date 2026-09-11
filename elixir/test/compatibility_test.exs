@@ -63,7 +63,8 @@ defmodule ChorusDraft.CompatibilityTest do
 
   test "advanced flags and short commands translate without publishing" do
     assert Commands.normalize(["draft"]) == ["--post-only"]
-    assert Commands.normalize(["review"]) == ["--process-queue"]
+    assert Commands.normalize(["review"]) == ["--process-queue="]
+    assert Commands.normalize(["review", "draft-id"]) == ["--process-queue=draft-id"]
     assert Commands.normalize(["start", "--poll", "30"]) == ["--daemon", "--poll", "30"]
     assert Commands.normalize(["automatic"]) == ["--daemon", "--automatic"]
 
@@ -99,6 +100,9 @@ defmodule ChorusDraft.CompatibilityTest do
 
     for arguments <- [
           ["--random-post"],
+          ["--process-queue"],
+          ["--process-queue", "draft-id"],
+          ["--process-queue=draft-id"],
           ["--reply-uri=at://example", "--reply-cid=ignored"],
           ["--poll=30", "--quote-only"],
           ["--random-post", "--limit", "2"]
@@ -126,6 +130,8 @@ defmodule ChorusDraft.CompatibilityTest do
   test "short commands never inject direct publication" do
     commands = [
       ["draft"],
+      ["review"],
+      ["review", "draft-id"],
       ["post", "hello"],
       ["reply", "123", "hello"],
       ["quote", "123", "hello"],

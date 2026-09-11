@@ -5,7 +5,6 @@ defmodule ChorusDraft.Commands do
   @simple %{
     "setup" => "--setup",
     "draft" => "--post-only",
-    "review" => "--process-queue",
     "replies" => "--replies-only",
     "start" => "--daemon",
     "listen" => "--listen",
@@ -21,6 +20,10 @@ defmodule ChorusDraft.Commands do
     cond do
       Map.has_key?(@simple, command) ->
         [Map.fetch!(@simple, command) | args]
+
+      command == "review" ->
+        {value, rest} = optional(args)
+        ["--process-queue=#{value || ""}" | rest]
 
       command == "automatic" ->
         ["--daemon", "--automatic" | args]
