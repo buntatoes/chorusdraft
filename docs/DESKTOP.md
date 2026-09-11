@@ -72,8 +72,10 @@ uses the same id formats. Compose previews visibility before submit: Bluesky
 Settings (`STATUS_VISIBILITY`); Mastodon replies to others stage as `unlisted`.
 Compose queues for review. It does not publish.
 
-**Open review** approves, edits, or rejects it. The desktop talks to the bot
-over JSON; publish buttons follow a review event, not a scraped prompt.
+**Open review** shows a card for the current draft from the `review` event:
+exact text, action, visibility, content warning, reply target, quote target,
+id, and status. Approve, edit, or reject from that card. Activity is the
+session log. Publish buttons follow a review event, not a scraped prompt.
 **Queue** lists pending and uncertain drafts from the account store last used
 on the selected platform. Cards show reply and quote targets when the draft
 has them. **Review this draft** starts `review ID` for that pending item;
@@ -199,8 +201,10 @@ included. `service install` is CLI-only; enable the unit yourself. See
 ## Desktop JSON control
 
 GUI sessions set `CHORUSDRAFT_CONTROL=1` and talk to the bot over JSON lines
-on stdio (binary, not a PTY). The activity log still shows the human `log`
-lines. Publish buttons follow a `review` event, not scraped prompt text.
+on stdio (binary, not a PTY). The activity log shows the human `log` lines. A
+`review` event is shown as a draft card (`text`, `action`, `visibility`, `cw`,
+`reply_to`, `quote_to`, `id`, `status`). Publish buttons follow that event, not
+scraped prompt text.
 
 Bot events, one JSON object per line on stdout:
 
