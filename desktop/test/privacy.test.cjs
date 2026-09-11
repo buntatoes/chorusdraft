@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const crypto = require("node:crypto");
-const { Vault, History, Redactor, DAYS } = require("../electron/privacy.cjs");
+const { Vault, History, Redactor, DAYS, LIST_LIMIT } = require("../electron/privacy.cjs");
 function fixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "chorusdraft privacy "));
   for (const site of ["bluesky", "mastodon"])
@@ -217,6 +217,75 @@ test("secret omission preserves credentials, explicit clearing removes them, and
     true,
   );
   assert.equal(vault.values("mastodon").MASTODON_ACCESS_TOKEN, "");
+});
+test("ACTIVE_HOURS, DISCOVERY_KEYWORDS, and account lists persist without inventing env keys", (t) => {
+  const root = fixture(t),
+    vault = new Vault(
+      root,
+      path.join(root, "credentials"),
+      protectedStorage(),
+      "linux",
+    );
+  vault.save(
+    "bluesky",
+    {
+      values: {
+        ACTIVE_HOURS: "08:30-22:00",
+        DISCOVERY_KEYWORDS: "elixir,linux",
+      },
+      clear: [],
+      lists: {
+        "target_accounts.txt": "# keep\nexample.bsky.social\n",
+        "do_not_contact.txt": "blocked.example\n",
+      },
+    },
+    true,
+  );
+  assert.equal(vault.values("bluesky").ACTIVE_HOURS, "08:30-22:00");
+  assert.equal(vault.values("bluesky").DISCOVERY_KEYWORDS, "elixir,linux");
+  assert.equal(
+    vault.view("bluesky").lists["target_accounts.txt"],
+    "# keep\nexample.bsky.social\n",
+  );
+  assert.equal(
+    fs.readFileSync(
+      path.join(root, "elixir", "bluesky", "config", "do_not_contact.txt"),
+      "utf8",
+    ),
+    "blocked.example\n",
+  );
+  vault.save("bluesky", input({ ACTIVE_HOURS: "", DISCOVERY_KEYWORDS: "" }), true);
+  assert.equal(vault.values("bluesky").ACTIVE_HOURS, "");
+  assert.equal(vault.values("bluesky").DISCOVERY_KEYWORDS, "opensource");
+  assert.equal(
+    vault.lists("bluesky")["do_not_contact.txt"],
+    "blocked.example\n",
+  );
+  vault.forget("bluesky");
+  assert.equal(
+    vault.lists("bluesky")["target_accounts.txt"],
+    "# keep\nexample.bsky.social\n",
+  );
+  for (const hours of ["25:00-08:00", "08:60-22:00", "morning", "08:30"])
+    assert.throws(
+      () => vault.save("bluesky", input({ ACTIVE_HOURS: hours }), true),
+      /HH:MM-HH:MM/,
+    );
+  vault.save("bluesky", input({ ACTIVE_HOURS: "22:00-08:00" }), true);
+  vault.save("bluesky", input({ ACTIVE_HOURS: "9-17" }), true);
+  vault.save("bluesky", input({ ACTIVE_HOURS: "09:00-09:00" }), true);
+  for (const lists of [
+    { "target_accounts.txt": "ok", "secret.txt": "nope" },
+    { "target_accounts.txt": "ok\0nope", "do_not_contact.txt": "" },
+    {
+      "target_accounts.txt": "a".repeat(LIST_LIMIT + 1),
+      "do_not_contact.txt": "",
+    },
+  ])
+    assert.throws(
+      () => vault.save("bluesky", { values: {}, clear: [], lists }, true),
+      /Invalid account list/,
+    );
 });
 test("redaction handles every chunk boundary, encoded forms, and overlapping secrets", () => {
   const secret = 'synthetic secret/"value';
@@ -512,6 +581,30 @@ test(
       /links/,
     );
     assert.ok(!fs.existsSync(path.join(outside, "not-created")));
+    fs.mkdirSync(path.join(root, "elixir", "bluesky", "config"), {
+      recursive: true,
+    });
+    fs.symlinkSync(
+      path.join(outside, "list-not-created"),
+      path.join(root, "elixir", "bluesky", "config", "target_accounts.txt"),
+    );
+    assert.throws(
+      () =>
+        vault.save(
+          "bluesky",
+          {
+            values: {},
+            clear: [],
+            lists: {
+              "target_accounts.txt": "handle.example",
+              "do_not_contact.txt": "",
+            },
+          },
+          false,
+        ),
+      /links/,
+    );
+    assert.ok(!fs.existsSync(path.join(outside, "list-not-created")));
     const history = new History(root, path.join(root, "activity"));
     fs.mkdirSync(path.join(root, "logs"));
     fs.symlinkSync(outside, path.join(root, "logs", "external"));

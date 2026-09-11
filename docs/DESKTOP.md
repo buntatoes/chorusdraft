@@ -100,6 +100,13 @@ If protected storage is unavailable, **Use for this session** keeps newly
 entered settings in memory until ChorusDraft closes. The app does not fall
 back to saving plaintext.
 
+The form also has `ACTIVE_HOURS` (`HH:MM-HH:MM`; blank or equal start and end
+means always active) and `DISCOVERY_KEYWORDS` (comma-separated). Target
+accounts and Do not contact edit `config/target_accounts.txt` and
+`config/do_not_contact.txt` in the selected platform directory (one handle
+per line). Saving Settings writes those two files; the bot reads them from
+disk.
+
 These settings apply to bots launched through the GUI. Secure saving removes
 only the fields managed by the form from the selected bot's existing `.env`;
 advanced settings remain there. Session-only use leaves an existing `.env`

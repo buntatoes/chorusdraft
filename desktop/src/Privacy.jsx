@@ -3,6 +3,10 @@ export function Settings({ selection, onClose, onSaved }) {
   const dialog = useRef(null),
     [info, setInfo] = useState(null),
     [values, setValues] = useState({}),
+    [lists, setLists] = useState({
+      "target_accounts.txt": "",
+      "do_not_contact.txt": "",
+    }),
     [clear, setClear] = useState([]),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -13,6 +17,7 @@ export function Settings({ selection, onClose, onSaved }) {
       .then((v) => {
         setInfo(v);
         setValues(v.values);
+        if (v.lists) setLists(v.lists);
       })
       .catch(() =>
         setError("Settings could not be opened. Check storage permissions."),
@@ -22,7 +27,11 @@ export function Settings({ selection, onClose, onSaved }) {
     setBusy(true);
     setError("");
     try {
-      await window.chorus.saveSettings(selection, { values, clear }, persist);
+      await window.chorus.saveSettings(
+        selection,
+        { values, clear, lists },
+        persist,
+      );
       setValues({});
       onSaved(
         persist
@@ -197,6 +206,69 @@ export function Settings({ selection, onClose, onSaved }) {
               {field("STATUS_LANGUAGE", "Post language")}
             </div>
           </fieldset>
+          <fieldset disabled={busy}>
+            <legend>Hours and discovery</legend>
+            <div className="settings-grid">
+              {field("ACTIVE_HOURS", "Active hours")}
+              {field("DISCOVERY_KEYWORDS", "Discovery keywords")}
+              <p className="settings-hint">
+                Active hours use <code>HH:MM-HH:MM</code>. Leave blank or set
+                equal start and end to stay active all day. Discovery keywords
+                are comma-separated.
+              </p>
+            </div>
+          </fieldset>
+          <fieldset disabled={busy}>
+            <legend>Account lists</legend>
+            <div className="settings-grid">
+              <label className="settings-field wide">
+                <span>Target accounts</span>
+                <textarea
+                  name="target_accounts.txt"
+                  aria-label="Target accounts"
+                  spellCheck={false}
+                  maxLength={262144}
+                  value={lists["target_accounts.txt"] || ""}
+                  disabled={busy}
+                  onChange={(e) =>
+                    setLists({
+                      ...lists,
+                      "target_accounts.txt": e.target.value,
+                    })
+                  }
+                />
+              </label>
+              <label className="settings-field wide">
+                <span>Do not contact</span>
+                <textarea
+                  name="do_not_contact.txt"
+                  aria-label="Do not contact"
+                  spellCheck={false}
+                  maxLength={262144}
+                  value={lists["do_not_contact.txt"] || ""}
+                  disabled={busy}
+                  onChange={(e) =>
+                    setLists({
+                      ...lists,
+                      "do_not_contact.txt": e.target.value,
+                    })
+                  }
+                />
+              </label>
+              <p className="settings-hint">
+                One handle per line. <code>#</code> starts a comment. Saving
+                writes{" "}
+                <code>
+                  elixir/{selection.platform}/config/target_accounts.txt
+                </code>{" "}
+                and{" "}
+                <code>
+                  elixir/{selection.platform}/config/do_not_contact.txt
+                </code>
+                .
+              </p>
+            </div>
+          </fieldset>
           <div className="storage-note">
             <p>
               {info.available
@@ -231,6 +303,7 @@ export function Settings({ selection, onClose, onSaved }) {
                   const v = await window.chorus.forgetSettings(selection);
                   setInfo(v);
                   setValues(v.values);
+                  if (v.lists) setLists(v.lists);
                   setClear([]);
                 } catch {
                   setError("Settings could not be removed.");
