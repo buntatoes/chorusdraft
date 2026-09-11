@@ -104,15 +104,20 @@ function validId(id) {
     !CONTROL.test(id)
   );
 }
-function validPostId(id) {
-  return (
-    typeof id === "string" &&
-    id.trim() !== "" &&
-    id.length <= 512 &&
-    !CONTROL.test(id) &&
-    !/\s/.test(id) &&
-    !id.startsWith("--")
-  );
+function validPostId(platform, id) {
+  if (
+    typeof id !== "string" ||
+    id.trim() === "" ||
+    id.length > 512 ||
+    CONTROL.test(id) ||
+    /\s/.test(id) ||
+    id.startsWith("--")
+  )
+    return false;
+  if (platform === "bluesky")
+    return /^at:\/\/[^/\s]+\/app\.bsky\.feed\.post\/[a-zA-Z0-9._~:-]+$/.test(id);
+  if (platform === "mastodon") return /^\d+$/.test(id);
+  return false;
 }
 function emit(message) {
   if (window && !window.isDestroyed())
@@ -297,7 +302,7 @@ app
         throw new Error("Enter text for this action (maximum 10,000 characters).");
       if (
         ["reply", "quote"].includes(request.action) &&
-        !validPostId(request.target)
+        !validPostId(request.platform, request.target)
       )
         throw new Error("Enter a reply or quote target.");
       const cw =
@@ -309,9 +314,9 @@ app
       if (cw) {
         if (request.platform === "bluesky")
           throw new Error("Content warnings are supported only for Mastodon.");
-        if (!validText(cw, 10000))
+        if (!validText(cw, 500))
           throw new Error(
-            "Enter a content warning (maximum 10,000 characters).",
+            "Enter a content warning (maximum 500 characters).",
           );
       }
       if (request.action === "reject" && !validId(request.text))

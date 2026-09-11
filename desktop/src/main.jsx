@@ -1,6 +1,13 @@
 import { Settings, History, Queue } from "./Privacy.jsx";
 import { TerminalText } from "./terminal.mjs";
 import { reviewDraftFrom } from "./review.mjs";
+import {
+  TEXT_LIMIT,
+  characterCount,
+  composeAction,
+  composeCanSubmit,
+  draftVisibility,
+} from "./compose.mjs";
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
@@ -123,7 +130,6 @@ const titles = {
   version: "Version",
 };
 const api = window.chorus;
-const TEXT_LIMIT = { bluesky: 300, mastodon: 500 };
 
 function App() {
   const runtime = "elixir";
@@ -243,8 +249,7 @@ function App() {
     if (!running) runningLock.current = false;
   }, [running]);
   useEffect(() => {
-    if (!compose || compose === "search" || platform !== "mastodon" || !api)
-      return;
+    if (platform !== "mastodon" || !api) return;
     let active = true;
     api
       .settings({ runtime, platform })
@@ -258,7 +263,7 @@ function App() {
     return () => {
       active = false;
     };
-  }, [compose, platform]);
+  }, [platform]);
   const invoke = async (operation, opts = {}) => {
     try {
       setError("");
@@ -369,30 +374,31 @@ function App() {
   const writeLimit = TEXT_LIMIT[platform];
   const replyId = replyTo.trim();
   const quoteId = quoteTo.trim();
-  const stagingReply =
-    (compose === "reply" || !!replyId) &&
-    !(compose === "quote" || !!quoteId);
-  const composeVisibility =
-    platform === "bluesky"
-      ? "public"
-      : stagingReply
-        ? "unlisted"
-        : mastodonVisibility;
+  const stagingAction = composeAction(replyId, quoteId);
+  const composeVisibility = draftVisibility(
+    platform,
+    stagingAction,
+    mastodonVisibility,
+  );
+  const bodyCount = characterCount(text);
   const composeOver =
-    compose && compose !== "search" && text.length > writeLimit;
-  const composeReady =
-    !!text.trim() &&
-    !composeOver &&
-    !(replyId && quoteId) &&
-    (compose !== "reply" || !!replyId) &&
-    (compose !== "quote" || !!quoteId);
+    compose && compose !== "search" && bodyCount > writeLimit;
+  const composeReady = composeCanSubmit({
+    compose,
+    platform,
+    text,
+    cw,
+    replyId,
+    quoteId,
+  });
   const submitCompose = () => {
     if (compose === "search") {
       run("search", text);
       return;
     }
     if (!composeReady) return;
-    const action = replyId ? "reply" : quoteId ? "quote" : "post";
+    const action = composeAction(replyId, quoteId);
+    if (!action) return;
     run(action, text, replyId || quoteId || undefined, {
       cw: platform === "mastodon" && cw.trim() ? cw : undefined,
     });
@@ -932,50 +938,54 @@ function App() {
                     data-over={composeOver ? "true" : "false"}
                     aria-label="Character count"
                   >
-                    {text.length}/{writeLimit}
+                    {bodyCount}/{writeLimit}
                   </p>
                   {platform === "mastodon" && (
                     <label className="settings-field">
                       Content warning
                       <input
                         aria-label="Content warning"
-                        maxLength={10000}
+                        maxLength={500}
                         value={cw}
                         onChange={(e) => setCw(e.target.value)}
                         placeholder="Optional Mastodon content warning"
                       />
                     </label>
                   )}
-                  <label className="settings-field">
-                    Reply id
-                    <input
-                      autoFocus={compose === "reply"}
-                      aria-label="Reply id"
-                      maxLength={512}
-                      value={replyTo}
-                      onChange={(e) => setReplyTo(e.target.value)}
-                      placeholder={
-                        platform === "bluesky"
-                          ? "at:// URI of the post to reply to"
-                          : "Numeric Mastodon status id"
-                      }
-                    />
-                  </label>
-                  <label className="settings-field">
-                    Quote id
-                    <input
-                      autoFocus={compose === "quote"}
-                      aria-label="Quote id"
-                      maxLength={512}
-                      value={quoteTo}
-                      onChange={(e) => setQuoteTo(e.target.value)}
-                      placeholder={
-                        platform === "bluesky"
-                          ? "at:// URI of the post to quote"
-                          : "Numeric Mastodon status id"
-                      }
-                    />
-                  </label>
+                  {compose !== "quote" && (
+                    <label className="settings-field">
+                      Reply id
+                      <input
+                        autoFocus={compose === "reply"}
+                        aria-label="Reply id"
+                        maxLength={512}
+                        value={replyTo}
+                        onChange={(e) => setReplyTo(e.target.value)}
+                        placeholder={
+                          platform === "bluesky"
+                            ? "at:// URI of the post to reply to"
+                            : "Numeric Mastodon status id"
+                        }
+                      />
+                    </label>
+                  )}
+                  {compose !== "reply" && (
+                    <label className="settings-field">
+                      Quote id
+                      <input
+                        autoFocus={compose === "quote"}
+                        aria-label="Quote id"
+                        maxLength={512}
+                        value={quoteTo}
+                        onChange={(e) => setQuoteTo(e.target.value)}
+                        placeholder={
+                          platform === "bluesky"
+                            ? "at:// URI of the post to quote"
+                            : "Numeric Mastodon status id"
+                        }
+                      />
+                    </label>
+                  )}
                   <p
                     className="compose-visibility"
                     aria-label="Draft visibility"
