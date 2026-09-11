@@ -12,6 +12,12 @@ will receive. **Write a reply** and **Write a quote** are GUI labels; desktop
 `bot:run` allows the `reply` and `quote` commands the same way it allows
 `post`. Compose still queues for review. There is no desktop `--publish`.
 
+Overview starts **Discover**, **Targets**, and **Delete a post**. Delete
+asks for a post id, then confirms from the bot `confirm` event with
+`approve`. Search hits are cards with author, id, and text. **Reply** and
+**Quote** open compose with that id. **Discover** on a card starts discovery
+using that id.
+
 ## 0.53.2 — 2026-09-10
 
 Current published GitHub Release. Earlier GitHub Releases and tags

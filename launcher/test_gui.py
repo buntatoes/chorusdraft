@@ -120,6 +120,43 @@ class DesktopTests(unittest.TestCase):
             self.assertIn('got approve', output)
             self.assertTrue(session.control)
 
+    def test_control_sessions_forward_delete_confirm(self):
+        with tempfile.TemporaryDirectory(prefix='ChorusDraft GUI test ') as folder:
+            program = Path(folder) / 'control.py'
+            program.write_text(
+                "import json,sys\n"
+                "print(json.dumps({'event':'confirm','action':'delete','id':'post-1'}), flush=True)\n"
+                "command = json.loads(sys.stdin.readline())\n"
+                "print(json.dumps({'event':'log','value':'got '+command['action']+'\\n'}), flush=True)\n"
+            )
+            session = Session([sys.executable, str(program)], folder, {'CHORUSDRAFT_CONTROL': '1'})
+            output = ''
+            confirm = None
+            deadline = time.monotonic() + 20
+            sent = False
+            while time.monotonic() < deadline:
+                try:
+                    kind, value = session.events.get(timeout=0.2)
+                except queue.Empty:
+                    continue
+                if kind == 'output':
+                    output += value
+                elif kind == 'confirm':
+                    confirm = value
+                    if not sent:
+                        session.send(json.dumps({'action': 'approve'}))
+                        sent = True
+                elif kind == 'exit':
+                    break
+                else:
+                    raise AssertionError((kind, value))
+            else:
+                session.stop()
+                raise AssertionError('Control session timed out')
+            self.assertEqual(confirm, {'action': 'delete', 'id': 'post-1'})
+            self.assertIn('got approve', output)
+            self.assertNotIn('confirm', output)
+
     def test_desktop_commands_cannot_inject_flags_or_skip_approval(self):
         text = 'quotes "hello" & pipes | $HOME; café'
         self.assertEqual(arguments({'runtime': 'elixir', 'platform': 'bluesky', 'action': 'post', 'text': text}),
@@ -147,6 +184,21 @@ class DesktopTests(unittest.TestCase):
                          ('elixir', 'bluesky', ['review', 'draft-id']))
         self.assertEqual(arguments({'runtime': 'elixir', 'platform': 'bluesky', 'action': 'review'}),
                          ('elixir', 'bluesky', ['review']))
+        self.assertEqual(arguments({'runtime': 'elixir', 'platform': 'bluesky', 'action': 'discover'}),
+                         ('elixir', 'bluesky', ['discover']))
+        self.assertEqual(arguments({'runtime': 'elixir', 'platform': 'bluesky', 'action': 'discover', 'text': '  '}),
+                         ('elixir', 'bluesky', ['discover']))
+        self.assertEqual(arguments({'runtime': 'elixir', 'platform': 'mastodon', 'action': 'discover', 'text': 'opensource'}),
+                         ('elixir', 'mastodon', ['discover', 'opensource']))
+        self.assertEqual(arguments({'runtime': 'elixir', 'platform': 'bluesky', 'action': 'targets'}),
+                         ('elixir', 'bluesky', ['targets']))
+        self.assertEqual(arguments({'runtime': 'elixir', 'platform': 'mastodon', 'action': 'targets', 'text': 'someone'}),
+                         ('elixir', 'mastodon', ['targets', 'someone']))
+        post_id = 'at://did:plc:abcdefghijklmnopqrstuvwx/app.bsky.feed.post/3k2yqh3k2yq2q'
+        self.assertEqual(arguments({'runtime': 'elixir', 'platform': 'bluesky', 'action': 'delete', 'text': post_id}),
+                         ('elixir', 'bluesky', ['delete', post_id]))
+        self.assertEqual(arguments({'runtime': 'elixir', 'platform': 'mastodon', 'action': 'delete', 'text': '123'}),
+                         ('elixir', 'mastodon', ['delete', '123']))
         for request in ({'runtime': 'elixir', 'platform': 'bluesky', 'action': '--publish'},
                         {'runtime': 'python', 'platform': 'mastodon', 'action': 'review'},
                         {'runtime': 'elixir', 'platform': '../bluesky', 'action': 'review'},
@@ -163,7 +215,12 @@ class DesktopTests(unittest.TestCase):
                         {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'quote', 'text': text,
                          'target': 'at://did:plc:alice/app.bsky.feed.like/fixture'},
                         {'runtime': 'elixir', 'platform': 'mastodon', 'action': 'post', 'text': text, 'cw': 'n' * 501},
-                        {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'review', 'target': 'draft\nid'}):
+                        {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'review', 'target': 'draft\nid'},
+                        {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'import'},
+                        {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'service'},
+                        {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'delete'},
+                        {'runtime': 'elixir', 'platform': 'mastodon', 'action': 'delete', 'text': 'post\nid'},
+                        {'runtime': 'elixir', 'platform': 'mastodon', 'action': 'delete', 'text': post_id}):
             with self.assertRaises(ValueError):
                 arguments(request)
 
