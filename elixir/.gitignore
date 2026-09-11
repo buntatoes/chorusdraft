@@ -2,6 +2,9 @@
 /deps/
 /dist/
 /chorusdraft
+/guard/guard.manifest
+/guard/guard.manifest.sig
+/guard/keys/development.pub
 **/.env
 **/data/
 **/logs/

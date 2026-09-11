@@ -46,6 +46,8 @@ the desktop app and will not open a window:
 - `ChorusDraft-elixir-0.54.0-windows.zip`
 
 Each archive has setup/install/verify scripts, config examples, docs, Guard,
-licenses, a manifest, and a SHA-256 sidecar. Desktop archives include the
+licenses, a manifest, and a SHA-256 sidecar. Guard is signed with the ed25519
+release key, and the bot checks the Guard code on disk against that signature
+before it screens or publishes anything. Desktop archives include the
 launcher; they do not include GUI or Elixir rebuild source. Stop the old
 process, then import state if you need it.

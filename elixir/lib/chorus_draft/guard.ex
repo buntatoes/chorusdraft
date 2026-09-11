@@ -2,15 +2,19 @@ defmodule ChorusDraft.Guard do
   @moduledoc """
   Loads the proprietary ChorusDraft Guard implementation.
 
-  Official builds compile `guard/`. If that code is missing or is not a
-  licensed Guard module, ChorusDraft refuses to continue rather than
-  screening or publishing without safeguards.
+  Official builds compile `guard/` and sign the compiled Guard modules with the
+  release key. If that code is missing, or the code on disk is not what the
+  release signed, ChorusDraft refuses to continue rather than screening or
+  publishing without safeguards.
   """
   alias ChorusDraft.Error
+  alias ChorusDraft.Guard.Signature
 
   @safety ChorusDraft.Guard.Safety
   @pii ChorusDraft.Guard.PII
-  @id_prefix "chorusdraft-guard-"
+
+  @doc "The proprietary modules a build must carry and verify."
+  def modules, do: [@safety, @pii]
 
   def required! do
     safety()
@@ -36,13 +40,9 @@ defmodule ChorusDraft.Guard do
   def ensure_module!(module) when is_atom(module) do
     case Code.ensure_loaded(module) do
       {:module, ^module} ->
-        id =
-          if function_exported?(module, :__guard_id__, 0), do: module.__guard_id__()
-
-        if valid_id?(id) do
-          module
-        else
-          raise Error, missing_message()
+        case Signature.verify(module) do
+          :ok -> module
+          {:error, reason} -> raise Error, unverified_message(reason)
         end
 
       _ ->
@@ -54,11 +54,18 @@ defmodule ChorusDraft.Guard do
     "ChorusDraft Guard is required and was not loaded. Official builds include the proprietary safeguard module; refusing to continue without it."
   end
 
-  # The id check proves a Guard beam is present and matches this release, not
-  # that it is authentic: anyone who can swap beams already controls the
-  # runtime. The fail-closed property is what matters.
-  defp valid_id?(id) when is_binary(id),
-    do: id == @id_prefix <> ChorusDraft.version()
+  def unverified_message(reason) do
+    "ChorusDraft Guard failed signature verification (#{explain(reason)}). Official builds ship Guard signed by the release key; refusing to screen or publish with unverified safeguards."
+  end
 
-  defp valid_id?(_), do: false
+  defp explain(:unsigned), do: "this build carries no Guard signature"
+  defp explain(:malformed_signature), do: "the Guard signature is unreadable"
+  defp explain(:no_trusted_key), do: "this build carries no Guard verifying key"
+  defp explain(:untrusted_signature), do: "no trusted key signed the Guard manifest"
+  defp explain(:malformed_manifest), do: "the signed Guard manifest is unreadable"
+  defp explain(:wrong_release), do: "the signed Guard manifest is for another release"
+  defp explain(:unsigned_module), do: "the signed Guard manifest does not cover this module"
+  defp explain(:unreadable_beam), do: "the Guard code could not be read back for checking"
+  defp explain(:digest_mismatch), do: "the Guard code on disk is not what was signed"
+  defp explain(:stale_code), do: "the running Guard code is not the code on disk"
 end

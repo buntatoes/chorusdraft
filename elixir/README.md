@@ -30,6 +30,42 @@ On Windows, from a source checkout: `escript .\chorusdraft ...`. Edit
 `bluesky/.env` and/or `mastodon/.env`. Setup does not start a service or
 overwrite existing config. Run one daemon per account.
 
+## Guard signing
+
+Guard is proprietary and is verified before it screens anything. `mix
+guard.sign` digests the compiled Guard modules, signs the digests with an
+ed25519 key, and compiles the signed manifest, the signature, and the public
+keys in [guard/keys](guard/keys) into the build. At startup the bot digests the
+Guard code as it exists on disk and refuses to run unless it matches.
+
+`mix test` and `mix escript.build` sign first, so a source checkout needs no
+extra step. With no release key configured they use a development key kept in
+`_build/`, trusted through `guard/keys/development.pub`, which git ignores. A
+development key makes a build run; it says nothing about a downloaded release.
+
+Generate the release key once, keep the private half offline, and commit only
+the public half:
+
+```sh
+mix guard.keygen --out /secure/path/chorusdraft-guard-release.key
+cp /secure/path/chorusdraft-guard-release.key.pub guard/keys/release.pub
+```
+
+Then build a release with it:
+
+```sh
+rm -f guard/keys/development.pub
+CHORUSDRAFT_GUARD_SIGNING_KEY=/secure/path/chorusdraft-guard-release.key \
+  MIX_ENV=prod mix run scripts/build_release.exs
+```
+
+The private key is read from that path and never enters the repository or the
+package; `guard/keys` may hold only public keys, and the build stops if it does
+not. Signing refuses to run while `guard/keys/development.pub` exists, so a
+release cannot ship trusting a development key. `./scripts/check_packages.sh`
+runs the packaged bot, which verifies Guard before anything else, so a package
+whose Guard does not verify fails the check.
+
 ## Workflows
 
 ```sh
@@ -163,7 +199,8 @@ user data directory and runs setup. Pass a path when you want a custom
 location. The CLI installer refuses a destination that already exists.
 
 Build: `MIX_ENV=prod mix run scripts/build_release.exs`  
-Verify: `./scripts/check_packages.sh` or `.\scripts\check_packages.ps1`
+Verify: `./scripts/check_packages.sh` or `.\scripts\check_packages.ps1`  
+Release builds set `CHORUSDRAFT_GUARD_SIGNING_KEY` first: [Guard signing](#guard-signing).
 
 ## Upgrade
 
@@ -185,6 +222,7 @@ Check the live account first. Do not force uncertain back to pending.
 | Symptom | What to do |
 |---|---|
 | `ChorusDraft Guard is required` | Official source includes `guard/`. Do not delete or replace it. |
+| `ChorusDraft Guard failed signature verification` | The Guard code is not what this build signed. Reinstall from an official package. From source, run `mix guard.sign --development` after changing Guard. |
 | `automatic frozen` in `status` | A `publishing` or `uncertain` draft is blocking claims. Inspect the live account, then `reject ID`. |
 | `State is busy` / lock timed out | Another process holds the account store. Stop the extra daemon. Linux needs `flock` (`util-linux`). |
 | `State is already locked by this process` | Nested store write. Retry the edit after the outer command finishes. |
@@ -205,6 +243,7 @@ the source-tree desktop guide (`docs/DESKTOP.md`).
 ## License
 
 Application code is Apache 2.0 except ChorusDraft Guard (`guard/`), which is
-proprietary. Official builds require Guard and refuse to run without it. See
+proprietary. Official builds require Guard, verify its signature, and refuse to
+run without it. See
 LICENSE, [guard/LICENSE](guard/LICENSE), [NOTICE](NOTICE), and
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

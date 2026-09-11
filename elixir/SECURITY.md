@@ -48,7 +48,12 @@ Review indents draft text. The desktop lights the publish buttons from a JSON
 line-anchored prompt.
 
 These checks live in proprietary ChorusDraft Guard. Official builds include
-it. The bot refuses to draft or publish if Guard is missing. The checks are
+it and sign the compiled Guard modules with an ed25519 release key. The public
+key ships in the source tree; the private key does not. Before Guard screens
+anything, the bot digests the Guard code as it exists on disk, checks it
+against that signature, and confirms the running code is that code. The bot
+refuses to draft or publish if Guard is missing, unsigned, signed by a key it
+does not trust, or altered after it was signed. The checks are
 regex. They miss some bad text and block some fine text. Do not loosen them
 to chase people.
 

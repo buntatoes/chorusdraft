@@ -6,33 +6,34 @@ defmodule ChorusDraft.GuardTest do
     def public?(_post), do: true
   end
 
-  defmodule WrongId do
-    def __guard_id__, do: "not-a-guard"
+  defmodule ReleaseIdentity do
+    def __guard_id__, do: "chorusdraft-guard-" <> ChorusDraft.version()
     def public?(_post), do: true
   end
 
-  test "official Guard is loaded and identifies this release" do
+  test "official Guard is loaded and verifies against this build's signature" do
     assert Guard.required!() == :ok
     assert Guard.safety() == ChorusDraft.Guard.Safety
     assert Guard.pii() == ChorusDraft.Guard.PII
+    assert Guard.modules() == [ChorusDraft.Guard.Safety, ChorusDraft.Guard.PII]
 
-    assert ChorusDraft.Guard.Safety.__guard_id__() ==
-             "chorusdraft-guard-" <> ChorusDraft.version()
-
-    assert ChorusDraft.Guard.PII.__guard_id__() == "chorusdraft-guard-" <> ChorusDraft.version()
+    for module <- Guard.modules() do
+      assert ChorusDraft.Guard.Signature.verify(module) == :ok
+      refute function_exported?(module, :__guard_id__, 0)
+    end
   end
 
-  test "refuses to use a missing or unlicensed Guard module" do
-    message = Guard.missing_message()
-
+  test "refuses to use a missing Guard module" do
     error = assert_raise Error, fn -> Guard.ensure_module!(ChorusDraft.Guard.DoesNotExist) end
-    assert error.message == message
+    assert error.message == Guard.missing_message()
+  end
 
-    error = assert_raise Error, fn -> Guard.ensure_module!(Unlicensed) end
-    assert error.message == message
-
-    error = assert_raise Error, fn -> Guard.ensure_module!(WrongId) end
-    assert error.message == message
+  test "refuses a Guard module this build did not sign" do
+    for module <- [Unlicensed, ReleaseIdentity] do
+      error = assert_raise Error, fn -> Guard.ensure_module!(module) end
+      assert error.message =~ "failed signature verification"
+      assert error.message =~ "refusing to screen or publish"
+    end
   end
 
   test "public Safety and PII APIs still screen through Guard" do
