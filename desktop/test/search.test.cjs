@@ -1,11 +1,25 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 
-test("inspect_posts print becomes author, id, and text cards", async () => {
+test("one inspect_posts put becomes an author, id, and text card", async () => {
   const { searchHitsFrom } = await import("../src/search.mjs");
   const printed =
-    "\n@alice.bsky.social | at://did:plc:alice/app.bsky.feed.post/abc\nA café draft\n\n@bob@example.org | 10987654321\nLine one\nLine two\n";
+    "\n@alice.bsky.social | at://did:plc:alice/app.bsky.feed.post/abc\nA café draft\n";
   assert.deepEqual(searchHitsFrom(printed), [
+    {
+      author: "alice.bsky.social",
+      id: "at://did:plc:alice/app.bsky.feed.post/abc",
+      text: "A café draft",
+    },
+  ]);
+});
+
+test("each inspect_posts put is its own card", async () => {
+  const { searchHitsFrom } = await import("../src/search.mjs");
+  const first =
+    "\n@alice.bsky.social | at://did:plc:alice/app.bsky.feed.post/abc\nA café draft\n";
+  const second = "\n@bob@example.org | 10987654321\nLine one\nLine two\n";
+  assert.deepEqual(searchHitsFrom(first + second), [
     {
       author: "alice.bsky.social",
       id: "at://did:plc:alice/app.bsky.feed.post/abc",
@@ -19,10 +33,10 @@ test("inspect_posts print becomes author, id, and text cards", async () => {
   ]);
 });
 
-test("empty or non-print output yields no search hits", async () => {
+test("non inspect_posts output is not a search hit", async () => {
   const { searchHitsFrom } = await import("../src/search.mjs");
   assert.deepEqual(searchHitsFrom(""), []);
   assert.deepEqual(searchHitsFrom(null), []);
-  assert.deepEqual(searchHitsFrom("Session complete"), []);
-  assert.deepEqual(searchHitsFrom("not a hit | because it lacks an @"), []);
+  assert.deepEqual(searchHitsFrom("Looking up posts.\n"), []);
+  assert.deepEqual(searchHitsFrom("@bob mentioned this without an id\n"), []);
 });

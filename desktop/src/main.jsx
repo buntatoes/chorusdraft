@@ -3,6 +3,7 @@ import { TerminalText } from "./terminal.mjs";
 import { reviewDraftFrom } from "./review.mjs";
 import { confirmDeleteFrom } from "./confirm.mjs";
 import { searchHitsFrom } from "./search.mjs";
+
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
@@ -135,32 +136,6 @@ const titles = {
 };
 const api = window.chorus;
 const TEXT_LIMIT = { bluesky: 300, mastodon: 500 };
-const promptCopy = {
-  discover: {
-    title: "Discover public posts",
-    hint: "Optional topic. Leave blank to use the bot’s discovery keywords.",
-    label: "Discovery query",
-    placeholder: "Topic to search…",
-    submit: "Start discovery",
-    require: false,
-  },
-  targets: {
-    title: "Target accounts",
-    hint: "Optional handle. Leave blank to use the target account list.",
-    label: "Account handle",
-    placeholder: "handle",
-    submit: "Stage commentary",
-    require: false,
-  },
-  delete: {
-    title: "Delete a post",
-    hint: "Enter the id of a post on your account. ChorusDraft asks before deleting.",
-    label: "Post id",
-    placeholder: "Post id",
-    submit: "Ask to confirm",
-    require: true,
-  },
-};
 
 function App() {
   const runtime = "elixir";
@@ -193,11 +168,12 @@ function App() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [searchHits, setSearchHits] = useState([]);
   const [copiedHit, setCopiedHit] = useState("");
-  const [prompt, setPrompt] = useState(null);
-  const [promptText, setPromptText] = useState("");
+  const [deletePrompt, setDeletePrompt] = useState(false);
+  const [deleteId, setDeleteId] = useState("");
   const savingReviewLock = useRef(false);
   const runningLock = useRef(false);
   const deleteAvailable = useRef(false);
+  const actionRef = useRef(null);
   useEffect(() => {
     if (!api) {
       setError("Open ChorusDraft in the desktop app to use the bot controls.");
@@ -228,6 +204,11 @@ function App() {
               .join("")
               .slice(-160000),
           );
+          if (actionRef.current === "search") {
+            const hits = searchHitsFrom(output);
+            if (hits.length)
+              setSearchHits((previous) => previous.concat(hits));
+          }
         }
       }
       const draft = reviewDraftFrom(event);
@@ -246,6 +227,7 @@ function App() {
         setDeleteConfirm(deleted);
       }
       if (event.type === "started") {
+        actionRef.current = event.action;
         setRunning(true);
         setAction(event.action);
       }
@@ -283,13 +265,10 @@ function App() {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [activity]);
   useEffect(() => {
-    if (action === "search") setSearchHits(searchHitsFrom(activity));
-  }, [activity, action]);
-  useEffect(() => {
     const close = (e) => {
       if (e.key === "Escape") {
         setCompose(null);
-        setPrompt(null);
+        setDeletePrompt(false);
       }
     };
     window.addEventListener("keydown", close);
@@ -348,24 +327,26 @@ function App() {
       setCw("");
       setReplyTo(opts.replyTo || "");
       setQuoteTo(opts.quoteTo || "");
-      setPrompt(null);
+      setDeletePrompt(false);
       setCompose(nextAction);
       return;
     }
     if (
-      ["discover", "targets", "delete"].includes(nextAction) &&
-      suppliedText === undefined
+      nextAction === "delete" &&
+      (suppliedText === undefined || !String(suppliedText).trim())
     ) {
-      setPromptText("");
+      setDeleteId("");
       setCompose(null);
-      setPrompt(nextAction);
+      setDeletePrompt(true);
       return;
     }
     runningLock.current = true;
     setCompose(null);
-    setPrompt(null);
+    setDeletePrompt(false);
     if (!opts.stay) setPage("overview");
     activityParts.current = [];
+    actionRef.current = nextAction;
+    if (nextAction === "search") setSearchHits([]);
     setAction(nextAction);
     setRunning(true);
     setActivity("");
@@ -458,10 +439,10 @@ function App() {
       run("quote", undefined, undefined, { quoteTo: hit.id });
     else if (nextAction === "discover") run("discover", hit.id);
   };
-  const submitPrompt = () => {
-    if (!prompt) return;
-    if (promptCopy[prompt].require && !promptText.trim()) return;
-    run(prompt, prompt === "delete" ? promptText.trim() : promptText.trim());
+  const submitDelete = () => {
+    const id = deleteId.trim();
+    if (!id) return;
+    run("delete", id);
   };
   const writeLimit = TEXT_LIMIT[platform];
   const replyId = replyTo.trim();
@@ -1209,52 +1190,55 @@ function App() {
           </section>
         </div>
       )}
-      {prompt && promptCopy[prompt] && (
+      {deletePrompt && (
         <div className="modal-backdrop">
           <section
-            className="compose-modal prompt-modal"
+            className="compose-modal delete-modal"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="prompt-title"
+            aria-labelledby="delete-title"
           >
             <div className="modal-title">
-              <h2 id="prompt-title">{promptCopy[prompt].title}</h2>
+              <h2 id="delete-title">Delete a post</h2>
               <button
                 aria-label="Close dialog"
-                onClick={() => setPrompt(null)}
+                onClick={() => setDeletePrompt(false)}
               >
                 <Icon name="close" />
               </button>
             </div>
-            <p>{promptCopy[prompt].hint}</p>
+            <p>
+              Enter the id of a post on your account. ChorusDraft asks before
+              deleting.
+            </p>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                submitPrompt();
+                submitDelete();
               }}
             >
               <input
                 autoFocus
-                maxLength={prompt === "delete" ? 512 : 10000}
-                aria-label={promptCopy[prompt].label}
-                value={promptText}
-                onChange={(e) => setPromptText(e.target.value)}
-                placeholder={promptCopy[prompt].placeholder}
+                maxLength={512}
+                aria-label="Post id"
+                value={deleteId}
+                onChange={(e) => setDeleteId(e.target.value)}
+                placeholder="Post id"
               />
               <div className="modal-footer">
                 <button
                   type="button"
                   className="button secondary"
-                  onClick={() => setPrompt(null)}
+                  onClick={() => setDeletePrompt(false)}
                 >
                   Cancel
                 </button>
                 <button
                   className="button primary"
                   type="submit"
-                  disabled={promptCopy[prompt].require && !promptText.trim()}
+                  disabled={!deleteId.trim()}
                 >
-                  {promptCopy[prompt].submit}
+                  Ask to confirm
                   <Icon name="arrow" size={16} />
                 </button>
               </div>

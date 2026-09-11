@@ -1,5 +1,6 @@
-// Parse the inspect_posts print: each hit is "@author | id" then text.
-const HEADER = /^@(.+?) \| (.+)$/gm;
+// Parse inspect_posts puts. Each put is one control log event:
+// "\n@author | id\ntext\n". Pass that event, not the activity panel.
+const HEADER = /\n@(\S+) \| (\S+)\n/g;
 
 export function searchHitsFrom(output) {
   if (typeof output !== "string" || !output) return [];
@@ -21,7 +22,7 @@ export function searchHitsFrom(output) {
     return {
       author: item.author,
       id: item.id,
-      text: output.slice(item.headerEnd, end).replace(/^\n/, "").trimEnd(),
+      text: output.slice(item.headerEnd, end).replace(/\n$/, ""),
     };
   });
 }

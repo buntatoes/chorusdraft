@@ -12,10 +12,10 @@ desktop `bot:run` the same way **Write a post** is. Compose still queues for
 review. There is no desktop `--publish`.
 
 Overview starts **Discover**, **Targets**, and **Delete a post**. Delete
-confirms from the bot `confirm` event with `approve`. Search hits are cards
-with author, id, and text. **Reply** and **Quote** open compose with that id.
-**Discover** on a card starts discovery using that id. `import` and `service`
-stay command-line only.
+asks for a post id, then confirms from the bot `confirm` event with
+`approve`. Search hits are cards with author, id, and text. **Reply** and
+**Quote** open compose with that id. **Discover** on a card starts discovery
+using that id.
 
 ## 0.53.2 — 2026-09-10
 
