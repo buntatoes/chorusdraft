@@ -10,7 +10,8 @@ Old JSON state still imports.
 0.53.0: publication screening lives in proprietary ChorusDraft Guard; the bot refuses to run if Guard is missing. Earlier GitHub Releases were withdrawn.
 0.53.1 is review fixes only; see CHANGELOG.
 0.53.2: Bluesky draft/automatic AppView+PDS routing, clearer AI HTTP errors, simpler GUI install into a stable folder, slimmer desktop archives, kept thread ancestors on missing parents, dead-session desktop input rejection, UTF-16 Windows service XML; see CHANGELOG.
-0.54.0 is the current published GitHub Release: CLI `review ID` / `--process-queue ID`; desktop review cards from the `review` event; Queue reply/quote, Review this draft, and dual-platform counts; compose with live 300/500, Mastodon CW, reply, and quote; Overview Discover, Targets, Delete, and search cards; Settings `ACTIVE_HOURS`, `DISCOVERY_KEYWORDS`, and target/block lists; see CHANGELOG.
+0.54.1 is the current published GitHub Release; see CHANGELOG.
+0.54.0: CLI `review ID` / `--process-queue ID`; desktop review cards from the `review` event; Queue reply/quote, Review this draft, and dual-platform counts; compose with live 300/500, Mastodon CW, reply, and quote; Overview Discover, Targets, Delete, and search cards; Settings `ACTIVE_HOURS`, `DISCOVERY_KEYWORDS`, and target/block lists; see CHANGELOG.
 
 | From Ruby 0.51.1 | Elixir | Tests |
 |---|---|---|

@@ -4,7 +4,8 @@
 
 | Version | Runtime | Support |
 |---|---|---|
-| 0.54.0 | Elixir | Current (published GitHub Release) |
+| 0.54.1 | Elixir | Current (published GitHub Release) |
+| 0.54.0 | Elixir | Previous published GitHub Release |
 | 0.53.2 | Elixir | Previous published GitHub Release |
 | v0.50 through v0.53.1 | Withdrawn | Unsupported |
 

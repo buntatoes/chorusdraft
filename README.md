@@ -21,9 +21,9 @@ Providers: local/Ollama, Gemini, or ChatGPT/OpenAI.
 
 ## Latest
 
-**[v0.54.0](https://github.com/buntatoes/chorusdraft/releases/tag/v0.54.0)**
+**[v0.54.1](https://github.com/buntatoes/chorusdraft/releases/tag/v0.54.1)**
 is the current published GitHub Release. Releases v0.50 through v0.53.1
-were withdrawn; 0.53.2 remains available.
+were withdrawn; 0.54.0 and 0.53.2 remain available.
 
 Publication screening now lives in proprietary ChorusDraft Guard. Official
 builds include it; the bot refuses to run if Guard is missing. Details in

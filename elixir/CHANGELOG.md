@@ -2,10 +2,16 @@
 
 Newest first. Also: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
+## 0.54.1 — 2026-09-11
+
+Current published GitHub Release. 0.54.0 remains available. Releases v0.50
+through v0.53.1 were withdrawn and are not downloadable. 0.53.2 remains
+available.
+
 ## 0.54.0 — 2026-09-11
 
-Current published GitHub Release. Earlier GitHub Releases and tags
-(v0.50 through v0.53.1) were withdrawn and are not downloadable.
+Earlier GitHub Releases and tags (v0.50 through v0.53.1) were withdrawn and
+are not downloadable.
 
 `review ID` and `--process-queue ID` review one pending draft. `review` and
 `--process-queue` still walk every pending draft. Missing or non-pending ids

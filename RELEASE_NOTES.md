@@ -1,19 +1,10 @@
-# ChorusDraft 0.54.0
+# ChorusDraft 0.54.1
 
 Downloads: [GitHub Releases](https://github.com/buntatoes/chorusdraft/releases).
 
-0.54.0 is the current published GitHub Release. Releases v0.50 through
-v0.53.1 were withdrawn and are not downloadable. 0.53.2 remains available.
-
-`review ID` and `--process-queue ID` review one pending draft. Desktop
-review is a card from the `review` event (text, action, visibility, content
-warning, reply, quote, id, status). Queue shows reply and quote targets,
-**Review this draft**, and Bluesky and Mastodon pending/uncertain counts
-with remaining automatic attempts and freeze. Compose uses a live 300/500
-count, Mastodon `--cw`, reply id, and quote id, and still queues for
-review. Overview starts **Discover**, **Targets**, and **Delete a post**;
-search hits are cards. Settings includes `ACTIVE_HOURS`,
-`DISCOVERY_KEYWORDS`, and the target and do-not-contact lists.
+0.54.1 is the current published GitHub Release. Releases v0.50 through
+v0.53.1 were withdrawn and are not downloadable. 0.54.0 and 0.53.2 remain
+available.
 
 **Desktop (recommended).** Extract the archive, then run `./install.sh`
 (double-click `Install ChorusDraft.command` on macOS) or `install.cmd` on
@@ -31,7 +22,7 @@ Pass a path when you want a custom install directory.
 ## Packages
 
 **Desktop (recommended).** GUI plus the bot. Download
-`chorusdraft-v0.54.0-<os>-<arch>` (`.tar.gz` on Unix, `.zip` on Windows):
+`chorusdraft-v0.54.1-<os>-<arch>` (`.tar.gz` on Unix, `.zip` on Windows):
 
 - Linux x64
 - macOS arm64 (Apple Silicon)
@@ -41,9 +32,9 @@ Pass a path when you want a custom install directory.
 **CLI only (no GUI).** Bot and terminal launchers only. These do not include
 the desktop app and will not open a window:
 
-- `ChorusDraft-elixir-0.54.0-linux.tar.gz`
-- `ChorusDraft-elixir-0.54.0-macos.tar.gz`
-- `ChorusDraft-elixir-0.54.0-windows.zip`
+- `ChorusDraft-elixir-0.54.1-linux.tar.gz`
+- `ChorusDraft-elixir-0.54.1-macos.tar.gz`
+- `ChorusDraft-elixir-0.54.1-windows.zip`
 
 Each archive has setup/install/verify scripts, config examples, docs, Guard,
 licenses, a manifest, and a SHA-256 sidecar. Desktop archives include the
