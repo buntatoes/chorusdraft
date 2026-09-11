@@ -204,20 +204,28 @@ test(
       await page.getByRole("textbox", { name: "Post text" }).waitFor();
       assert.equal(await page.getByLabel("Character count").innerText(), "0/500");
       await page.getByLabel("Content warning").waitFor();
+      assert.equal(
+        await page.getByLabel("Content warning").getAttribute("maxlength"),
+        "500",
+      );
       assert.match(
         await page.getByLabel("Draft visibility").innerText(),
         /^Visibility: public/,
       );
       await page.getByLabel("Reply id").fill("123");
-      await page.waitForFunction(() => {
-        const field = document.querySelector(
-          '[aria-label="Draft visibility"]',
-        );
-        return field && /^Visibility: unlisted/.test(field.textContent);
-      });
       assert.match(
         await page.getByLabel("Draft visibility").innerText(),
         /^Visibility: unlisted/,
+      );
+      await page.getByRole("button", { name: "Cancel", exact: true }).click();
+      await page
+        .getByRole("button", { name: "Write a reply", exact: true })
+        .click();
+      await page.getByRole("textbox", { name: "Reply text" }).waitFor();
+      assert.equal(await page.getByLabel("Quote id").count(), 0);
+      assert.match(
+        await page.getByLabel("Draft visibility").innerText(),
+        /^Visibility: public/,
       );
       await page.getByRole("button", { name: "Cancel", exact: true }).click();
       await page.getByLabel("Social platform").selectOption("bluesky");
@@ -336,6 +344,13 @@ test(
       await page
         .getByRole("button", { name: "Write a reply", exact: true })
         .click();
+      await page.getByRole("textbox", { name: "Reply text" }).fill("Hi");
+      assert.equal(await page.getByLabel("Quote id").count(), 0);
+      await page.getByLabel("Reply id").fill("not-a-uri");
+      assert.equal(
+        await page.getByRole("button", { name: "Add to review queue" }).isDisabled(),
+        true,
+      );
       await page
         .getByLabel("Reply id")
         .fill("at://did:plc:alice/app.bsky.feed.post/fixture");

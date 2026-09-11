@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import queue
+import re
 import sys
 import threading
 import subprocess
@@ -20,8 +21,11 @@ def settings(request):
     return values
 
 
-ACTIONS = {'setup', 'draft', 'review', 'start', 'listen', 'replies', 'search', 'post', 'help', 'version'}
-ACTIONS.update({'automatic', 'reject', 'edit', 'status', 'reply', 'quote'})
+ACTIONS = {
+    'setup', 'draft', 'review', 'start', 'automatic', 'listen', 'replies',
+    'search', 'post', 'reply', 'quote', 'help', 'version', 'status', 'reject',
+    'edit',
+}
 LINE_LIMIT = 65536
 
 
@@ -40,15 +44,25 @@ def valid_id(value):
     return isinstance(value, str) and value.strip() and len(value) <= 80 and not has_control(value)
 
 
-def valid_post_id(value):
-    return (
+BLUESKY_POST_URI = re.compile(r'at://[^/\s]+/app\.bsky\.feed\.post/[a-zA-Z0-9._~:-]+')
+MASTODON_STATUS_ID = re.compile(r'\d+')
+
+
+def valid_post_id(value, platform):
+    if not (
         isinstance(value, str)
         and value.strip()
         and len(value) <= 512
         and not has_control(value)
         and not any(character.isspace() for character in value)
         and not value.startswith('--')
-    )
+    ):
+        return False
+    if platform == 'bluesky':
+        return bool(BLUESKY_POST_URI.fullmatch(value))
+    if platform == 'mastodon':
+        return bool(MASTODON_STATUS_ID.fullmatch(value))
+    return False
 
 
 def require_live_session(session):
@@ -68,7 +82,7 @@ def arguments(request):
             raise ValueError('Enter text for this action (maximum 10,000 characters).')
         if action in ('reply', 'quote'):
             target = request.get('target')
-            if not valid_post_id(target):
+            if not valid_post_id(target, platform):
                 raise ValueError('Enter a reply or quote target.')
             args.extend([target, text])
         else:
@@ -77,8 +91,8 @@ def arguments(request):
         if action != 'search' and cw not in (None, ''):
             if platform == 'bluesky':
                 raise ValueError('Content warnings are supported only for Mastodon.')
-            if not isinstance(cw, str) or not cw.strip() or len(cw) > 10000 or '\x00' in cw:
-                raise ValueError('Enter a content warning (maximum 10,000 characters).')
+            if not isinstance(cw, str) or not cw.strip() or len(cw) > 500 or '\x00' in cw:
+                raise ValueError('Enter a content warning (maximum 500 characters).')
             args.extend(['--cw', cw])
     if action == 'reject':
         text = request.get('text')

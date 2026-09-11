@@ -152,11 +152,15 @@ class DesktopTests(unittest.TestCase):
                         {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'reply', 'text': text},
                         {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'quote', 'text': text, 'target': '--publish'},
                         {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'post', 'text': text, 'cw': 'note'},
-                        {'runtime': 'elixir', 'platform': 'mastodon', 'action': 'reply', 'text': text, 'target': '12 3'}):
+                        {'runtime': 'elixir', 'platform': 'mastodon', 'action': 'reply', 'text': text, 'target': '12 3'},
+                        {'runtime': 'elixir', 'platform': 'mastodon', 'action': 'reply', 'text': text, 'target': 'abc'},
+                        {'runtime': 'elixir', 'platform': 'mastodon', 'action': 'quote', 'text': text, 'target': uri},
+                        {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'reply', 'text': text, 'target': 'not-a-uri'},
+                        {'runtime': 'elixir', 'platform': 'bluesky', 'action': 'quote', 'text': text,
+                         'target': 'at://did:plc:alice/app.bsky.feed.like/fixture'},
+                        {'runtime': 'elixir', 'platform': 'mastodon', 'action': 'post', 'text': text, 'cw': 'n' * 501}):
             with self.assertRaises(ValueError):
                 arguments(request)
-        self.assertNotIn('--publish', arguments(
-            {'runtime': 'elixir', 'platform': 'mastodon', 'action': 'post', 'text': text, 'cw': 'note'})[2])
 
     def test_review_input_requires_a_live_session(self):
         class Finished:

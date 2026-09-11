@@ -64,12 +64,12 @@ Choose Bluesky or Mastodon, click **Set up**, then **Open configuration**.
 **Create a draft** stages a post. **Write a post**, **Write a reply**, and
 **Write a quote** open compose. Body text shows a live count against 300
 characters on Bluesky and 500 on Mastodon. Mastodon compose includes a
-content warning (`--cw`); Bluesky rejects content warnings. Reply id
-(`reply ID TEXT` / `--reply-to`) is an at:// URI on Bluesky or a numeric
-status id on Mastodon. Quote id (`quote ID TEXT` / `--quote-uri`) stages a
-quote. Compose shows the visibility the draft will store: Bluesky `public`;
-Mastodon originals and quotes use **Default visibility** from Settings
-(`STATUS_VISIBILITY`); Mastodon replies to others stage as `unlisted`.
+content warning (`--cw`, at most 500 characters); Bluesky rejects content
+warnings. Reply id (`reply ID TEXT` / `--reply-to`) is an at:// URI on Bluesky
+or a numeric status id on Mastodon. Quote id (`quote ID TEXT` / `--quote-uri`)
+uses the same id formats. Compose previews visibility before submit: Bluesky
+`public`; Mastodon originals and quotes use **Default visibility** from
+Settings (`STATUS_VISIBILITY`); Mastodon replies to others stage as `unlisted`.
 Compose queues for review. It does not publish.
 
 **Open review** approves, edits, or rejects it. The desktop talks to the bot
