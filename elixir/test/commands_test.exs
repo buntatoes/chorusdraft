@@ -31,6 +31,8 @@ defmodule ChorusDraft.CommandsTest do
            ]
 
     assert Commands.normalize(["--text", text]) == ["--text", text]
+    assert Commands.normalize(["review"]) == ["--process-queue="]
+    assert Commands.normalize(["review", "draft-id"]) == ["--process-queue=draft-id"]
   end
 
   test "incomplete commands cannot become other actions" do
@@ -55,6 +57,36 @@ defmodule ChorusDraft.CommandsTest do
         capture_io(:stderr, fn -> assert CLI.run(["bluesky", command, "--publish"]) == 1 end)
 
       assert message =~ "--publish requires --text"
+    end
+  end
+
+  test "review ID and --process-queue ID are one command and do not publish" do
+    assert Commands.normalize(["review", "draft-id"]) == ["--process-queue=draft-id"]
+    refute "--publish" in Commands.normalize(["review", "draft-id"])
+
+    for args <- [
+          ["review", "draft-id", "--publish"],
+          ["--process-queue", "draft-id", "--publish"],
+          ["--process-queue=draft-id", "--publish"],
+          ["--process-queue", "--publish"]
+        ] do
+      message =
+        capture_io(:stderr, fn -> assert CLI.run(["bluesky" | args]) == 1 end)
+
+      assert message =~ "--publish requires --text"
+      refute message =~ "Unexpected positional"
+      refute message =~ "Unknown command"
+      refute message =~ "Choose one command"
+    end
+
+    for args <- [
+          ["review", "draft-id", "--status"],
+          ["--process-queue", "draft-id", "--status"]
+        ] do
+      message =
+        capture_io(:stderr, fn -> assert CLI.run(["bluesky" | args]) == 1 end)
+
+      assert message =~ "Choose one command at a time."
     end
   end
 
@@ -125,7 +157,9 @@ defmodule ChorusDraft.CommandsTest do
       assert capture_io(fn -> assert CLI.run([platform, "version"]) == 0 end) =~
                ChorusDraft.version()
 
-      assert capture_io(fn -> assert CLI.run([platform, "help"]) == 0 end) =~ "Short commands:"
+      help = capture_io(fn -> assert CLI.run([platform, "help"]) == 0 end)
+      assert help =~ "review [ID]"
+      assert help =~ "--process-queue [ID]"
     end
   end
 

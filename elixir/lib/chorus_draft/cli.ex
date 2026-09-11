@@ -38,7 +38,7 @@ defmodule ChorusDraft.CLI do
     daemon: :boolean,
     automatic: :boolean,
     jetstream: :boolean,
-    process_queue: :boolean,
+    process_queue: :string,
     targets_only: :boolean,
     queue: :boolean,
     search: :string,
@@ -175,6 +175,11 @@ defmodule ChorusDraft.CLI do
 
   defp normalize_compatibility_args(["--random-post", "--" <> _ = next | rest]),
     do: ["--random-post=" | normalize_compatibility_args([next | rest])]
+
+  defp normalize_compatibility_args(["--process-queue"]), do: ["--process-queue="]
+
+  defp normalize_compatibility_args(["--process-queue", "--" <> _ = next | rest]),
+    do: ["--process-queue=" | normalize_compatibility_args([next | rest])]
 
   defp normalize_compatibility_args([value | rest]) do
     aliases = %{
@@ -421,7 +426,7 @@ defmodule ChorusDraft.CLI do
         manual(runner, options)
 
       options[:process_queue] ->
-        Runner.review(runner)
+        Runner.review(runner, options.process_queue)
 
       options[:delete] ->
         Runner.delete(runner, options.delete)
@@ -589,7 +594,7 @@ defmodule ChorusDraft.CLI do
     Usage: chorusdraft #{platform} [options]
 
     Short commands:
-      setup, draft, review, start, automatic, listen, replies, status, history
+      setup, draft, review [ID], start, automatic, listen, replies, status, history
       post TEXT, reply ID TEXT, quote ID TEXT, search QUERY, edit ID TEXT
       random [QUERY], discover [QUERY], targets [HANDLE], delete ID, reject ID, import FILE
       service install|uninstall|print
@@ -607,7 +612,7 @@ defmodule ChorusDraft.CLI do
           --daemon             Poll mentions and periodically draft originals
           --automatic          With --daemon, publish new originals/replies after safety checks
           --jetstream          Compatibility no-op; Bluesky listen/start always streams
-          --process-queue      Interactively review AI and manual drafts
+          --process-queue [ID] Interactively review pending drafts, or one pending draft
           --edit ID            Replace pending draft text; requires --text; then review; not with --publish, reply, quote, or queue
           --search QUERY       Display public posts
           --random-post [QUERY] Display a random public search/timeline result

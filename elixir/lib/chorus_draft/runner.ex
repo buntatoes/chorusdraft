@@ -289,13 +289,24 @@ defmodule ChorusDraft.Runner do
     published
   end
 
-  def review(runner) do
+  def review(runner, id \\ nil) do
     unless runner.interactive, do: raise(Error, "Queue review requires an interactive terminal.")
 
     runner.store
     |> Store.drafts()
-    |> Enum.filter(&(&1["status"] == "pending"))
+    |> pending_for_review(id)
     |> Enum.reduce_while(:ok, fn item, _ -> review_item(runner, item) end)
+  end
+
+  defp pending_for_review(drafts, id) do
+    if empty?(id) do
+      Enum.filter(drafts, &(&1["status"] == "pending"))
+    else
+      case Enum.find(drafts, &(&1["id"] == id and &1["status"] == "pending")) do
+        nil -> raise Error, "Draft is unavailable or not pending."
+        item -> [item]
+      end
+    end
   end
 
   def replace_pending(runner, id, text, opts \\ []) do
