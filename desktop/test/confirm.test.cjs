@@ -20,6 +20,7 @@ test("delete confirm is armed only by the structured confirm event", async () =>
     confirmDeleteFrom({ type: "confirm", action: "reject", id: "1" }),
     null,
   );
-  assert.equal(confirmDeleteFrom({ type: "confirm", action: "delete" }), "");
+  assert.equal(confirmDeleteFrom({ type: "confirm", action: "delete" }), null);
+  assert.equal(confirmDeleteFrom({ type: "confirm", action: "delete", id: "" }), null);
   assert.equal(confirmDeleteFrom(null), null);
 });

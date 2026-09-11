@@ -4,9 +4,8 @@
 export function reviewDraftFrom(event) {
   if (!event || event.type !== "review") return null;
   const draft = event.draft;
-  return draft && typeof draft === "object" && !Array.isArray(draft)
-    ? draft
-    : {};
+  if (!draft || typeof draft !== "object" || Array.isArray(draft)) return null;
+  return typeof draft.text === "string" ? draft : null;
 }
 
 function field(draft, key) {

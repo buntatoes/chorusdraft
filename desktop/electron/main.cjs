@@ -13,6 +13,7 @@ const path = require("node:path");
 const readline = require("node:readline");
 const os = require("node:os");
 const { Vault, History, Redactor, SECRET } = require("./privacy.cjs");
+const { createPrompts } = require("./arming.cjs");
 const localData =
   !app.isPackaged && process.env.CHORUSDRAFT_USER_DATA
     ? process.env.CHORUSDRAFT_USER_DATA
@@ -40,7 +41,8 @@ let vault,
   history,
   currentSite,
   redactor = new Redactor(),
-  maintenanceFailures = [];
+  maintenanceFailures = [],
+  prompts = createPrompts();
 function output(text) {
   if (!text) return;
   if (currentSite)
@@ -168,6 +170,7 @@ function startBridge() {
       newline === -1 ? buffered + chunk.length : chunk.length - newline - 1;
     if (buffered > RESPONSE_LIMIT) {
       bridge.stdout.destroy();
+      prompts.reset();
       emit({
         type: "error",
         value: "The bot service returned an oversized response.",
@@ -178,6 +181,7 @@ function startBridge() {
   readline.createInterface({ input: bridge.stdout }).on("line", (line) => {
     try {
       const message = JSON.parse(line);
+      prompts.onEvent(message);
       if (message.type === "started") running = true;
       if (message.type === "exit") running = false;
       if (message.type === "error") running = Boolean(message.active);
@@ -259,12 +263,17 @@ app
         contextIsolation: true,
         nodeIntegration: false,
         sandbox: true,
+        webviewTag: false,
         partition: "chorusdraft-ui",
         spellcheck: false,
       },
     });
     window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
     window.webContents.on("will-navigate", (event) => event.preventDefault());
+    window.webContents.on("will-redirect", (event) => event.preventDefault());
+    window.webContents.on("will-attach-webview", (event) =>
+      event.preventDefault(),
+    );
     // The UI requests no web permissions; deny every one by default.
     window.webContents.session.setPermissionRequestHandler(
       (_webContents, _permission, callback) => callback(false),
@@ -352,6 +361,7 @@ app
       currentSite = request.platform;
       redactor = new Redactor(SECRET.map((key) => environment[key]));
       running = true;
+      prompts.reset();
       try {
         send({
           environment,
@@ -382,14 +392,17 @@ app
           throw new Error(
             "Enter replacement text for a pending draft (maximum 10,000 characters).",
           );
+        if (!prompts.allow(action))
+          throw new Error("Wait for the current prompt before responding.");
         send({ type: "input", action, text });
         return;
       }
-      if (typeof text !== "string" || text.length > 20000 || CONTROL.test(text))
-        throw new Error("Enter one response at a time.");
-      send({ type: "input", text });
+      throw new Error("Enter one response at a time.");
     });
-    handle("bot:stop", () => send({ type: "stop" }));
+    handle("bot:stop", () => {
+      prompts.reset();
+      send({ type: "stop" });
+    });
     handle("bot:settings", (request) =>
       vault.view(selection(request).platform),
     );

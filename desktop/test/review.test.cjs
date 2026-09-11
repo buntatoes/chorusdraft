@@ -24,12 +24,13 @@ test("publish is armed only by the structured review event", async () => {
   assert.equal(reviewDraftFrom("review"), null);
 });
 
-test("a review event with a malformed draft still arms with an empty draft", async () => {
+test("a review event with a malformed draft does not arm publish", async () => {
   const { reviewDraftFrom } = await import("../src/review.mjs");
-  assert.deepEqual(reviewDraftFrom({ type: "review" }), {});
-  assert.deepEqual(reviewDraftFrom({ type: "review", draft: null }), {});
-  assert.deepEqual(reviewDraftFrom({ type: "review", draft: "text" }), {});
-  assert.deepEqual(reviewDraftFrom({ type: "review", draft: ["text"] }), {});
+  assert.equal(reviewDraftFrom({ type: "review" }), null);
+  assert.equal(reviewDraftFrom({ type: "review", draft: null }), null);
+  assert.equal(reviewDraftFrom({ type: "review", draft: "text" }), null);
+  assert.equal(reviewDraftFrom({ type: "review", draft: ["text"] }), null);
+  assert.equal(reviewDraftFrom({ type: "review", draft: { id: "1" } }), null);
 });
 
 const emptyCard = {

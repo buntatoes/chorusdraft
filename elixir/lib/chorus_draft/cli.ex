@@ -573,14 +573,22 @@ defmodule ChorusDraft.CLI do
   def load_do_not_contact(store, path), do: Enum.each(read_list(path), &Store.block(store, &1))
 
   defp read_list(path) do
-    if File.regular?(path) do
-      path
-      |> File.read!()
-      |> String.split("\n")
-      |> Enum.map(&String.trim/1)
-      |> Enum.reject(&(&1 == "" or String.starts_with?(&1, "#")))
-    else
-      []
+    case File.lstat(path) do
+      {:ok, %{type: :regular}} ->
+        path
+        |> File.read!()
+        |> String.split("\n")
+        |> Enum.map(&String.trim/1)
+        |> Enum.reject(&(&1 == "" or String.starts_with?(&1, "#")))
+
+      {:error, :enoent} ->
+        []
+
+      {:ok, _} ->
+        raise Error, "Configuration must be a regular file, not a symlink or directory."
+
+      {:error, _} ->
+        raise Error, "Could not read configuration."
     end
   end
 

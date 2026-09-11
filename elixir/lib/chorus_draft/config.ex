@@ -2,13 +2,21 @@ defmodule ChorusDraft.Config do
   alias ChorusDraft.Error
 
   def load(path, env \\ System.get_env()) do
-    if File.regular?(path) do
-      path
-      |> File.stream!([], :line)
-      |> Enum.with_index(1)
-      |> Enum.reduce(env, fn {line, number}, acc -> parse_line(line, number, acc) end)
-    else
-      env
+    case File.lstat(path) do
+      {:ok, %{type: :regular}} ->
+        path
+        |> File.stream!([], :line)
+        |> Enum.with_index(1)
+        |> Enum.reduce(env, fn {line, number}, acc -> parse_line(line, number, acc) end)
+
+      {:error, :enoent} ->
+        env
+
+      {:ok, _} ->
+        raise Error, "Configuration must be a regular file, not a symlink or directory."
+
+      {:error, _} ->
+        raise Error, "Could not read configuration."
     end
   end
 
