@@ -1,0 +1,23 @@
+name: Task
+description: A change to make
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A few sentences. What should change, and how we will know it is done.
+        No checklists. Public issues are public; no tokens, private posts, or
+        personal information.
+  - type: textarea
+    id: want
+    attributes:
+      label: What
+      description: The change.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: How we will know it is finished.
+    validations:
+      required: true

@@ -1,0 +1,18 @@
+---
+description: ChorusDraft development lock and PR rules for agents
+alwaysApply: true
+---
+
+Follow CONTRIBUTING.md and AGENTS.md.
+
+Desktop lock (one open PR only): `desktop/src/main.jsx`,
+`desktop/electron/main.cjs`, `launcher/bridge.py`. If another open PR
+touches those files, stop. Do not open a second PR. Do not stack on an
+unmerged lock PR.
+
+Issues and PRs: short, no checklists or agent notes, `Fixes #N`. Do not
+file extra issues. Do not merge/close/duplicate an open PR for the same
+work. Do not bump VERSION or cut a release unless asked.
+
+At most two open PRs; at most one desktop-lock PR. Sign commits with the
+environment default.

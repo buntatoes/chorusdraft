@@ -1,0 +1,35 @@
+# One open PR at a time against the desktop hot path.
+name: Desktop lock
+
+on:
+  pull_request:
+    paths:
+      - "desktop/src/main.jsx"
+      - "desktop/electron/main.cjs"
+      - "launcher/bridge.py"
+      - "scripts/desktop_lock.py"
+      - ".github/workflows/desktop-lock.yml"
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: desktop-lock-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  lock:
+    name: One desktop-lock PR
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Refuse a second desktop hot-path PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: python3 scripts/desktop_lock.py

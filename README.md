@@ -30,7 +30,7 @@ builds include it and sign it; the bot refuses to run if Guard is missing or is
 not the signed code. Details in
 [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
-[Changelog](CHANGELOG.md) · [Releases](https://github.com/buntatoes/chorusdraft/releases) · [Build](elixir/README.md) · [Security](SECURITY.md)
+[Changelog](CHANGELOG.md) · [Releases](https://github.com/buntatoes/chorusdraft/releases) · [Build](elixir/README.md) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md)
 
 ## What it does
 
