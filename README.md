@@ -53,6 +53,7 @@ use `elixir/chorusdraft` after `mix escript.build`.
 ./run.sh bluesky --help
 ./run.sh bluesky draft
 ./run.sh bluesky review
+./run.sh bluesky review DRAFT_ID
 ./run.sh bluesky start
 ./run.sh bluesky automatic --active-hours 08:30-22:00
 ./run.sh mastodon post "Maintenance is complete." --publish
@@ -62,7 +63,7 @@ use `elixir/chorusdraft` after `mix escript.build`.
 |---|---|
 | `setup` | Create missing config files |
 | `draft` | Stage one original AI draft |
-| `review` | Review queued drafts |
+| `review [ID]` | Review pending drafts, or one pending draft |
 | `start` | Foreground daemon (review-first) |
 | `automatic` | Daemon that may auto-post new originals and mention replies |
 | `listen` / `replies` | Mentions |

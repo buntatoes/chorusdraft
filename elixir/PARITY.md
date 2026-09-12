@@ -18,7 +18,7 @@ Old JSON state still imports.
 | Original comic drafts, contextual replies, target and discovery commentary | Shared runner; skips seen or ineligible candidates | Runner and parity tests |
 | Local OpenAI, Ollama, and Gemini | Shared AI adapter; credentials stay out of errors | AI adapter fixtures |
 | Manual staging and explicit manual publication | `--text`, `--publish`, reply/quote/CW options | Runner and client tests |
-| Interactive approval and rejection; review is the default | `--process-queue`; `--edit`; `--reject`; claim before publish. Opt-in `automatic` can post a new original or eligible mention reply | Approval, concurrency, and failure tests |
+| Interactive approval and rejection; review is the default | `--process-queue [ID]`; `--edit`; `--reject`; claim before publish. Opt-in `automatic` can post a new original or eligible mention reply | Approval, concurrency, and failure tests |
 | Search, timeline inspection, random reply targets | `--search`, `--random-post [QUERY]`, `--random-reply QUERY` | CLI/runner; parser tests |
 | CLI compatibility aliases | `--reply-uri`, `--quote-only`, `--staging`, `--poll`, CID arguments | Parity tests; supplied CIDs are re-fetched |
 | Polling, daemon, local active hours, jitter | Foreground loops; one failed job does not kill the loop | Schedule and HTTP-error tests |
@@ -29,8 +29,9 @@ Old JSON state still imports.
 | Jetstream | Bluesky notification wake-up only; periodic API catch-up; no history replay | Protocol, reconnect, coalescing, oversized/fragment, handshake, heartbeat, timeout tests |
 | Mastodon streaming | User-stream wake-up only; token in Authorization header; periodic API catch-up | Endpoint checks, SSE notification wake-up, local fixture |
 
-The bot needs Erlang/OTP. Desktop downloads include the GUI runtime. Install
-into a new directory; copy state after stopping the old process. HTTP
+The bot needs Erlang/OTP. Desktop downloads include the GUI runtime. Desktop
+install updates a stable folder in place; CLI install still refuses an
+existing destination. Copy state after stopping the old process. HTTP
 redirects and automatic retries are off, including 503 Retry-After. Still no
 auto likes, boosts, or reposts.
 

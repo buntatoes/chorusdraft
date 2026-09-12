@@ -44,7 +44,8 @@ extra step. With no release key configured they use a development key kept in
 development key makes a build run; it says nothing about a downloaded release.
 
 Generate the release key once, keep the private half offline, and commit only
-the public half:
+the public half. `mix guard.keygen` writes the private file owner-readable
+only, the same private-file treatment as credentials:
 
 ```sh
 mix guard.keygen --out /secure/path/chorusdraft-guard-release.key
@@ -71,6 +72,7 @@ whose Guard does not verify fails the check.
 ```sh
 ./chorusdraft bluesky draft
 ./chorusdraft bluesky review
+./chorusdraft bluesky review DRAFT_ID
 ./chorusdraft bluesky edit DRAFT_ID "replacement text"
 ./chorusdraft bluesky status
 ./chorusdraft bluesky start
@@ -78,6 +80,11 @@ whose Guard does not verify fails the check.
 ./chorusdraft mastodon reply STATUS_ID "Thanks for the context."
 ./chorusdraft mastodon search "open source"
 ```
+
+`review` and `--process-queue` walk every pending draft. With an id they
+open that one pending draft only. Missing, rejected, publishing, and
+uncertain ids fail with `Draft is unavailable or not pending.` They do not
+publish. `--publish` is refused.
 
 `start` is review-first. Only `automatic` (`--daemon --automatic`) may
 auto-publish AI output. Manual text, quotes, target/discovery commentary,
@@ -87,8 +94,31 @@ held drafts, and items already in the queue stay review-only.
 ./chorusdraft bluesky --post-only
 ./chorusdraft mastodon --replies-only
 ./chorusdraft bluesky --process-queue
+./chorusdraft bluesky --process-queue DRAFT_ID
 ./chorusdraft mastodon --text "Maintenance is complete." --publish
 ```
+
+## Configuration
+
+Per-platform files under `bluesky/` or `mastodon/` (or `--base`):
+
+| File | Purpose |
+|---|---|
+| `.env` | Credentials and knobs. Setup copies `.env.example` once; it never overwrites. |
+| `config/target_accounts.txt` | Handles for `targets` (one per line; `#` is a comment) |
+| `config/do_not_contact.txt` | Never reply, quote, or target. Loaded at start. |
+
+| Key | Constraint |
+|---|---|
+| `ACTIVE_HOURS` | Local `HH:MM-HH:MM`. Blank or equal endpoints keep the bot always active. Overnight ranges work (`22:00-08:00`). Minutes are optional (`9-17`). |
+| `DISCOVERY_KEYWORDS` | Comma-separated. `discover` without a query picks one at random. Falls back to `DISCOVERY_TAGS`, then `opensource`. |
+| `STATUS_VISIBILITY` | Mastodon originals and quotes (default `public`). Replies to others are `unlisted`. Bluesky is always `public`. Desktop Settings allows `public` or `unlisted`. |
+| `STATUS_LANGUAGE` | Draft language tag (default `en`). |
+
+Desktop Settings can edit the same hours, keywords, visibility, language, and
+list files for GUI launches. Form values other than the two lists stay in the
+desktop vault or session memory. Only the list files are written under
+`config/`. CLI still reads `.env` and `config/` from disk.
 
 ## Automatic mode
 
@@ -161,8 +191,10 @@ moving the package so the command path stays valid.
 ## State
 
 Per platform `data/` directory, split by platform, origin, and account.
-Do-not-contact and public opt-outs apply. Ambiguous publishes become
-`uncertain`. Screens are regex. They miss things. Review is what matters.
+Writers take a loopback lock in the bot process; another run of the same
+account store is refused until it is released. Do-not-contact and public
+opt-outs apply. Ambiguous publishes become `uncertain`. Screens are regex.
+They miss things. Review is what matters.
 
 ## Providers
 
@@ -204,7 +236,10 @@ Release builds set `CHORUSDRAFT_GUARD_SIGNING_KEY` first: [Guard signing](#guard
 
 ## Upgrade
 
-Stop the old process, install into a new directory, copy `.env` and config:
+CLI install writes a new versioned folder and refuses a destination that
+already exists. Desktop install updates the existing folder in place and
+keeps `.env`, queues, and block lists. Stop the old process first. For a
+CLI move, install into a new directory, then copy `.env` and config:
 
 ```sh
 ./chorusdraft bluesky import /absolute/path/to/old/data/ACCOUNT_HASH/state.json
@@ -224,6 +259,7 @@ Check the live account first. Do not force uncertain back to pending.
 | `ChorusDraft Guard is required` | Official source includes `guard/`. Do not delete or replace it. |
 | `ChorusDraft Guard failed signature verification` | The Guard code is not what this build signed. Reinstall from an official package. From source, run `mix guard.sign --development` after changing Guard. |
 | `automatic frozen` in `status` | A `publishing` or `uncertain` draft is blocking claims. Inspect the live account, then `reject ID`. |
+| `Draft is unavailable or not pending` | `review ID` and `edit ID` accept a current pending draft only. Use `status` for ids. `reject ID` for uncertain. |
 | `State is busy` / lock timed out | Another process holds the account store. Stop the extra daemon or the other run. |
 | `no loopback lock address was free` | Locking binds a loopback address. Allow local sockets on `127.0.0.1` for the bot. |
 | `State is already locked by this process` | Nested store write. Retry the edit after the outer command finishes. |
