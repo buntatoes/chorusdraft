@@ -80,12 +80,14 @@ session log. Publish buttons follow a review event, not a scraped prompt.
 The app also refuses approve, reject, skip, and edit until that event, and
 after the session ends.
 
-**Queue** lists pending and uncertain drafts from the account store last used
-on the selected platform. Cards show reply and quote targets when the draft
-has them. **Review this draft** starts `review ID` for that pending item;
-publish buttons still follow a review event. Remaining automatic attempts and
-freeze state are shown for Bluesky and Mastodon side by side. Edit from Queue
-or during review; the replacement is screened and still needs approval.
+**Queue** lists pending, publishing, and uncertain drafts from the account
+store last written on each platform (newest `state.json` mtime). Cards show
+reply and quote targets when the draft has them. **Review this draft** starts
+`review ID` for that pending item only; missing or non-pending ids are
+refused. Publish buttons still follow a review event. Remaining automatic
+attempts and freeze state are shown for Bluesky and Mastodon side by side.
+Edit from Queue or during review; the replacement is screened and still needs
+approval.
 During review, **Edit text** prefills the current draft and keeps line
 breaks. The response field is disabled while the edit form is open so `y`
 cannot publish the original. After you save, review asks again. You can also
@@ -93,8 +95,10 @@ send `y`, `e`, `d`, or `q` through the response field when those buttons are
 showing.
 
 **Discover** and **Targets** start `discover` and `targets` the same way as
-the command line. Discovery and target commentary still need review;
-automatic mode does not publish them. **Delete a post** asks for a post id,
+the command line. Optional text from the desktop cannot start with `-`
+(reply, quote, and delete already refuse `--` ids). Discovery and target
+commentary still need review; automatic mode does not publish them.
+**Delete a post** asks for a post id,
 then confirms from the bot `confirm` event with an id. Confirming sends
 `approve`. Cancel sends `quit`. The app refuses approve until that event.
 The bot still refuses ids that are not your posts.
@@ -124,11 +128,13 @@ entered settings in memory until ChorusDraft closes. The app does not fall
 back to saving plaintext.
 
 The form also has `ACTIVE_HOURS` (`HH:MM-HH:MM`; blank or equal start and end
-means always active) and `DISCOVERY_KEYWORDS` (comma-separated). Target
-accounts and Do not contact edit `config/target_accounts.txt` and
-`config/do_not_contact.txt` in the selected platform directory (one handle
-per line). Saving Settings writes those two files; the bot reads them from
-disk.
+means always active; overnight ranges and optional minutes such as `9-17`
+are accepted), `DISCOVERY_KEYWORDS` (comma-separated; a blank value is
+saved as `opensource`), and `STATUS_LANGUAGE` (default `en`). Mastodon
+**Default visibility** is `public` or `unlisted`. Target accounts and Do not
+contact edit `config/target_accounts.txt` and `config/do_not_contact.txt` in
+the selected platform directory (one handle per line; `#` starts a comment).
+Saving Settings writes those two files; the bot reads them from disk.
 
 These settings apply to bots launched through the GUI. Secure saving removes
 only the fields managed by the form from the selected bot's existing `.env`;
@@ -138,7 +144,7 @@ does not revoke credentials at the service or remove copies you keep elsewhere.
 
 Command-line `.env` files and environment variables are still plaintext.
 GUI settings are not available to separately launched CLI processes. See
-[Elixir configuration](../elixir/README.md) for command-line setup.
+[Elixir configuration](../elixir/README.md#configuration) for command-line setup.
 
 ## Local history
 
@@ -159,7 +165,9 @@ Pending drafts, uncertain publications, do-not-contact entries, and duplicate
 and interaction safety records are retained separately. Expiring local history
 does not delete posts from Bluesky or Mastodon.
 
-ChorusDraft does not upload history or activity logs. Account state stays in
+ChorusDraft does not upload history or activity logs. Settings, queue, and
+history reads refuse symbolic links and files over 50 MB (account lists over
+256 KB) instead of following them. Account state stays in
 `elixir/bluesky/data/` or `elixir/mastodon/data/` inside your installation.
 Desktop credentials and activity use:
 
@@ -190,7 +198,7 @@ On Windows, replace `./bot` with `.\bot.bat`.
 | --- | --- |
 | `setup` | Create missing configuration files |
 | `draft` | Create an AI draft |
-| `review` | Review and publish selected drafts |
+| `review [ID]` | Review pending drafts, or one pending draft |
 | `post "TEXT"` | Queue a post you wrote |
 | `reply ID "TEXT"` | Queue a reply |
 | `quote ID "TEXT"` | Queue a quote or commentary |
@@ -256,9 +264,11 @@ typing `delete`.
 
 Each platform uses its own configuration and account state under
 `elixir/bluesky/` or `elixir/mastodon/`. Setup preserves existing files. Stop
-the old bot before upgrading and install into a new directory. Keep the
-complete account state so pending drafts, opt-outs, and uncertain publications
-survive the move. Backups can hold secrets; treat them like credentials.
+the old bot before upgrading. The desktop installer updates the existing
+folder in place and keeps `.env`, queues, and block lists. To move, install
+into the new folder, then copy `.env` and import state. Keep the complete
+account state so pending drafts, opt-outs, and uncertain publications survive
+the move. Backups can hold secrets; treat them like credentials.
 
 When migrating from the Ruby release, follow the
 [state import instructions](../elixir/README.md#upgrade).

@@ -9,6 +9,19 @@ the post body that look like `@author | id` stay on that card. Discover and
 Targets optional text from the desktop cannot start with `-`. Reply, quote,
 and delete already refuse `--` ids.
 
+Account-state locking is a loopback socket in the bot process. It does not
+spawn a helper and does not need `flock`. Only addresses that refused a bind
+are probed, so a closed candidate does not wait out a connection timeout.
+
+Official builds sign compiled Guard modules with an ed25519 key. The private
+key file is owner-readable only, the same as credentials, and is never
+packaged. The bot refuses Guard that is missing, unsigned, or altered after
+signing.
+
+Desktop approve, reject, skip, and edit are armed in the main process from a
+`review` or delete `confirm` event. Settings, queue, and history reads refuse
+symlinks and oversize files.
+
 ## 0.54.0 — 2026-09-11
 
 Current published GitHub Release. Earlier GitHub Releases and tags

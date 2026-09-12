@@ -35,6 +35,10 @@ publish in flight. `publishing` or `uncertain` blocks later claims. A
 publishing claim older than five minutes becomes `uncertain` and is never
 retried automatically.
 
+`review ID` and `--process-queue ID` open one pending draft. They refuse
+missing, publishing, uncertain, and rejected ids. Bare `review` still walks
+every pending item. Neither form publishes on its own.
+
 `edit ID` and review `e` replace pending text after the same screens, then
 leave the draft pending. They cannot publish. `--edit` cannot be combined with
 `--publish`, reply, quote, or queue flags. Desktop review Edit prefills the
